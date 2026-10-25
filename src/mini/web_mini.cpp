@@ -114,6 +114,7 @@ void handleStart() {
   j.cutoffV = b["cutoffV"] | 3.0f;
   j.preCharge = b["preCharge"] | true;
   j.restMin = b["restMin"] | settings.restMin;
+  j.cycles = b["cycles"] | 1;
   String after = b["after"] | "storage";
   j.after = after == "none" ? After::None : after == "full" ? After::Full : After::Storage;
   const CellPreset* p = findPreset(j.presetId.c_str());

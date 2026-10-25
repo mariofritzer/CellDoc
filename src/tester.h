@@ -35,6 +35,11 @@ struct JobConfig {
   bool preCharge = true;
   uint16_t restMin = 30;
   After after = After::Full;
+  uint8_t cycles = 1;    // Zyklentest: so oft laden und entladen (1–10)
+};
+
+struct CycleRec {
+  float cap, wh, ri, chg;  // Entnommen mAh, Wh, Ri bei 50 % (mΩ), vorher geladen mAh
 };
 
 #include "curve.h"
@@ -124,8 +129,16 @@ class Tester {
   String lastCellId_;
   float lastCap_ = 0;
   int lastScore_ = -1;
-  // Selbstentladung: 1 h nach dem Vollladen Startspannung merken
+  // Zyklen
+  uint8_t cycleIdx_ = 0, nCyc_ = 0;
+  bool midRecharge_ = false;
+  CycleRec cyc_[10];
+  float riAt50() const;
+  void recordCycle(float chgMah);
+  float lastChgMah_ = 0;
+  // 1 h nach dem Test Ruhespannung merken (Spannungscheck), nach Vollladen auch Selbstentladung starten
   uint32_t sdArmAt_ = 0;
+  bool sdStartToo_ = false;
   void checkSelfDischarge(uint32_t now);
   String linkCell(JobConfig& c, bool create);
 };

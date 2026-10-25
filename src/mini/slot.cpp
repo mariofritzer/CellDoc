@@ -91,6 +91,10 @@ String Slot::startTest(const SlotJob& jIn) {
   sdArmAt_ = 0;
   if (job_.cutoffV <= 0) job_.cutoffV = job_.chem->cutoffV;
   if (job_.cutoffV < 2.7f) job_.cutoffV = 2.7f;
+  job_.cycles = constrain(job_.cycles, 1, 10);
+  cycleIdx_ = nCyc_ = 0;
+  midRe_ = false;
+  lastChg_ = 0;
   preMah_ = startOcv_ = restOcv_ = capMah_ = energyWh_ = reMah_ = reWh_ = 0;
   reSec_ = 0;
   riCount_ = riStage_ = 0;
@@ -213,7 +217,9 @@ void Slot::checkSelfDischarge(uint32_t now) {
   if (!sdArmAt_ || phase_ != Phase::Done || int32_t(now - sdArmAt_) < 0) return;
   sdArmAt_ = 0;
   float v = hal.m(s_).v;
-  if (job_.cellNo && v > 3.0f) cells::sdStart(job_.cellNo, v);
+  if (!job_.cellNo || v < 2.5f) return;
+  cells::setRest(job_.cellNo, v, "test");
+  if (sdStartToo_ && v > 3.0f) cells::sdStart(job_.cellNo, v);
 }
 
 void Slot::update(uint32_t now) {
@@ -242,7 +248,18 @@ void Slot::update(uint32_t now) {
     case Phase::RestAfter:
       if (now - phaseMs_ >= REST_AFTER_MS) {
         restOcv_ = m.v;
-        if (job_.after == After::None) {
+        if (nCyc_ < 10) {
+          cycCap_[nCyc_] = capMah_;
+          cycWh_[nCyc_] = energyWh_;
+          cycRi_[nCyc_] = ri50();
+          cycChg_[nCyc_] = cycleIdx_ == 0 ? preMah_ : lastChg_;
+          nCyc_++;
+        }
+        if (cycleIdx_ + 1 < job_.cycles) {
+          midRe_ = true;
+          storageMah_ = 0;
+          enter(Phase::Recharge);
+        } else if (job_.after == After::None) {
           finish();
         } else {
           storageMah_ = job_.after == After::Storage ? capMah_ * 0.5f : 0;
@@ -315,6 +332,12 @@ void Slot::handleCharge(uint32_t now) {
   hal.setCharger(s_, false);
   if (phase_ == Phase::PreCharge) {
     preMah_ = mah;
+    enter(Phase::Rest);
+  } else if (phase_ == Phase::Recharge && midRe_) {
+    midRe_ = false;
+    lastChg_ = mah;
+    cycleIdx_++;
+    riCount_ = 0;
     enter(Phase::Rest);
   } else if (phase_ == Phase::Recharge) {
     reMah_ = mah;
@@ -415,6 +438,15 @@ void Slot::logPoint(uint32_t now, bool force) {
   lastPtSec_ = sec;
 }
 
+float Slot::ri50() const {
+  float r = riCount_ ? riR_[0] : 0, best = 1e9;
+  for (int k = 0; k < riCount_; k++) {
+    float d = fabsf(riQ_[k] - capMah_ / 2);
+    if (d < best) { best = d; r = riR_[k]; }
+  }
+  return r;
+}
+
 void Slot::finish() {
   hal.kill(s_);
   float ri100 = riCount_ ? riR_[0] : 0, ri50 = 0, best = 1e9;
@@ -470,6 +502,16 @@ void Slot::finish() {
   d["throttled"] = throttled_;
   d["saturated"] = saturatedSeen_;
   d["durationSec"] = (millis() - startMs_) / 1000;
+  if (nCyc_ > 1) {
+    JsonArray ca = d["cycles"].to<JsonArray>();
+    for (int k = 0; k < nCyc_; k++) {
+      JsonObject c = ca.add<JsonObject>();
+      c["cap"] = roundf(cycCap_[k]);
+      c["wh"] = roundf(cycWh_[k] * 100) / 100;
+      c["ri"] = roundf(cycRi_[k] * 10) / 10;
+      c["chg"] = roundf(cycChg_[k]);
+    }
+  }
   JsonObject so = d["soh"].to<JsonObject>();
   so["score"] = r.score;
   so["low"] = r.low;
@@ -488,7 +530,8 @@ void Slot::finish() {
   lastScore_ = r.score;
   lastCap_ = capMah_;
   lastCellId_ = job_.cellId;
-  if (job_.after == After::Full) sdArmAt_ = millis() + 3600000UL;
+  sdArmAt_ = millis() + 3600000UL;
+  sdStartToo_ = job_.after == After::Full;
   enter(Phase::Done);
   hal.beep(800);
 }
@@ -517,6 +560,8 @@ void Slot::stateJson(JsonObject o) const {
     j["preCharge"] = job_.preCharge;
     j["restMin"] = job_.restMin;
     j["after"] = job_.after == After::Full ? "full" : job_.after == After::Storage ? "storage" : "none";
+    j["cycles"] = job_.cycles;
+    o["cycle"] = cycleIdx_ + 1;
     o["elapsed"] = (now - startMs_) / 1000;
     o["phaseElapsed"] = (now - phaseMs_) / 1000;
     if (phase_ == Phase::Rest) o["phaseTotal"] = uint32_t(job_.restMin) * 60;

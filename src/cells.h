@@ -22,10 +22,12 @@ struct JobCell {
 bool begin();
 String makeId(uint32_t no);
 uint32_t parseRef(const String& s);  // „CD-0042“, „#42“, „42“ → 42, 0 = ungültig
-bool exists(uint32_t no);
-bool load(uint32_t no, JsonDocument& d);
-bool save(uint32_t no, JsonDocument& d);
-bool remove(uint32_t no);
+bool exists(uint32_t no);                 // vorhanden und nicht gelöscht
+bool load(uint32_t no, JsonDocument& d);  // auch gelöschte (Grabstein: deleted = true)
+bool save(uint32_t no, JsonDocument& d);  // setzt Änderungszeit und Gerät, stößt den Abgleich an
+bool saveRaw(uint32_t no, JsonDocument& d);  // unverändert speichern (Abgleich)
+bool remove(uint32_t no);                 // hinterlässt einen Grabstein, damit Partnergeräte mitlöschen
+uint32_t allocate();                      // nächste freie Nummer, mit Partnergeräten abgestimmt
 uint32_t create(JsonObjectConst info);  // neue Zelle ohne Test (z. B. zum Vorab-Etikettieren)
 
 // Vor einem Vorgang: vorhandene Zelle laden oder neu anlegen, fehlende Angaben gegenseitig ergänzen
@@ -39,6 +41,10 @@ float firstCapacity(uint32_t no);
 String sdStart(uint32_t no, float v);
 String sdMeasure(uint32_t no, float v);
 String sdReset(uint32_t no);
+
+// Spannungscheck: Ruhespannung merken und beim nächsten Einstecken vergleichen
+void setRest(uint32_t no, float v, const char* src);
+String check(uint32_t no, float v, JsonObject out);  // out: v, prevV, days, dv (mV), mvDay
 
 // Zähler nach Wiederherstellung neu setzen
 void rescanCounters();

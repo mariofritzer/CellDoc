@@ -19,6 +19,7 @@ struct SlotJob {
   bool preCharge = true;
   uint16_t restMin = 30;
   After after = After::Storage;
+  uint8_t cycles = 1;
 };
 
 class Slot {
@@ -88,6 +89,13 @@ class Slot {
   float lastCap_ = 0;
   String lastCellId_;
   uint32_t sdArmAt_ = 0;
+  bool sdStartToo_ = false;
+  // Zyklen
+  uint8_t cycleIdx_ = 0, nCyc_ = 0;
+  bool midRe_ = false;
+  float lastChg_ = 0;
+  float cycCap_[10], cycWh_[10], cycRi_[10], cycChg_[10];
+  float ri50() const;
   String linkCell(SlotJob& j, bool create);
   void checkSelfDischarge(uint32_t now);
 };

@@ -132,6 +132,9 @@ String Tester::startTest(const JobConfig& cIn) {
     c.preCharge = false;
     c.after = After::None;
   }
+  // Zyklen nur, wenn CellDoc selbst laden kann
+  if (c.port == PORT_B || (c.chem && c.chem->charger == ChargerMode::Off)) c.cycles = 1;
+  c.cycles = constrain(c.cycles, 1, 10);
   String e = precheck(c, c.preCharge || c.after != After::None, true);
   if (e.length()) return e;
   e = linkCell(c, true);
@@ -147,6 +150,9 @@ String Tester::startTest(const JobConfig& cIn) {
   riCount_ = 0;
   riStage_ = 0;
   lastRi_ = 0;
+  cycleIdx_ = nCyc_ = 0;
+  midRecharge_ = false;
+  lastChgMah_ = 0;
   throttled_ = saturatedSeen_ = false;
   nPts_ = 0;
   ptInterval_ = 10;
@@ -280,7 +286,9 @@ void Tester::checkSelfDischarge(uint32_t now) {
   if (!sdArmAt_ || phase_ != Phase::Done || int32_t(now - sdArmAt_) < 0) return;
   sdArmAt_ = 0;
   float v = hal.m().port[job_.port].v / max<uint8_t>(1, job_.cells);
-  if (job_.cellNo && v > 3.0f) cells::sdStart(job_.cellNo, v);
+  if (!job_.cellNo || v < 2.5f) return;
+  cells::setRest(job_.cellNo, v, "test");
+  if (sdStartToo_ && v > 3.0f) cells::sdStart(job_.cellNo, v);
 }
 
 void Tester::update(uint32_t now) {
@@ -314,7 +322,13 @@ void Tester::update(uint32_t now) {
     case Phase::RestAfter:
       if (now - phaseMs_ >= REST_AFTER_MS) {
         restOcv_ = pm.v;
-        if (job_.after == After::None) {
+        recordCycle(cycleIdx_ == 0 ? preChargeMah_ : lastChgMah_);
+        if (cycleIdx_ + 1 < job_.cycles) {
+          // nächster Zyklus: voll laden, ruhen, wieder entladen
+          midRecharge_ = true;
+          storageTargetMah_ = 0;
+          enter(Phase::Recharge);
+        } else if (job_.after == After::None) {
           finishTest();
         } else {
           storageTargetMah_ = job_.after == After::Storage ? capMah_ * 0.5f : 0;
@@ -465,6 +479,12 @@ void Tester::handleCharge(uint32_t now, bool isTest) {
   if (phase_ == Phase::PreCharge) {
     preChargeMah_ = mah;
     enter(Phase::Rest);
+  } else if (phase_ == Phase::Recharge && midRecharge_) {
+    midRecharge_ = false;
+    lastChgMah_ = mah;
+    cycleIdx_++;
+    riCount_ = 0;
+    enter(Phase::Rest);
   } else if (phase_ == Phase::Recharge) {
     rechargeMah_ = mah;
     rechargeWh_ = float(pm.energyWs / 3600.0);
@@ -598,6 +618,24 @@ void Tester::logPoint(uint32_t now, bool force) {
 // ---------------------------------------------------------------------------
 // Ergebnis
 
+float Tester::riAt50() const {
+  int i50 = -1;
+  float best = 1e9;
+  for (int k = 0; k < riCount_; k++) {
+    float d = fabsf(ri_[k].qmAh - capMah_ / 2);
+    if (d < best) {
+      best = d;
+      i50 = k;
+    }
+  }
+  return i50 >= 0 ? ri_[i50].riMilli : (riCount_ ? ri_[0].riMilli : 0);
+}
+
+void Tester::recordCycle(float chgMah) {
+  if (nCyc_ >= 10) return;
+  cyc_[nCyc_++] = {capMah_, energyWh_, riAt50(), chgMah};
+}
+
 void Tester::finishTest() {
   hal.setCharger(ChargerMode::Off);
   hal.setLoad(job_.port, 0);
@@ -669,6 +707,16 @@ void Tester::finishTest() {
   d["throttled"] = throttled_;
   d["saturated"] = saturatedSeen_;
   d["durationSec"] = (millis() - startMs_) / 1000;
+  if (nCyc_ > 1) {
+    JsonArray ca = d["cycles"].to<JsonArray>();
+    for (int k = 0; k < nCyc_; k++) {
+      JsonObject c = ca.add<JsonObject>();
+      c["cap"] = roundf(cyc_[k].cap);
+      c["wh"] = roundf(cyc_[k].wh * 100) / 100;
+      c["ri"] = roundf(cyc_[k].ri * 10) / 10;
+      c["chg"] = roundf(cyc_[k].chg);
+    }
+  }
   JsonObject s = d["soh"].to<JsonObject>();
   s["score"] = r.score;
   s["low"] = r.low;
@@ -688,8 +736,9 @@ void Tester::finishTest() {
   lastCellId_ = job_.cellId;
   lastCap_ = capMah_;
   lastScore_ = r.score;
-  // nach dem Vollladen in einer Stunde die Startspannung für die Selbstentladung merken
-  if (job_.after == After::Full && job_.cells == 1 && job_.chem->lithium) sdArmAt_ = millis() + 3600000UL;
+  // in einer Stunde die Ruhespannung merken, nach dem Vollladen auch den Selbstentladungstest starten
+  sdArmAt_ = millis() + 3600000UL;
+  sdStartToo_ = job_.after == After::Full && job_.cells == 1 && job_.chem->lithium;
   enter(Phase::Done);
   hal.beep(800);
 }
@@ -718,6 +767,8 @@ void Tester::stateJson(JsonObject o) const {
     j["preCharge"] = job_.preCharge;
     j["restMin"] = job_.restMin;
     j["after"] = job_.after == After::Full ? "full" : job_.after == After::Storage ? "storage" : "none";
+    j["cycles"] = job_.cycles;
+    o["cycle"] = cycleIdx_ + 1;
     o["elapsed"] = (now - startMs_) / 1000;
     o["phaseElapsed"] = (now - phaseMs_) / 1000;
     if (phase_ == Phase::Rest) o["phaseTotal"] = uint32_t(job_.restMin) * 60;

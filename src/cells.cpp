@@ -3,6 +3,7 @@
 #include "profiles.h"
 #include "settings.h"
 #include "soh.h"
+#include "sync.h"
 
 namespace cells {
 
@@ -34,7 +35,11 @@ uint32_t parseRef(const String& s) {
   return strtoul(s.substring(start, end + 1).c_str(), nullptr, 10);
 }
 
-bool exists(uint32_t no) { return no && LittleFS.exists(path(no)); }
+bool exists(uint32_t no) {
+  if (!no || !LittleFS.exists(path(no))) return false;
+  JsonDocument d;
+  return load(no, d) && !(d["deleted"] | false);
+}
 
 bool load(uint32_t no, JsonDocument& d) {
   File f = LittleFS.open(path(no), "r");
@@ -44,7 +49,7 @@ bool load(uint32_t no, JsonDocument& d) {
   return ok;
 }
 
-bool save(uint32_t no, JsonDocument& d) {
+bool saveRaw(uint32_t no, JsonDocument& d) {
   File f = LittleFS.open(path(no), "w");
   if (!f) return false;
   serializeJson(d, f);  // eine Zeile, wichtig für die Datensicherung
@@ -52,11 +57,41 @@ bool save(uint32_t no, JsonDocument& d) {
   return true;
 }
 
-bool remove(uint32_t no) { return LittleFS.remove(path(no)); }
+bool save(uint32_t no, JsonDocument& d) {
+  // Änderungszeit + Gerät: beim Abgleich gewinnt die neuere Fassung
+  uint32_t t = nowEpoch();
+  uint32_t old = d["upd"] | 0u;
+  d["upd"] = t > old ? t : old + 1;
+  d["dev"] = settings.hostname;
+  d["rcv"] = t;
+  bool ok = saveRaw(no, d);
+  peersync::changed();
+  return ok;
+}
+
+bool remove(uint32_t no) {
+  JsonDocument d;
+  if (!load(no, d) || (d["deleted"] | false)) return false;
+  JsonDocument t;
+  t["no"] = no;
+  t["id"] = d["id"];
+  t["uid"] = d["uid"];
+  t["deleted"] = true;
+  return save(no, t);
+}
+
+uint32_t allocate() {
+  uint32_t n = max(settings.nextCellNo, peersync::peerNextNo());
+  settings.nextCellNo = n + 1;
+  settings.save();
+  peersync::reserve(n);
+  return n;
+}
 
 static void fillNew(JsonDocument& d, uint32_t no) {
   d["no"] = no;
   d["id"] = makeId(no);
+  d["uid"] = settings.hostname + "-" + String(nowEpoch()) + "-" + String(esp_random() & 0xffff, HEX);
   d["status"] = "ok";
   d["created"] = nowEpoch();
   d["tests"].to<JsonArray>();
@@ -69,8 +104,7 @@ static void setPreset(JsonDocument& d, const String& presetId) {
 }
 
 uint32_t create(JsonObjectConst info) {
-  uint32_t no = settings.nextCellNo++;
-  settings.save();
+  uint32_t no = allocate();
   JsonDocument d;
   fillNew(d, no);
   String name = info["name"] | "";
@@ -91,7 +125,7 @@ uint32_t create(JsonObjectConst info) {
 String prepare(JobCell& c) {
   JsonDocument d;
   if (c.no) {
-    if (!load(c.no, d)) return "Zelle " + makeId(c.no) + " nicht gefunden";
+    if (!load(c.no, d) || (d["deleted"] | false)) return "Zelle " + makeId(c.no) + " nicht gefunden";
     // fehlende Angaben aus dem Bestand übernehmen, neue Angaben im Bestand merken
     String stored = d["name"] | "";
     if (!c.name.length()) c.name = stored;
@@ -105,8 +139,7 @@ String prepare(JobCell& c) {
     d["chem"] = c.chem;
     d["cells"] = c.cellCount;
   } else {
-    c.no = settings.nextCellNo++;
-    settings.save();
+    c.no = allocate();
     fillNew(d, c.no);
     if (!c.name.length()) c.name = makeId(c.no);
     d["name"] = c.name;
@@ -145,6 +178,16 @@ void addResult(uint32_t no, JsonDocument& r) {
   last["high"] = s["high"] | score;
   last["est"] = s["estimated"] | false;
   last["grade"] = String(soh::grade(score));
+  // Verlauf mit Gerät, damit Partnergeräte die Tests auch sehen
+  JsonArray h = d["hist"].is<JsonArray>() ? d["hist"].as<JsonArray>() : d["hist"].to<JsonArray>();
+  JsonObject e = h.add<JsonObject>();
+  e["dev"] = settings.hostname;
+  e["id"] = r["id"];
+  e["t"] = r["time"];
+  e["cap"] = r["capMah"];
+  e["ri"] = ri;
+  e["score"] = score;
+  while (h.size() > 20) h.remove(0);
   if (!d["first"].is<JsonObject>()) {
     JsonObject f = d["first"].to<JsonObject>();
     f["id"] = r["id"];
@@ -203,6 +246,49 @@ String sdReset(uint32_t no) {
   JsonDocument d;
   if (!load(no, d)) return "Zelle nicht gefunden";
   d.remove("sd");
+  save(no, d);
+  return "";
+}
+
+void setRest(uint32_t no, float v, const char* src) {
+  uint32_t t = nowEpoch();
+  JsonDocument d;
+  if (!t || !load(no, d) || (d["deleted"] | false)) return;
+  JsonObject r = d["rest"].to<JsonObject>();
+  r["v"] = roundf(v * 1000) / 1000;
+  r["t"] = t;
+  r["src"] = src;
+  save(no, d);
+}
+
+String check(uint32_t no, float v, JsonObject out) {
+  uint32_t t = nowEpoch();
+  if (!t) return "Uhrzeit unbekannt";
+  if (v < 1.0f) return "Keine Zelle erkannt";
+  JsonDocument d;
+  if (!load(no, d) || (d["deleted"] | false)) return "Zelle nicht gefunden";
+  out["v"] = roundf(v * 1000) / 1000;
+  JsonObject r = d["rest"];
+  if (!r.isNull() && (r["t"] | 0u) && t > (r["t"] | 0u)) {
+    float pv = r["v"] | 0.0f, days = (t - (r["t"] | 0u)) / 86400.0f;
+    float dv = (v - pv) * 1000;
+    out["prevV"] = pv;
+    out["prevT"] = r["t"];
+    out["days"] = roundf(days * 10) / 10;
+    out["dv"] = roundf(dv);
+    if (days >= 0.5f) out["mvDay"] = roundf(-dv / days * 10) / 10;
+    JsonObject c = d["check"].to<JsonObject>();
+    c["v"] = out["v"];
+    c["t"] = t;
+    c["prevV"] = pv;
+    c["days"] = out["days"];
+    c["dv"] = out["dv"];
+    if (days >= 0.5f) c["mvDay"] = out["mvDay"];
+  }
+  JsonObject nr = d["rest"].to<JsonObject>();
+  nr["v"] = roundf(v * 1000) / 1000;
+  nr["t"] = t;
+  nr["src"] = "check";
   save(no, d);
   return "";
 }

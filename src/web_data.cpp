@@ -8,6 +8,7 @@
 #include "config.h"
 #include "mqtt.h"
 #include "settings.h"
+#include "sync.h"
 #include "web.h"
 #include "web_device.h"
 
@@ -76,15 +77,99 @@ uint32_t cellArg(JsonDocument* b) {
 // ---------------------------------------------------------------------------
 // Zellenbestand
 
-void handleCells() { streamArray("/z", false); }
+// Ohne ?since: alle Zellen ohne gelöschte (für die Oberfläche).
+// Mit ?since=t: alle seit t hier eingegangenen Änderungen inklusive Grabsteinen (für Partnergeräte).
+void handleCells() {
+  bool forSync = server.hasArg("since");
+  uint32_t since = server.arg("since").toInt();
+  std::vector<uint32_t> ids = idsIn("/z");
+  std::sort(ids.begin(), ids.end());
+  beginChunked("application/json");
+  server.sendContent("[");
+  bool first = true;
+  for (uint32_t id : ids) {
+    File f = LittleFS.open("/z/" + String(id) + ".json", "r");
+    if (!f || !f.size()) continue;
+    if (forSync) {
+      JsonDocument flt, d;
+      flt["rcv"] = true;
+      deserializeJson(d, f, DeserializationOption::Filter(flt));
+      if (since && (d["rcv"] | 0u) <= since) {
+        f.close();
+        continue;
+      }
+      f.seek(0);
+      if (!first) server.sendContent(",");
+      first = false;
+      sendRaw(f);
+    } else {
+      String c = f.readString();
+      if (c.indexOf("\"deleted\":true") < 0) {
+        if (!first) server.sendContent(",");
+        first = false;
+        server.sendContent(c);
+      }
+    }
+    f.close();
+  }
+  server.sendContent("]");
+  server.sendContent("");
+}
 
 void handleCell() {
   uint32_t no = cellArg(nullptr);
   File f = LittleFS.open("/z/" + String(no) + ".json", "r");
   if (!no || !f) return sendError("Zelle nicht gefunden", 404);
-  server.sendHeader("Cache-Control", "no-store");
-  server.streamFile(f, "application/json");
+  String c = f.readString();
   f.close();
+  if (c.indexOf("\"deleted\":true") >= 0) return sendError("Zelle wurde gelöscht", 404);
+  server.sendHeader("Cache-Control", "no-store");
+  server.send(200, "application/json", c);
+}
+
+void handleCellCheck() {
+  JsonDocument b;
+  if (!readBody(b)) return sendError("Ungültige Anfrage");
+  uint32_t no = cellArg(&b);
+  if (!cells::exists(no)) return sendError("Zelle nicht gefunden", 404);
+  float v = 0;
+  String e = device::cellVoltage(b, v);
+  JsonDocument r;
+  if (!e.length()) e = cells::check(no, v, r.to<JsonObject>());
+  if (e.length()) return sendError(e, 409);
+  r["ok"] = true;
+  sendJson(r);
+}
+
+// --- Abgleich mit Partnergeräten
+void handleSyncNextGet() {
+  JsonDocument r;
+  r["next"] = settings.nextCellNo;
+  r["host"] = settings.hostname;
+  sendJson(r);
+}
+
+void handleSyncNextPost() {
+  JsonDocument b;
+  if (!readBody(b)) return sendError("Ungültige Anfrage");
+  uint32_t used = b["used"] | 0u;
+  if (used >= settings.nextCellNo) {
+    settings.nextCellNo = used + 1;
+    settings.save();
+  }
+  sendOk();
+}
+
+void handleSyncStatus() {
+  JsonDocument r;
+  peersync::status(r.to<JsonObject>());
+  sendJson(r);
+}
+
+void handleSyncDiscover() {
+  JsonDocument r;
+  peersync::discover(r.to<JsonArray>());
+  sendJson(r);
 }
 
 const char* STATUS[] = {"ok", "verbaut", "defekt", "entsorgt"};
@@ -124,7 +209,7 @@ void handleCellSave() {
     cells::save(no, d);
   } else {
     JsonDocument d;
-    if (!cells::load(no, d)) return sendError("Zelle nicht gefunden", 404);
+    if (!cells::exists(no) || !cells::load(no, d)) return sendError("Zelle nicht gefunden", 404);
     applyFields(d, b);
     cells::save(no, d);
   }
@@ -142,7 +227,7 @@ void handleCellsBatch() {
   for (JsonVariant v : b["nos"].as<JsonArray>()) {
     uint32_t no = v.as<uint32_t>();
     JsonDocument d;
-    if (!cells::load(no, d)) continue;
+    if (!cells::exists(no) || !cells::load(no, d)) continue;
     applyFields(d, b);
     cells::save(no, d);
     n++;
@@ -365,6 +450,19 @@ void routes() {
   server.on("/api/cells/batch", HTTP_POST, handleCellsBatch);
   server.on("/api/cell/delete", HTTP_POST, handleCellDelete);
   server.on("/api/cell/sd", HTTP_POST, handleSelfDischarge);
+  server.on("/api/cell/check", HTTP_POST, handleCellCheck);
+  server.on("/api/sync/next", HTTP_GET, handleSyncNextGet);
+  server.on("/api/sync/next", HTTP_POST, handleSyncNextPost);
+  server.on("/api/sync/poke", HTTP_POST, [] {
+    peersync::poked();
+    sendOk();
+  });
+  server.on("/api/sync/now", HTTP_POST, [] {
+    peersync::syncNow();
+    sendOk();
+  });
+  server.on("/api/sync/status", HTTP_GET, handleSyncStatus);
+  server.on("/api/sync/discover", HTTP_GET, handleSyncDiscover);
   server.on("/api/time", HTTP_POST, handleTime);
   server.on("/api/backup", HTTP_GET, handleBackup);
   server.on("/api/restore", HTTP_POST, handleRestoreDone, handleRestoreUpload);

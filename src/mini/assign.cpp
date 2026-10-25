@@ -1,4 +1,5 @@
 #include "assign.h"
+#include "cells.h"
 #include "config_mini.h"
 #include "hal_mini.h"
 #include "slot.h"
@@ -15,6 +16,8 @@ static uint32_t slotNo[4] = {};
 static String slotId[4];
 static bool inserted[4] = {};
 static uint32_t pendNo = 0, pendAt = 0;
+static uint32_t checkAt[4] = {};
+static JsonDocument chk[4];
 static String pendId;
 
 uint32_t no(int s) { return slotNo[s]; }
@@ -22,6 +25,15 @@ const String& id(int s) { return slotId[s]; }
 void clear(int s) {
   slotNo[s] = 0;
   slotId[s] = "";
+  checkAt[s] = 0;
+  chk[s].clear();
+}
+
+bool check(int s, float& dv, float& days) {
+  if (!chk[s]["dv"].is<float>()) return false;
+  dv = chk[s]["dv"];
+  days = chk[s]["days"];
+  return true;
 }
 
 static void put(int s, uint32_t n, const String& i) {
@@ -29,6 +41,8 @@ static void put(int s, uint32_t n, const String& i) {
     if (slotNo[k] == n) clear(k);
   slotNo[s] = n;
   slotId[s] = i;
+  chk[s].clear();
+  checkAt[s] = millis() + 2500;  // Spannungscheck, sobald sich die Spannung gesetzt hat
   hal.beep(40);
 }
 
@@ -73,6 +87,11 @@ void tick(uint32_t now) {
     }
     // läuft der Vorgang mit dieser Zelle, ist die Zuordnung erledigt
     if (slotNo[s] && slots[s].active()) clear(s);
+    if (slotNo[s] && checkAt[s] && inserted[s] && (int32_t)(now - checkAt[s]) >= 0) {
+      checkAt[s] = 0;
+      chk[s].clear();
+      cells::check(slotNo[s], v, chk[s].to<JsonObject>());
+    }
   }
 }
 
@@ -82,6 +101,7 @@ void stateJson(JsonObject root, JsonArray arr) {
     JsonObject a = arr[s]["assigned"].to<JsonObject>();
     a["no"] = slotNo[s];
     a["id"] = slotId[s];
+    if (chk[s]["dv"].is<float>()) a["check"] = chk[s].as<JsonObjectConst>();
   }
   if (pendNo) {
     JsonObject p = root["pending"].to<JsonObject>();

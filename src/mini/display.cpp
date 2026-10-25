@@ -114,7 +114,12 @@ static void drawDetail() {
   snprintf(buf, sizeof(buf), "%.3fV", m.v);
   u8g2.drawUTF8(0, 32, buf);
   u8g2.setFont(u8g2_font_6x10_tf);
-  snprintf(buf, sizeof(buf), "%.3f A  %.1f°C", m.i, isnan(m.tCell) ? 0.0f : m.tCell);
+  float dv, days;
+  if (sl.phase() == Phase::Idle && assign::no(sel) && assign::check(sel, dv, days))
+    // Spannungscheck nach dem Einstecken: so viel hat die Zelle seit der letzten Messung verloren
+    snprintf(buf, sizeof(buf), "seit %.0f Tg. %+.0f mV", days, dv);
+  else
+    snprintf(buf, sizeof(buf), "%.3f A  %.1f°C", m.i, isnan(m.tCell) ? 0.0f : m.tCell);
   u8g2.drawUTF8(0, 44, buf);
   if (sl.phase() == Phase::Error) {
     u8g2.drawUTF8(0, 56, sl.error().substring(0, 21).c_str());

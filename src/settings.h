@@ -44,6 +44,14 @@ struct Settings {
   String mqttUser, mqttPass;
   String mqttBase = "celldoc";
 
+  // Mehrere Geräte: eigener Name im Netz und Partnergeräte (Namen oder IPs, mit Komma getrennt)
+#ifdef CELLDOC_MINI
+  String hostname = "celldoc-mini";
+#else
+  String hostname = "celldoc";
+#endif
+  String peers;
+
   void toJson(JsonObject o, bool withSecrets) const;
   void fromJson(JsonObjectConst o);
   bool load();

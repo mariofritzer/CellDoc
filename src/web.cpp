@@ -9,6 +9,7 @@
 #include "config.h"
 #include "mqtt.h"
 #include "scanner.h"
+#include "sync.h"
 #include "settings.h"
 #include "storage.h"
 #include "web_device.h"
@@ -150,6 +151,7 @@ void addCommon(JsonObject o) {
   o["time"] = now > 1700000000 ? uint32_t(now) : 0;
   o["riInOhm"] = settings.riInOhm;
   o["prefix"] = settings.cellPrefix;
+  o["host"] = settings.hostname;
   o["mqtt"] = mqtt::status();
   scanner::fill(o);
   device::scanState(o);
@@ -215,7 +217,7 @@ static void startAp() {
 
 void begin() {
   scanner::begin();
-  WiFi.setHostname(cfg::HOSTNAME);
+  WiFi.setHostname(settings.hostname.c_str());
   if (settings.wifiSsid.length()) {
     WiFi.mode(WIFI_STA);
     WiFi.setAutoReconnect(true);
@@ -228,12 +230,15 @@ void begin() {
   }
   if (WiFi.status() == WL_CONNECTED) {
     Serial.printf("WLAN verbunden: http://%s  (http://%s.local)\n", WiFi.localIP().toString().c_str(),
-                  cfg::HOSTNAME);
+                  settings.hostname.c_str());
     configTzTime("CET-1CEST,M3.5.0,M10.5.0/3", "pool.ntp.org", "time.google.com");
   } else {
     startAp();
   }
-  if (MDNS.begin(cfg::HOSTNAME)) MDNS.addService("http", "tcp", 80);
+  if (MDNS.begin(settings.hostname.c_str())) {
+    MDNS.addService("http", "tcp", 80);
+    MDNS.addService("celldoc", "tcp", 80);  // damit Partnergeräte uns finden
+  }
 
   server.on("/", HTTP_GET, handleIndex);
   server.on("/api/result", HTTP_GET, handleResult);
@@ -255,6 +260,7 @@ void update() {
   server.handleClient();
   mqtt::update();
   scanner::update();
+  peersync::update();
   if (restartPending && millis() > restartAt) {
     device::killAll();
     delay(100);

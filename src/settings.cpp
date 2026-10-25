@@ -60,6 +60,8 @@ void Settings::toJson(JsonObject o, bool withSecrets) const {
   if (withSecrets) o["mqttPass"] = mqttPass;
   else o["mqttPassSet"] = mqttPass.length() > 0;
   o["mqttBase"] = mqttBase;
+  o["hostname"] = hostname;
+  o["peers"] = peers;
 }
 
 static float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
@@ -111,6 +113,19 @@ void Settings::fromJson(JsonObjectConst o) {
     String b = o["mqttBase"].as<const char*>();
     b.trim();
     if (b.length() && b.indexOf('#') < 0 && b.indexOf('+') < 0) mqttBase = b;
+  }
+  if (o["hostname"].is<const char*>()) {
+    String h = o["hostname"].as<const char*>(), clean;
+    h.toLowerCase();
+    for (char c : h)
+      if ((isalnum((unsigned char)c) || c == '-') && clean.length() < 24) clean += c;
+    if (clean.length()) hostname = clean;
+  }
+  if (o["peers"].is<const char*>()) {
+    String p = o["peers"].as<const char*>(), clean;
+    for (char c : p)
+      if ((isalnum((unsigned char)c) || c == '-' || c == '.' || c == ',' || c == ':') && clean.length() < 160) clean += c;
+    peers = clean;
   }
 }
 

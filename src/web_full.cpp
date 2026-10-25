@@ -81,6 +81,7 @@ static bool parseJob(JsonDocument& b, JobConfig& c) {
   c.cutoffV = b["cutoffV"] | 0.0f;
   c.preCharge = b["preCharge"] | true;
   c.restMin = b["restMin"] | settings.restMin;
+  c.cycles = b["cycles"] | 1;
   String after = b["after"] | "full";
   c.after = after == "none" ? After::None : after == "storage" ? After::Storage : After::Full;
   // Zelltyp-Vorgabe übernimmt Chemie, Kapazität und Ri, wenn nichts anderes angegeben ist
@@ -259,8 +260,10 @@ void mqttCommand(const String& cmd) {
 }
 
 // Gescannte Zelle wird im Startdialog vorausgewählt (10 Minuten lang)
-static uint32_t scanNo = 0, scanAt = 0;
+static uint32_t scanNo = 0, scanAt = 0, checkAt = 0;
 static String scanId;
+static bool checked = false;
+static JsonDocument checkRes;  // Ergebnis des Spannungschecks
 
 void onScan(uint32_t no, const String& id) {
   if (!no) {
@@ -271,10 +274,25 @@ void onScan(uint32_t no, const String& id) {
   scanNo = no;
   scanId = id;
   scanAt = millis();
+  checkAt = 0;
+  checked = false;
+  checkRes.clear();
 }
 
 void scanTick(uint32_t now) {
   if (scanNo && (now - scanAt > 600000UL || (tester.active() && tester.cellNo() == scanNo))) scanNo = 0;
+  if (!scanNo || checked || tester.active()) return;
+  // Spannungscheck: steckt die gescannte Zelle an A, nach 2,5 s Ruhespannung vergleichen
+  const PortMeas& pm = hal.m().port[PORT_A];
+  if (pm.v < 2.5f) {
+    checkAt = 0;
+    return;
+  }
+  if (!checkAt) checkAt = now + 2500;
+  if ((int32_t)(now - checkAt) < 0) return;
+  checked = true;
+  checkRes.clear();
+  cells::check(scanNo, pm.v, checkRes.to<JsonObject>());
 }
 
 void scanState(JsonObject o) {
@@ -282,6 +300,7 @@ void scanState(JsonObject o) {
   JsonObject a = o["assigned"].to<JsonObject>();
   a["no"] = scanNo;
   a["id"] = scanId;
+  if (checked && checkRes["dv"].is<float>()) a["check"] = checkRes.as<JsonObjectConst>();
 }
 
 void killAll() { hal.killAll(); }
