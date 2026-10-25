@@ -123,7 +123,7 @@ static void drawDetail() {
     String id = sl.lastCellId();
     u8g2.drawUTF8((128 - u8g2.getUTF8Width(id.c_str())) / 2, 34, id.c_str());
     u8g2.setFont(u8g2_font_6x10_tf);
-    snprintf(buf, sizeof(buf), "Note %c  Lebenszahl %d", soh::grade(sl.lastScore()), sl.lastScore());
+    snprintf(buf, sizeof(buf), "Note %c  %d %%", soh::grade(sl.lastScore()), sl.lastScore());
     u8g2.drawUTF8((128 - u8g2.getUTF8Width(buf)) / 2, 46, buf);
     u8g2.drawUTF8(0, 60, "OK: bestätigen");
   } else if (sl.active()) {
