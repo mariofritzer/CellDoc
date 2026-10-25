@@ -19,6 +19,11 @@
 - **Bis 30 W / 8 A** Entladeleistung mit zwei Lastkanälen und Lüfter
 - **Sicherheit:** drei Temperaturfühler mit Drosselung und Abschaltung, Über- und Unterspannung pro Zelle, Überstrom, Lüfter- und Sensorausfall, Not-Aus-Taste
 - **Ergebnisse** mit Entladekurve, Ri-Verlauf und Vergleich zum ersten Test derselben Zelle
+- **Zellenbestand** mit fester Nummer je Zelle (CD-0042), Suche nach Nummer, Name, Lagerort oder Notiz und Note A–D
+- **Etiketten** mit Nummer, QR-Code und Messwerten als Bild für Etikettendrucker wie Supvan E16 oder Niimbot
+- **Selbstentladungstest** über 7–14 Tage, findet Zellen mit innerem Kurzschluss
+- **Pack zusammenstellen:** sucht gleich starke Zellen für z. B. 10S4P und verteilt sie gleichmäßig auf die Parallelgruppen
+- **Home Assistant** über MQTT mit automatischer Erkennung, **Datensicherung** und CSV-Export
 - **Handbuch** direkt im Gerät: Akkutypen, Bauformen, Stecker, Messwerte, Sicherheit, Lagerung und Entsorgung
 - **Firmware-Updates** über den Browser, WLAN-Einrichtung über einen eigenen Hotspot
 
@@ -33,6 +38,23 @@
 | <img src="docs/img/phone-start.png" width="240" alt="Startdialog für einen Kapazitätstest"> | <img src="docs/img/phone-manual.png" width="240" alt="Handbuch mit Akkutypen"> | <img src="docs/img/phone-settings.png" width="240" alt="Einstellungen"> |
 
 *Fotos vom fertigen Aufbau folgen.*
+
+## Zellenbestand und Etiketten
+
+Jeder Test legt die Zelle mit einer festen Nummer an. Die Nummer kommt mit einem Etikettendrucker auf die Zelle, der QR-Code darauf öffnet die Zelle später direkt in CellDoc. Beim nächsten Test wird sie aus dem Bestand gewählt und automatisch mit dem ersten Test verglichen.
+
+| Bestand | Zelle | Etikett | Pack |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/img/phone-bestand.png" width="200" alt="Zellenbestand mit Suche, Filtern und Noten"> | <img src="docs/img/phone-zelle.png" width="200" alt="Zelle mit Messwerten, Angaben und Selbstentladung"> | <img src="docs/img/phone-etikett.png" width="200" alt="Etikett-Vorschau mit Einstellungen"> | <img src="docs/img/phone-pack.png" width="200" alt="Pack 7S2P mit gleichmäßig verteilten Zellen"> |
+
+<img src="docs/img/etikett-beispiel.png" alt="Etikett 40 × 14 mm mit QR-Code, Nummer CD-0005, Kapazität, Innenwiderstand, Note und Datum">
+
+- **Etiketten:** 12–15 mm breit, 30–50 mm lang, 203 dpi, reines Schwarz-Weiß. Für den **Supvan E16**: Bild speichern und in der Katasymbol-App als Bild einfügen. Für viele Zellen auf einmal gibt es eine CSV-Liste für den Tabellenimport der App.
+- **Suche:** „42“ findet CD-0042, Wörter finden Name, Lagerort, Notiz oder Pack. Filter für Note A–B, „Prüfen“, verbaut und ausgemustert.
+- **Selbstentladung:** Nach einem Test mit „Danach voll laden“ merkt sich CellDoc nach einer Stunde die Spannung. Nach 7–14 Tagen nachmessen, unter 3 mV pro Tag ist gut.
+- **Pack zusammenstellen:** Serie und Parallel eingeben, CellDoc sucht passende Zellen, verteilt sie so, dass jede Parallelgruppe gleich viel Kapazität hat, und markiert sie auf Wunsch als verbaut.
+- **Home Assistant:** Broker unter Einstellungen → MQTT eintragen, CellDoc erscheint von selbst als Gerät mit allen Messwerten und einer Stopp-Taste.
+- **Datensicherung:** Bestand, Ergebnisse und Einstellungen als Datei sichern und wieder einspielen, dazu CSV-Export für Excel.
 
 ## Hardware
 
@@ -121,7 +143,10 @@ Die Weboberfläche ist eine einzelne Datei: [`web/index.html`](web/index.html). 
 | `src/hal.*` | Messung, Last-Regelung, Lader, Relais, Lüfter |
 | `src/tester.*` | Testablauf, Ri-Messung, Sicherheitsüberwachung |
 | `src/profiles.h` | Akkuchemien und Zelltypen |
-| `src/soh.h` | Lebenszahl |
+| `src/soh.h` | Lebenszahl und Note |
+| `src/cells.*` | Zellenbestand, Selbstentladung |
+| `src/mqtt.*` | Home Assistant über MQTT |
+| `src/web_data.cpp` | Bestand, Datensicherung und Uhrzeit über die REST-API |
 | `src/web.*` | WLAN, REST-API, Firmware-Update |
 | `src/mini/` | CellDoc Mini: Schächte, OLED, eigene Web-API |
 | `web/index.html` | Weboberfläche inkl. Handbuch |

@@ -115,7 +115,8 @@ h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0;line-height:1.1
 /* Tabs */
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--bar);backdrop-filter:saturate(1.6) blur(16px);-webkit-backdrop-filter:saturate(1.6) blur(16px);
   border-top:1px solid var(--line);display:flex;justify-content:center;padding:6px max(8px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
-.tabs .in{display:grid;grid-template-columns:repeat(4,1fr);width:100%;max-width:560px}
+.tabs .in{display:grid;grid-template-columns:repeat(5,1fr);width:100%;max-width:640px}
+@media(max-width:380px){.tabs button{font-size:10px}}
 .tabs button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--muted);padding:4px;cursor:pointer;border-radius:10px}
 .tabs button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tabs button[aria-selected="true"]{color:var(--charge)}
@@ -123,7 +124,7 @@ h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0;line-height:1.1
 .field{display:flex;flex-direction:column;gap:5px}
 .field label,.lbl{font-size:13px;font-weight:600}
 .field .hint{font-size:12px;color:var(--muted)}
-input[type=text],input[type=number],input[type=password],select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--fill);font-size:15px;min-width:0}
+input[type=text],input[type=number],input[type=password],input[type=search],select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--fill);font-size:15px;min-width:0}
 input:focus,select:focus{outline:2px solid var(--rest);outline-offset:0}
 .form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .form .full{grid-column:1/-1}
@@ -171,6 +172,37 @@ tr:last-child td{border-bottom:0}
 .empty{color:var(--muted);text-align:center;padding:24px 8px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:40;max-width:90vw}
 .demo{font-size:12px;font-weight:700;color:var(--warn)}
+/* Bestand */
+.crow{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.crow .l{min-width:0}
+.crow .l b,.crow .l small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.cid{font-family:var(--mono);font-weight:700;font-size:13px;background:var(--fill);border-radius:8px;padding:4px 8px;white-space:nowrap;flex:none}
+.cid.big{font-size:22px;padding:4px 10px;background:var(--card)}
+.cid.sm{font-size:11px;padding:2px 6px;display:inline-block;margin:1px 0}
+.grade{width:42px;height:42px;flex:none;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:18px;line-height:1;color:var(--on-accent)}
+.grade small{font-size:10px;font-weight:700;opacity:.9;margin-top:2px;color:inherit}
+.hint a,.note a{color:var(--charge)}
+.grade.none{background:var(--fill);color:var(--muted)}
+.grade.big{width:64px;height:64px;font-size:28px;border-radius:16px}
+.grade.big small{font-size:12px}
+.cellsum{display:flex;gap:14px;align-items:center}
+.cellsum .l{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cellsum .l b{font-size:17px}
+.cellsum .l small{color:var(--muted);font-size:13px}
+.fchips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.fchips button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.fchips button span{color:var(--muted);font-weight:500;margin-left:2px}
+.fchips button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.fchips button[aria-pressed="true"] span{color:inherit;opacity:.7}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toolbar .grow{flex:1;min-width:160px}
+.lbl-prev{display:flex;flex-direction:column;gap:10px;align-items:flex-start;background:var(--fill);border-radius:14px;padding:14px}
+.lbl-prev canvas{max-width:100%;height:auto;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.25);image-rendering:pixelated}
+.checks{display:flex;flex-direction:column}
+.pick{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.pick .row{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--fill)}
+.pick .row+.row{border-top:1px solid var(--line)}
+.cell-h{display:flex;align-items:center;gap:10px}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -238,6 +270,25 @@ tr:last-child td{border-bottom:0}
     <section class="card">
       <h2>Geprüfte Akkus <span class="sub" id="resCount" style="text-transform:none;letter-spacing:0"></span></h2>
       <div id="resList"><div class="empty">Lädt …</div></div>
+    </section>
+  </main>
+
+  <!-- ===================== BESTAND ===================== -->
+  <main id="v-cells" class="view" hidden>
+    <section class="card">
+      <h2>Zellenbestand <span class="sub" id="cellCount" style="text-transform:none;letter-spacing:0"></span></h2>
+      <div class="toolbar">
+        <input type="search" id="cSearch" class="grow" placeholder="Nummer, Name, Ort, Notiz …" aria-label="Zellen durchsuchen" autocomplete="off">
+        <select id="cSort" aria-label="Sortierung" style="width:auto"><option value="no">Neueste zuerst</option><option value="score">Lebenszahl</option><option value="cap">Kapazität</option><option value="ri">Innenwiderstand</option><option value="date">Zuletzt geprüft</option></select>
+      </div>
+      <div class="fchips" id="cFilter" role="group" aria-label="Filter"></div>
+      <div id="cellList"><div class="empty">Lädt …</div></div>
+      <div class="actions">
+        <button class="btn primary" id="cNew" type="button">Neue Zelle</button>
+        <button class="btn" id="cPack" type="button">Pack zusammenstellen</button>
+        <button class="btn" id="cLabels" type="button">Etiketten für Auswahl</button>
+        <button class="btn" id="cCsv" type="button">CSV</button>
+      </div>
     </section>
   </main>
 
@@ -539,6 +590,20 @@ tr:last-child td{border-bottom:0}
       </ul>
       <h4>Laden und Entladen von Hand</h4>
       <p>Im Startdialog „Laden“ oder „Entladen“ wählen. Entladen läuft mit Konstantstrom bis zur eingestellten Schlussspannung. Dabei gelten dieselben Sicherheitsgrenzen wie im Test.</p>
+      <h4>Zellenbestand und Etiketten</h4>
+      <ul>
+        <li>Jeder Kapazitätstest legt eine Zelle mit fester Nummer an, z. B. <b>CD-0042</b>. Die Nummer bleibt der Zelle für immer, auch nach weiteren Tests.</li>
+        <li>Unter <b>Bestand</b> lässt sich nach Nummer, Name, Lagerort, Notiz oder Pack suchen. Eine Zahl wie „42“ findet direkt CD-0042, Enter öffnet sie.</li>
+        <li><b>Etikett drucken</b> erzeugt ein Bild mit Nummer, QR-Code, Kapazität, Innenwiderstand, Note und Datum in 203 dpi, passend für Supvan E16, Niimbot und ähnliche Drucker. In der App des Druckers als Bild einfügen.</li>
+        <li>Der QR-Code öffnet die Zelle direkt in CellDoc, wenn das Handy im selben WLAN ist. Beim nächsten Test „Aus dem Bestand“ wählen, dann wird automatisch mit dem ersten Test verglichen.</li>
+        <li>Note: <b>A</b> ab Lebenszahl 85, <b>B</b> ab 70, <b>C</b> ab 50, darunter <b>D</b>.</li>
+      </ul>
+      <h4>Selbstentladung</h4>
+      <p>Zellen mit innerem Kurzschluss verlieren auch ohne Last Ladung. Nach einem Test mit „Danach voll laden“ merkt sich CellDoc nach einer Stunde Ruhe die Spannung. Die Zelle 7–14 Tage lagern, dann in der Zelle unter Bestand „Jetzt nachmessen“ wählen. Unter 3 mV pro Tag ist gut, ab 8 mV pro Tag gehört die Zelle nicht in ein Pack.</p>
+      <h4>Pack zusammenstellen</h4>
+      <p>Unter Bestand → Pack zusammenstellen Serie und Parallel eingeben, z. B. 10S4P. CellDoc wählt Zellen mit möglichst gleicher Kapazität und ähnlichem Innenwiderstand und verteilt sie so, dass jede Parallelgruppe gleich viel Kapazität hat. Danach lassen sich die Zellen als verbaut markieren.</p>
+      <h4>Home Assistant und Datensicherung</h4>
+      <p>Unter Einstellungen → MQTT den Broker eintragen (z. B. Mosquitto in Home Assistant). CellDoc erscheint dann von selbst als Gerät mit Spannung, Strom, Status, Temperaturen und letztem Ergebnis, dazu eine Taste zum Stoppen. Unter Datensicherung lassen sich Bestand und Ergebnisse als Datei sichern und wieder einspielen, oder als CSV für Excel exportieren.</p>
       <h4>CellDoc Mini</h4>
       <ul>
         <li>Die Mini prüft nur <b>18650 Li-Ion</b> (4,2 V), in 1, 2 oder 4 Schächten gleichzeitig. Jeder Schacht hat seinen eigenen Lader, seine Last und seinen Temperaturfühler.</li>
@@ -585,7 +650,22 @@ tr:last-child td{border-bottom:0}
           <div class="field"><label for="sRest">Ruhezeit vor dem Entladen (Minuten)</label><input type="number" id="sRest" min="0" max="240"></div>
           <label class="switch"><span>Innenwiderstand in Ω statt mΩ</span><input type="checkbox" id="sOhm"></label>
           <label class="switch"><span>Summer</span><input type="checkbox" id="sBuzz"></label>
+          <div class="field"><label for="sPrefix">Kürzel für Zellnummern</label><input type="text" id="sPrefix" maxlength="6" placeholder="CD" style="text-transform:uppercase"><span class="hint">Neue Zellen heißen dann z. B. <b id="sPrefixEx">CD-0001</b>. Bereits vergebene Nummern bleiben.</span></div>
           <div class="actions"><button class="btn primary" id="sSave" type="button">Einstellungen speichern</button></div>
+        </section>
+
+        <section class="card">
+          <h2>Home Assistant (MQTT) <span class="sub" id="mqState" style="text-transform:none;letter-spacing:0"></span></h2>
+          <p class="note">CellDoc meldet sich mit allen Messwerten automatisch in Home Assistant an (MQTT-Integration, z. B. mit dem Mosquitto-Add-on). Funktioniert nur im Heim-WLAN, nicht im Hotspot.</p>
+          <label class="switch"><span>MQTT verwenden</span><input type="checkbox" id="mqOn"></label>
+          <div class="form">
+            <div class="field"><label for="mqHost">Broker</label><input type="text" id="mqHost" placeholder="homeassistant.local" autocomplete="off"></div>
+            <div class="field"><label for="mqPort">Port</label><input type="number" id="mqPort" value="1883"></div>
+            <div class="field"><label for="mqUser">Benutzer</label><input type="text" id="mqUser" autocomplete="off"></div>
+            <div class="field"><label for="mqPass">Passwort</label><input type="password" id="mqPass" autocomplete="new-password"></div>
+            <div class="field full"><label for="mqBase">Thema</label><input type="text" id="mqBase" placeholder="celldoc"><span class="hint" id="mqHint"></span></div>
+          </div>
+          <div class="actions"><button class="btn primary" id="mqSave" type="button">MQTT speichern</button></div>
         </section>
       </div>
 
@@ -617,6 +697,17 @@ tr:last-child td{border-bottom:0}
         </section>
 
         <section class="card">
+          <h2>Datensicherung</h2>
+          <p class="note">Sichert Zellenbestand, Ergebnisse und Einstellungen in eine Textdatei. Vor einem Neuflashen mit „Gerät löschen“ unbedingt sichern. Das WLAN- und das MQTT-Passwort sind nicht enthalten.</p>
+          <label class="switch"><span>Entladekurven mitsichern (größer)</span><input type="checkbox" id="bkCurves" checked></label>
+          <div class="actions"><button class="btn primary" id="bkGo" type="button">Sicherung herunterladen</button></div>
+          <div class="field"><label for="bkFile">Sicherung wiederherstellen</label><input type="file" id="bkFile" accept=".txt,text/plain"></div>
+          <div class="actions"><button class="btn" id="bkRestore" type="button" disabled>Einspielen</button></div>
+          <div class="lbl">Für Excel</div>
+          <div class="actions"><button class="btn" id="bkCellsCsv" type="button">Zellen als CSV</button><button class="btn" id="bkResCsv" type="button">Ergebnisse als CSV</button></div>
+        </section>
+
+        <section class="card">
           <h2>Firmware-Update</h2>
           <p class="note">Datei <b>celldoc-firmware.bin</b> aus den GitHub-Releases wählen. Während eines Tests ist kein Update möglich.</p>
           <input type="file" id="fwFile" accept=".bin" aria-label="Firmware-Datei">
@@ -631,6 +722,7 @@ tr:last-child td{border-bottom:0}
 <nav class="tabs" role="tablist" aria-label="Bereiche">
   <div class="in">
     <button role="tab" data-v="live" aria-selected="true"><svg viewBox="0 0 24 24"><rect x="7" y="4" width="10" height="17" rx="2"/><path d="M10 2h4M9.5 14l2-3.5h1l-2 3.5h2l-2 3.5"/></svg>Live</button>
+    <button role="tab" data-v="cells" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 13h3M8 16h6"/></svg>Bestand</button>
     <button role="tab" data-v="results" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Ergebnisse</button>
     <button role="tab" data-v="manual" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21a2 2 0 0 1 2-2h13v2H6"/><path d="M9 8h6M9 11h4"/></svg>Handbuch</button>
     <button role="tab" data-v="settings" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Einstellungen</button>
@@ -685,6 +777,7 @@ function showView(v) {
   tabs.forEach(b => b.setAttribute("aria-selected", b.dataset.v === v));
   document.querySelectorAll(".view").forEach(m => m.hidden = m.id !== "v-" + v);
   if (v === "results") loadResults();
+  if (v === "cells") loadCells();
   if (v === "settings") loadSettings();
   try { localStorage.setItem("celldoc-tab", v); } catch (e) {}
   window.scrollTo(0, 0);
@@ -795,14 +888,17 @@ function renderLive() {
   // Banner
   let bn = "";
   if (ph === "error") bn = `<div class="banner err" role="alert"><div><b>${esc(s.error || "Gestoppt")}</b>Last und Lader sind getrennt.</div></div>`;
-  else if (ph === "done") bn = `<div class="banner ok"><div><b>${job.name ? esc(job.name) + " ist fertig" : "Fertig"}</b>${s.lastResult ? "Das Ergebnis steht rechts und unter Ergebnisse." : ""}</div></div>`;
+  else if (ph === "done") bn = `<div class="banner ok"><div style="flex:1"><b>${job.cellId ? esc(job.cellId) + " ist fertig" : job.name ? esc(job.name) + " ist fertig" : "Fertig"}${s.last?.grade && s.lastResult ? ` · Note ${esc(s.last.grade)}` : ""}</b>${s.lastResult ? "Das Ergebnis steht rechts und unter Ergebnisse." : ""}</div>${job.cell ? `<button class="btn small" id="bnLabel" type="button">Etikett</button>` : ""}</div>`;
   else if (s.saturated) bn = `<div class="banner info"><div><b>Strom wird nicht erreicht</b>Die Akkuspannung ist für diesen Strom zu niedrig. Der Test läuft mit dem maximal möglichen Strom weiter.</div></div>`;
-  $("banner").innerHTML = bn;
+  if ($("banner").dataset.k !== bn) {
+    $("banner").innerHTML = bn; $("banner").dataset.k = bn;
+    $("bnLabel")?.addEventListener("click", async () => { try { openLabel([await api("/api/cell?no=" + job.cell)]); } catch (e) { toast(e.message); } });
+  }
 
   $("vBig").innerHTML = port.v > 0.3 ? `${nf(port.v, 3)}<small>V</small>` : `–<small>V</small>`;
   let sub = "Kein Akku erkannt";
   if (isAct || ph === "done" || ph === "error") {
-    const bits = [job.name, job.preset ? (INFO?.presets.find(p => p.id === job.preset) || {}).name : chemName(job.chem), job.cells > 1 ? job.cells + "S" : "", isMini() ? "" : "Anschluss " + job.port].filter(Boolean);
+    const bits = [job.cellId && job.cellId !== job.name ? job.cellId : "", job.name, job.preset ? (INFO?.presets.find(p => p.id === job.preset) || {}).name : chemName(job.chem), job.cells > 1 ? job.cells + "S" : "", isMini() ? "" : "Anschluss " + job.port].filter(Boolean);
     sub = bits.map(esc).join(" · ");
   } else if (port.v > .3) sub = isMini() ? "Zelle erkannt · bereit für einen Test" : `Anschluss ${pIdx ? "B" : "A"} · bereit für einen Test`;
   $("vSub").innerHTML = sub;
@@ -871,7 +967,7 @@ function renderLive() {
     const pl = sl => (PHASE[sl.phase] || PHASE.idle)[0].replace("Test · ", "");
     const html = RAW.slots.map((sl, k) => {
       const p = sl.ports[0], c = (PHASE[sl.phase] || PHASE.idle)[1];
-      return `<div class="slot-tile${k === SEL ? " on" : ""}" data-slot="${k}" role="button" tabindex="0" aria-pressed="${k === SEL}"><span>Schacht ${k + 1}</span><b>${p.ok ? (p.v > .5 ? nf(p.v, 3) + " V" : "leer") : "Messung fehlt"}</b><span><i class="sdot" style="background:var(${c})"></i>${esc(pl(sl))}${sl.soc >= 0 && p.v > .5 ? " · " + nf(sl.soc) + " %" : ""}</span></div>`;
+      return `<div class="slot-tile${k === SEL ? " on" : ""}" data-slot="${k}" role="button" tabindex="0" aria-pressed="${k === SEL}"><span>Schacht ${k + 1}</span><b>${p.ok ? (p.v > .5 ? nf(p.v, 3) + " V" : "leer") : "Messung fehlt"}</b><span><i class="sdot" style="background:var(${c})"></i>${esc(pl(sl))}${sl.soc >= 0 && p.v > .5 ? " · " + nf(sl.soc) + " %" : ""}</span>${sl.job?.cellId && sl.phase !== "idle" ? `<span class="num" style="font-family:var(--mono)">${esc(sl.job.cellId)}</span>` : ""}</div>`;
     }).join("");
     if ($("ports").dataset.k !== html) {
       $("ports").innerHTML = html; $("ports").dataset.k = html;
@@ -999,8 +1095,10 @@ function openSheet(html) {
   return {el: bg.querySelector(".sheet"), close};
 }
 
-function openStart() {
+function openStart(preCell) {
   if (!INFO) return;
+  if (preCell && !(preCell.no > 0)) preCell = null;
+  let cellSel = preCell || null;
   const pB = !isMini() && S.ports[1].v > .5 && S.ports[0].v < .5;
   const presetOpts = INFO.presets.map(p => `<option value="${p.id}">${esc(p.name)} · ${nf(p.capMah)} mAh</option>`).join("");
   const chemOpts = INFO.chemistries.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
@@ -1013,6 +1111,11 @@ function openStart() {
     <div class="seg" role="group" aria-label="Anschluss" id="stPort"${isMini() ? " hidden" : ""}>
       <button type="button" data-p="A" aria-pressed="${!pB}">A · Einzelzelle</button><button type="button" data-p="B" aria-pressed="${pB}">B · Pack</button>
     </div>
+    <div class="field"><span class="lbl">Zelle</span>
+      <div class="seg" role="group" aria-label="Zelle" id="stCellMode"><button type="button" data-c="new" aria-pressed="${!cellSel}">Neue Zelle</button><button type="button" data-c="old" aria-pressed="${!!cellSel}">Aus dem Bestand</button></div>
+      <div id="stCellPick" hidden><input type="search" id="stCellQ" placeholder="Nummer, Name oder Ort" aria-label="Zelle suchen" autocomplete="off" style="margin-top:8px"><div class="pick" id="stCellRes"></div></div>
+      <span class="hint" id="stCellHint"></span>
+    </div>
     <div class="form">
       <div class="field full"><label for="stType">Zelltyp</label>
         <select id="stType"><optgroup label="Bekannte Zellen">${presetOpts}</optgroup><optgroup label="Sonstige"><option value="custom">Eigene Angaben</option><option value="unknown">Unbekannt</option></optgroup></select></div>
@@ -1020,7 +1123,7 @@ function openStart() {
       <div class="field" id="fCells"><label for="stCells">Zellen in Serie</label><input type="number" id="stCells" min="1" max="6" value="1"><span class="hint" id="cellsHint"></span></div>
       <div class="field" id="fCap"><label for="stCap">Nennkapazität (mAh)</label><input type="number" id="stCap" min="0" step="50" placeholder="optional"></div>
       <div class="field" id="fRi"><label for="stRi">Innenwiderstand neu (mΩ, DC)</label><input type="number" id="stRi" min="0" step="1" placeholder="optional"></div>
-      <div class="field full"><label for="stName">Name</label><input type="text" id="stName" maxlength="40" placeholder="Zelle #${INFO.nextCellNo}"><span class="hint">Gleicher Name wie bei einem früheren Test vergleicht automatisch mit dem ersten Ergebnis.</span></div>
+      <div class="field full"><label for="stName">Name</label><input type="text" id="stName" maxlength="40" placeholder="${esc(nextCellId())}"><span class="hint" id="stNameHint">Optional, z. B. „Laptop Dell Zelle 3“. Leer gelassen heißt die Zelle wie ihre Nummer.</span></div>
       <div class="field" id="fCur"><label for="stCur">Entladestrom (A)</label><input type="number" id="stCur" min="0.05" step="0.05" value="0.5"><span class="hint" id="curHint"></span></div>
       <div class="field" id="fCut"><label for="stCut">Entladeschluss (V pro Zelle)</label><input type="number" id="stCut" step="0.05"></div>
       <div class="field full" id="fPre"><label class="switch"><span>Vorher voll laden</span><input type="checkbox" id="stPre" checked></label></div>
@@ -1035,6 +1138,47 @@ function openStart() {
   const setSeg = (id, attr, val) => el.querySelectorAll(`#${id} button`).forEach(b => b.setAttribute("aria-pressed", b.dataset[attr] === val));
   el.querySelectorAll("#stMode button").forEach(b => b.addEventListener("click", () => { mode = b.dataset.m; setSeg("stMode", "m", mode); upd(); }));
   el.querySelectorAll("#stPort button").forEach(b => b.addEventListener("click", () => { port = b.dataset.p; setSeg("stPort", "p", port); if (port === "B" && q("#stType").value !== "custom" && q("#stType").value !== "unknown") q("#stType").value = "custom"; if (port === "B" && S.bal?.cells?.length > 1) q("#stCells").value = S.bal.cells.length; upd(true); }));
+  // Zelle aus dem Bestand wählen
+  el.querySelectorAll("#stCellMode button").forEach(b => b.addEventListener("click", async () => {
+    setSeg("stCellMode", "c", b.dataset.c);
+    if (b.dataset.c === "new") { cellSel = null; cellUi(); return; }
+    try { await loadCellsData(); } catch (e) {}
+    cellUi(); q("#stCellQ").focus();
+  }));
+  q("#stCellQ").addEventListener("input", () => cellUi());
+  function pickCell(c) {
+    cellSel = c;
+    q("#stName").value = c.name && c.name !== c.id ? c.name : "";
+    if (c.preset && INFO.presets.some(p => p.id === c.preset)) q("#stType").value = c.preset;
+    else if (c.nomCapMah > 0) { q("#stType").value = "custom"; q("#stCap").value = c.nomCapMah; q("#stRi").value = c.riNew || ""; }
+    else q("#stType").value = "unknown";
+    cellUi(); upd(true);
+  }
+  function cellUi() {
+    const old = el.querySelector('#stCellMode [aria-pressed="true"]')?.dataset.c === "old";
+    q("#stCellPick").hidden = !old || !!cellSel;
+    const hint = q("#stCellHint");
+    if (old && cellSel) {
+      hint.innerHTML = `<span class="cid sm">${esc(cellSel.id)}</span> ${esc(cellSel.name !== cellSel.id ? cellSel.name : cellSel.presetName || "")}${cellSel.last?.cap ? ` · zuletzt ${nf(cellSel.last.cap)} mAh, Lebenszahl ${cellSel.last.score} %` : " · noch nicht geprüft"} · <a href="#" id="stCellChange">ändern</a>`;
+      q("#stCellChange").addEventListener("click", e => { e.preventDefault(); cellSel = null; cellUi(); q("#stCellQ").focus(); });
+      q("#stNameHint").textContent = "Der Vergleich mit dem ersten Test dieser Zelle erfolgt automatisch.";
+    } else {
+      hint.textContent = old ? "" : mode === "test" ? `Bekommt die Nummer ${nextCellId()} fürs Etikett.` : "Ohne Zuordnung zu einer Zelle.";
+      q("#stNameHint").textContent = "Optional, z. B. „Laptop Dell Zelle 3“. Leer gelassen heißt die Zelle wie ihre Nummer.";
+    }
+    if (old && !cellSel) {
+      const qq = q("#stCellQ").value.trim();
+      const l = CELLS.filter(c => c.status === "ok" && cellMatches(c, qq)).sort((a, b) => b.no - a.no);
+      const n = /^#?\d+$/.test(qq) ? +qq.replace("#", "") : 0;
+      if (n) l.sort((a, b) => (b.no === n) - (a.no === n));
+      q("#stCellRes").innerHTML = l.length ? l.slice(0, 6).map(c => `<div class="row tap" data-pick="${c.no}" tabindex="0" role="button"><div class="crow"><span class="cid">${esc(c.id)}</span><div class="l"><b>${esc(c.name !== c.id ? c.name : c.presetName || "")}</b><small>${c.last?.cap ? nf(c.last.cap) + " mAh" : "noch nicht geprüft"}${c.loc ? " · " + esc(c.loc) : ""}</small></div></div>${gradeBadge(c)}</div>`).join("")
+        : `<div class="note">${CELLS.length ? "Keine passende Zelle" : "Der Bestand ist noch leer"}</div>`;
+      q("#stCellRes").querySelectorAll("[data-pick]").forEach(r => {
+        const go = () => pickCell(CELLS.find(c => c.no === +r.dataset.pick));
+        r.addEventListener("click", go); r.addEventListener("keydown", e => { if (e.key === "Enter") go(); });
+      });
+    }
+  }
   let lastChem = null;
   function upd(chemChanged) {
     const type = q("#stType").value, preset = INFO.presets.find(p => p.id === type);
@@ -1068,9 +1212,11 @@ function openStart() {
     }
     q("#stInfo").innerHTML = info;
     q("#stGo").disabled = mode === "charge" && !canCharge;
+    cellUi();
   }
   ["#stType", "#stChem", "#stCells", "#stCap", "#stCur", "#stPre", "#stRest", "#stAfter"].forEach(s => q(s).addEventListener("input", () => upd(s === "#stChem")));
-  q("#stType").value = INFO.presets[0]?.id || "unknown"; if (isMini()) { q("#stAfter").value = "storage"; q("#stCur").max = INFO.limits.maxCurrentA; } upd(true);
+  q("#stType").value = INFO.presets[0]?.id || "unknown"; if (isMini()) { q("#stAfter").value = "storage"; q("#stCur").max = INFO.limits.maxCurrentA; }
+  if (cellSel) pickCell(cellSel); else upd(true);
   q("#stGo").addEventListener("click", async () => {
     const type = q("#stType").value;
     const body = {
@@ -1080,8 +1226,9 @@ function openStart() {
       currentA: +q("#stCur").value || .5, cutoffV: +q("#stCut").value || 0,
       preCharge: q("#stPre").checked && !q("#fPre").hidden, restMin: +q("#stRest").value || 0,
       after: q("#fAfter").hidden ? "none" : q("#stAfter").value,
+      cell: cellSel?.no || 0,
     };
-    try { await api("/api/start", slotBody(body)); close(); curveCache = []; refresh(); toast("Gestartet"); }
+    try { await api("/api/start", slotBody(body)); close(); curveCache = []; CELLS_AT = 0; if (!cellSel && mode === "test" && INFO) INFO.nextCellNo++; refresh(); toast("Gestartet"); }
     catch (e) { const er = q("#stErr"); er.hidden = false; er.textContent = e.message; }
   });
 }
@@ -1130,8 +1277,8 @@ async function loadResults() {
   try {
     const list = await api("/api/results");
     $("resCount").textContent = list.length ? list.length + (list.length === 1 ? " Ergebnis" : " Ergebnisse") : "";
-    $("resList").innerHTML = list.length ? list.map(r => `<div class="row tap" data-id="${r.id}" tabindex="0" role="button"><div class="l"><b>${esc(r.name)}${r.presetName ? " · " + esc(r.presetName.replace(/^(Samsung|LG|Sony\/Murata|Panasonic|Molicel) /, "")) : r.cells > 1 ? " · " + r.cells + "S " + esc(chemName(r.chem)) : ""}</b>
-      <small class="num">${dateStr(r.time)} · ${nf(r.capMah)} mAh · ${riFmt(r.ri50 || r.ri100)}${r.throttled ? " · gedrosselt" : ""}</small></div>${sohTag(r)}</div>`).join("")
+    $("resList").innerHTML = list.length ? list.map(r => `<div class="row tap" data-id="${r.id}" tabindex="0" role="button"><div class="crow">${r.cellId ? `<span class="cid">${esc(r.cellId)}</span>` : ""}<div class="l"><b>${esc(r.name !== r.cellId ? r.name : "")}${r.presetName ? " · " + esc(r.presetName.replace(/^(Samsung|LG|Sony\/Murata|Panasonic|Molicel) /, "")) : r.cells > 1 ? " · " + r.cells + "S " + esc(chemName(r.chem)) : ""}</b>
+      <small class="num">${dateStr(r.time)} · ${nf(r.capMah)} mAh · ${riFmt(r.ri50 || r.ri100)}${r.throttled ? " · gedrosselt" : ""}</small></div></div>${sohTag(r)}</div>`).join("")
       : `<div class="empty">Noch keine Tests. Starte unter Live einen Kapazitätstest.</div>`;
     $("resList").querySelectorAll("[data-id]").forEach(e => {
       e.addEventListener("click", () => openResult(+e.dataset.id));
@@ -1145,13 +1292,15 @@ async function openResult(id) {
   try { r = await api("/api/result?id=" + id); curve = await api("/api/result?id=" + id + "&curve=1"); } catch (e) { return toast(e.message); }
   const cells = r.cells || 1;
   const {el, close} = openSheet(`
-    <div class="sheet-head"><h3>${esc(r.name)}</h3><button class="btn small" data-close type="button">Schließen</button></div>
+    <div class="sheet-head"><h3 class="cell-h">${r.cellId ? `<span class="cid big">${esc(r.cellId)}</span>` : ""}${r.name !== r.cellId ? esc(r.name) : ""}</h3><button class="btn small" data-close type="button">Schließen</button></div>
     <div class="note num">${dateStr(r.time)} · ${r.slot ? "Schacht " + r.slot : "Anschluss " + esc(r.port)} · ${esc(chemName(r.chem))}${cells > 1 ? " · " + cells + "S" : ""}</div>
     <section class="card">${resultSummary(r, false)}</section>
     <section class="card"><h2>Entladekurve</h2><svg class="chart" id="rC" viewBox="0 0 720 260" role="img" aria-label="Entladekurve"></svg></section>
     ${r.riCurve?.length > 1 ? `<section class="card"><h2>Innenwiderstand über der Entladung</h2><svg class="chart" id="rRi" viewBox="0 0 720 200" role="img" aria-label="Innenwiderstand"></svg></section>` : ""}
     ${r.cellRi?.length ? `<section class="card"><h2>Innenwiderstand je Zelle</h2><div class="balcells num">${r.cellRi.map((v, k) => `<div class="balcell ${v === Math.max(...r.cellRi) && r.cellRi.length > 1 ? "low" : ""}"><span>Zelle ${k + 1}</span><b>${riFmt(v)}</b></div>`).join("")}</div><p class="note">Die Zelle mit dem höchsten Wert begrenzt das Pack.</p></section>` : ""}
-    <div class="actions" id="rAct"><button class="btn danger" id="rDel" type="button">Ergebnis löschen</button></div>`);
+    <div class="actions" id="rAct">${r.cell ? `<button class="btn primary" id="rCell" type="button">Zur Zelle ${esc(r.cellId || "")}</button><button class="btn" id="rLbl" type="button">Etikett</button>` : ""}<button class="btn danger" id="rDel" type="button">Ergebnis löschen</button></div>`);
+  el.querySelector("#rCell")?.addEventListener("click", () => { close(); showView("cells"); openCell(r.cell); });
+  el.querySelector("#rLbl")?.addEventListener("click", async () => { try { openLabel([await api("/api/cell?no=" + r.cell)]); } catch (e) { toast(e.message); } });
   const dis = curve.filter(p => p[2] < -0.05);
   if (dis.length > 1) {
     const q0 = dis[0][3];
@@ -1174,6 +1323,11 @@ async function loadSettings() {
     const st = SETTINGS;
     $("sCw").value = st.chargeWarnC; $("sCs").value = st.chargeStopC; $("sDw").value = st.dischargeWarnC; $("sDs").value = st.dischargeStopC;
     $("sKw").value = st.sinkWarnC; $("sKs").value = st.sinkStopC; $("sRest").value = st.restMin; $("sOhm").checked = st.riInOhm; $("sBuzz").checked = st.buzzer;
+    $("sPrefix").value = st.cellPrefix || "CD"; $("sPrefixEx").textContent = `${st.cellPrefix || "CD"}-${String(st.nextCellNo || 1).padStart(4, "0")}`;
+    $("mqOn").checked = !!st.mqttOn; $("mqHost").value = st.mqttHost || ""; $("mqPort").value = st.mqttPort || 1883; $("mqUser").value = st.mqttUser || ""; $("mqBase").value = st.mqttBase || "celldoc";
+    $("mqPass").placeholder = st.mqttPassSet ? "gespeichert, leer lassen = unverändert" : "";
+    $("mqState").textContent = S?.mqtt ? "· " + S.mqtt : "";
+    $("mqHint").textContent = `Messwerte unter ${st.mqttBase || "celldoc"}/celldoc_xxxxxx/state, Geräte erscheinen in Home Assistant unter Einstellungen → Geräte → MQTT.`;
     const w = S?.wifi || {};
     $("wifiInfo").textContent = w.ap ? `Hotspot aktiv: ${w.ssid} · ${w.ip}` : `Verbunden mit ${w.ssid || st.wifiSsid} · ${w.ip}`;
     if (!$("wSsid").value) $("wSsid").value = st.wifiSsid || "";
@@ -1201,10 +1355,11 @@ async function loadDiag() {
 $("sSave").addEventListener("click", async () => {
   try {
     await api("/api/settings", {chargeWarnC: +$("sCw").value, chargeStopC: +$("sCs").value, dischargeWarnC: +$("sDw").value, dischargeStopC: +$("sDs").value,
-      sinkWarnC: +$("sKw").value, sinkStopC: +$("sKs").value, restMin: +$("sRest").value, riInOhm: $("sOhm").checked, buzzer: $("sBuzz").checked});
+      sinkWarnC: +$("sKw").value, sinkStopC: +$("sKs").value, restMin: +$("sRest").value, riInOhm: $("sOhm").checked, buzzer: $("sBuzz").checked, cellPrefix: $("sPrefix").value.trim() || "CD"});
     toast("Gespeichert"); loadSettings();
   } catch (e) { toast(e.message); }
 });
+$("sPrefix").addEventListener("input", () => $("sPrefixEx").textContent = `${($("sPrefix").value.trim() || "CD").toUpperCase().replace(/[^A-Z0-9]/g, "")}-${String(SETTINGS?.nextCellNo || 1).padStart(4, "0")}`);
 $("tSave").addEventListener("click", async () => {
   const b = {cell: "", pack: "", sink: ""};
   document.querySelectorAll("#sensorList select").forEach(s => { if (s.value) b[s.value] = s.dataset.addr; });
@@ -1256,6 +1411,587 @@ $("fwGo").addEventListener("click", () => {
 $("rst").addEventListener("click", () => confirmInline($("rst").parentElement, "CellDoc neu starten? Ein laufender Test wird abgebrochen.", async () => { await api("/api/restart", {}); toast("Startet neu …"); }));
 
 // ======================================================================
+// Zellenbestand
+// ======================================================================
+let CELLS = [], CELLS_AT = 0, cellFilter = "all";
+const gradeOf = s => s >= 85 ? "A" : s >= 70 ? "B" : s >= 50 ? "C" : "D";
+const gradeCol = g => ({A: "--charge", B: "--charge", C: "--warn", D: "--danger"}[g] || "--muted");
+const STATUS_TXT = {ok: "Im Bestand", verbaut: "Verbaut", defekt: "Defekt", entsorgt: "Entsorgt"};
+const cellPrefix = () => (S?.prefix || SETTINGS?.cellPrefix || "CD");
+const nextCellId = () => `${cellPrefix()}-${String(INFO?.nextCellNo || 1).padStart(4, "0")}`;
+const sdDays = c => c.sd?.t0 ? ((c.sd.t1 || Date.now() / 1000) - c.sd.t0) / 86400 : 0;
+function sdShort(c) {
+  const sd = c.sd;
+  if (!sd) return "";
+  if (sd.state === "run") return `Selbstentladung läuft · Tag ${Math.floor(sdDays(c))}`;
+  return `Selbstentladung ${nf(sd.mvDay, 1)} mV/Tag · ${sd.grade}`;
+}
+function gradeBadge(c, big) {
+  const l = c.last;
+  if (!l || !(l.cap > 0)) return `<span class="grade none${big ? " big" : ""}" title="noch nicht geprüft">–</span>`;
+  const g = l.grade || gradeOf(l.score);
+  return `<span class="grade${big ? " big" : ""}" style="background:var(${gradeCol(g)})" title="Note ${g}, Lebenszahl ${l.score} %">${g}<small>${l.est ? "≈" : ""}${l.score}</small></span>`;
+}
+async function loadCellsData(force) {
+  if (!force && CELLS.length && Date.now() - CELLS_AT < 5000) return CELLS;
+  CELLS = await api("/api/cells"); CELLS_AT = Date.now();
+  return CELLS;
+}
+// Suche: jedes Wort muss irgendwo vorkommen; Zahlen treffen auch die Zellnummer
+function cellMatches(c, q) {
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return true;
+  const hay = [c.id, "#" + c.no, c.name, c.loc, c.note, c.pack, c.presetName, STATUS_TXT[c.status], c.last ? "note " + (c.last.grade || "") : "", c.sd?.grade].join(" ").toLowerCase();
+  return words.every(w => /^#?\d+$/.test(w) ? (c.no === +w.replace("#", "") || hay.includes(w)) : hay.includes(w));
+}
+const FILTERS = [
+  ["all", "Alle", () => true],
+  ["ok", "Im Bestand", c => c.status === "ok"],
+  ["good", "Note A–B", c => c.status === "ok" && c.last && c.last.score >= 70 && c.sd?.grade !== "schlecht"],
+  ["check", "Prüfen", c => c.status === "ok" && (!c.last || c.sd?.state === "run" || ["auffällig", "schlecht"].includes(c.sd?.grade))],
+  ["used", "Verbaut", c => c.status === "verbaut"],
+  ["out", "Ausgemustert", c => c.status === "defekt" || c.status === "entsorgt"],
+];
+const SORTS = {
+  no: (a, b) => b.no - a.no, score: (a, b) => (b.last?.score ?? -1) - (a.last?.score ?? -1), cap: (a, b) => (b.last?.cap ?? 0) - (a.last?.cap ?? 0),
+  ri: (a, b) => (a.last?.ri || 1e9) - (b.last?.ri || 1e9), date: (a, b) => (b.last?.time ?? 0) - (a.last?.time ?? 0),
+};
+function filteredCells() {
+  const q = $("cSearch").value.trim(), f = FILTERS.find(x => x[0] === cellFilter) || FILTERS[0];
+  let list = CELLS.filter(f[2]).filter(c => cellMatches(c, q)).sort(SORTS[$("cSort").value] || SORTS.no);
+  const n = /^#?\d+$/.test(q) ? +q.replace("#", "") : 0;
+  if (n) list.sort((a, b) => (b.no === n) - (a.no === n));  // genaue Nummer zuerst
+  return list;
+}
+function cellRow(c) {
+  const l = c.last || {};
+  const name = c.name && c.name !== c.id ? c.name : (c.presetName || "");
+  const bits = [l.cap ? nf(l.cap) + " mAh" : "noch nicht geprüft", l.ri ? riFmt(l.ri) : "", c.loc ? "Ort: " + c.loc : "", c.status !== "ok" ? STATUS_TXT[c.status] + (c.pack ? " in " + c.pack : "") : "", sdShort(c)].filter(Boolean);
+  return `<div class="row tap" data-no="${c.no}" tabindex="0" role="button"><div class="crow"><span class="cid">${esc(c.id)}</span><div class="l"><b>${esc(name) || "&nbsp;"}</b><small class="num">${bits.map(esc).join(" · ")}</small></div></div>${gradeBadge(c)}</div>`;
+}
+function renderCells() {
+  const list = filteredCells();
+  $("cFilter").innerHTML = FILTERS.map(([id, n, fn]) => `<button type="button" aria-pressed="${id === cellFilter}" data-f="${id}">${n} <span class="num">${CELLS.filter(fn).length}</span></button>`).join("");
+  $("cFilter").querySelectorAll("button").forEach(b => b.addEventListener("click", () => { cellFilter = b.dataset.f; renderCells(); }));
+  $("cellCount").textContent = CELLS.length ? `${CELLS.length} ${CELLS.length === 1 ? "Zelle" : "Zellen"}` : "";
+  const q = $("cSearch").value.trim();
+  $("cellList").innerHTML = list.length ? list.slice(0, 300).map(cellRow).join("") + (list.length > 300 ? `<div class="note">… und ${list.length - 300} weitere. Suche verfeinern.</div>` : "")
+    : CELLS.length ? `<div class="empty">Nichts gefunden${q ? ` für „${esc(q)}“` : ""}.</div>`
+    : `<div class="empty">Noch keine Zellen. Jeder Kapazitätstest legt automatisch eine Zelle mit eigener Nummer an.<br>Du kannst Zellen auch vorab anlegen und gleich beschriften.</div>`;
+  $("cellList").querySelectorAll("[data-no]").forEach(e => {
+    e.addEventListener("click", () => openCell(+e.dataset.no));
+    e.addEventListener("keydown", ev => { if (ev.key === "Enter") openCell(+e.dataset.no); });
+  });
+}
+async function loadCells() {
+  try { await loadCellsData(true); renderCells(); } catch (e) { $("cellList").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+$("cSearch").addEventListener("input", renderCells);
+$("cSearch").addEventListener("keydown", e => {
+  if (e.key !== "Enter") return;
+  const l = filteredCells();
+  if (l.length === 1 || (l[0] && /^#?\d+$/.test(e.target.value.trim()) && l[0].no === +e.target.value.trim().replace("#", ""))) openCell(l[0].no);
+});
+$("cSort").addEventListener("input", () => { try { localStorage.setItem("celldoc-sort", $("cSort").value); } catch (e) {} renderCells(); });
+try { const s = localStorage.getItem("celldoc-sort"); if (s && SORTS[s]) $("cSort").value = s; } catch (e) {}
+$("cNew").addEventListener("click", () => openNewCell());
+$("cPack").addEventListener("click", () => openPack());
+$("cLabels").addEventListener("click", () => { const l = filteredCells(); if (!l.length) return toast("Keine Zellen in der Auswahl"); openLabel(l); });
+$("cCsv").addEventListener("click", () => exportCellsCsv(filteredCells()));
+
+function openNewCell() {
+  const presetOpts = INFO.presets.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
+  const {el, close} = openSheet(`
+    <div class="sheet-head"><h3>Neue Zelle anlegen</h3><button class="btn small" data-close type="button">Abbrechen</button></div>
+    <p class="note">Bekommt sofort die nächste freie Nummer (${esc(nextCellId())}), damit du sie schon vor dem Test beschriften kannst.</p>
+    <div class="form">
+      <div class="field full"><label for="ncName">Name</label><input type="text" id="ncName" maxlength="40" placeholder="z. B. Laptop Dell Zelle 3"></div>
+      <div class="field"><label for="ncType">Zelltyp</label><select id="ncType"><option value="">Unbekannt</option>${presetOpts}</select></div>
+      <div class="field"><label for="ncLoc">Lagerort</label><input type="text" id="ncLoc" maxlength="40" placeholder="z. B. Kiste 2"></div>
+      <div class="field"><label for="ncN">Anzahl</label><input type="number" id="ncN" min="1" max="50" value="1"><span class="hint">Mehrere gleiche Zellen auf einmal</span></div>
+      <div class="field full"><label for="ncNote">Notiz</label><input type="text" id="ncNote" maxlength="200"></div>
+    </div>
+    <div class="actions"><button class="btn primary" id="ncGo" type="button" style="flex:1">Anlegen</button></div>`);
+  const q = s => el.querySelector(s);
+  q("#ncGo").addEventListener("click", async () => {
+    const n = clamp(+q("#ncN").value || 1, 1, 50), made = [];
+    const p = INFO.presets.find(x => x.id === q("#ncType").value);
+    for (let k = 0; k < n; k++) {
+      const name = q("#ncName").value.trim();
+      try {
+        const r = await api("/api/cell", {no: 0, name: n > 1 && name ? `${name} ${k + 1}` : name, preset: p?.id || "", chem: p?.chem || "liion", nomCapMah: p?.capMah || 0, riNew: p?.riNew || 0, loc: q("#ncLoc").value.trim(), note: q("#ncNote").value.trim()});
+        made.push(r.no);
+      } catch (e) { toast(e.message); break; }
+    }
+    close();
+    if (INFO) INFO.nextCellNo = (INFO.nextCellNo || 1) + made.length;
+    await loadCellsData(true); renderCells();
+    if (made.length) {
+      toast(made.length === 1 ? "Angelegt" : `${made.length} Zellen angelegt`);
+      const list = CELLS.filter(c => made.includes(c.no));
+      if (list.length) openLabel(list);
+    }
+  });
+}
+
+function portSelect(id) {
+  return isMini() ? `<select id="${id}" aria-label="Schacht" style="width:auto">${RAW.slots.map((_, k) => `<option value="${k + 1}" ${k === SEL ? "selected" : ""}>Schacht ${k + 1}</option>`).join("")}</select>`
+    : `<select id="${id}" aria-label="Anschluss" style="width:auto"><option value="A">Anschluss A</option></select>`;
+}
+
+async function openCell(no) {
+  let c, results = [];
+  try { c = await api("/api/cell?no=" + no); } catch (e) { return toast(e.message); }
+  try { results = (await api("/api/results")).filter(r => r.cell === c.no); } catch (e) {}
+  const l = c.last || {};
+  const name = c.name && c.name !== c.id ? c.name : "";
+  const first = c.first?.cap && l.cap && c.first.id !== l.id ? `<div class="note">Seit dem ersten Test (${dateStr(c.first.time).split(",")[0]}): ${nf((l.cap / c.first.cap - 1) * 100, 1)} % Kapazität (${nf(c.first.cap)} → ${nf(l.cap)} mAh)</div>` : "";
+  const sd = c.sd || null;
+  let sdHtml;
+  if (!sd) sdHtml = `<p class="note">Zeigt, ob die Zelle von selbst Ladung verliert. Voll laden, eine Stunde ruhen lassen, Startspannung messen, 7–14 Tage lagern, nachmessen. Nach einem Kapazitätstest mit „Danach voll laden“ misst CellDoc die Startspannung nach einer Stunde automatisch.</p>
+      <div class="toolbar">${portSelect("sdPort")}<button class="btn" data-sd="start" type="button">Startspannung messen</button></div>`;
+  else if (sd.state === "run") sdHtml = `<div class="banner info num"><div><b>Läuft seit ${nf(sdDays(c), 1)} Tagen</b>Start ${nf(sd.v0, 3)} V am ${dateStr(sd.t0)}. ${sdDays(c) < 7 ? "Für ein belastbares Ergebnis mindestens 7 Tage warten." : "Jetzt nachmessen."}</div></div>
+      <div class="toolbar">${portSelect("sdPort")}<button class="btn primary" data-sd="measure" type="button">Jetzt nachmessen</button><button class="btn small" data-sd="reset" type="button">Abbrechen</button></div>`;
+  else {
+    const col = sd.grade === "gut" ? "--charge" : sd.grade === "auffällig" ? "--warn" : "--danger";
+    sdHtml = `<div class="banner num" style="background:color-mix(in srgb,var(${col}) 14%,var(--card))"><div><b>${nf(sd.mvDay, 1)} mV pro Tag · ${esc(sd.grade)}${sd.prelim ? " (vorläufig)" : ""}</b>${nf(sd.v0, 3)} V → ${nf(sd.v1, 3)} V in ${nf(sd.days, 1)} Tagen</div></div>
+      <p class="note">Unter 3 mV/Tag ist gut, ab 8 mV/Tag hat die Zelle wahrscheinlich einen inneren Kurzschluss und gehört nicht in ein Pack.</p>
+      <div class="toolbar">${portSelect("sdPort")}<button class="btn small" data-sd="start" type="button">Neu starten</button></div>`;
+  }
+  const {el, close} = openSheet(`
+    <div class="sheet-head"><h3 class="cell-h"><span class="cid big">${esc(c.id)}</span></h3><button class="btn small" data-close type="button">Schließen</button></div>
+    <section class="card">
+      <div class="cellsum">${gradeBadge(c, true)}<div class="l"><b>${esc(name || c.presetName || "Ohne Namen")}</b>
+        <small class="num">${[c.presetName && name ? c.presetName : "", STATUS_TXT[c.status] + (c.pack ? " in " + c.pack : ""), c.loc ? "Ort: " + c.loc : "", c.created ? "angelegt " + dateStr(c.created).split(",")[0] : ""].filter(Boolean).map(esc).join(" · ")}</small></div></div>
+      ${l.cap ? `<div class="kv num"><div><span>Kapazität</span><b>${nf(l.cap)} mAh</b></div><div><span>Innenwiderstand</span><b>${riFmt(l.ri)}</b></div><div><span>Lebenszahl</span><b>${l.est ? `${l.low}–${l.high}` : l.score} %</b></div><div><span>Energie</span><b>${nf(l.wh, 2)} Wh</b></div></div>${first}` : `<div class="note">Noch nicht geprüft. Starte einen Kapazitätstest und wähle diese Zelle aus dem Bestand.</div>`}
+    </section>
+    <section class="card"><h2>Angaben</h2>
+      <div class="form">
+        <div class="field full"><label for="ceName">Name</label><input type="text" id="ceName" maxlength="40" value="${esc(name)}" placeholder="${esc(c.id)}"></div>
+        <div class="field"><label for="ceLoc">Lagerort</label><input type="text" id="ceLoc" maxlength="40" value="${esc(c.loc || "")}" placeholder="z. B. Kiste 2"></div>
+        <div class="field"><label for="ceStatus">Status</label><select id="ceStatus">${Object.entries(STATUS_TXT).map(([k, v]) => `<option value="${k}" ${c.status === k ? "selected" : ""}>${v}</option>`).join("")}</select></div>
+        <div class="field full" id="cePackF"><label for="cePack">Pack</label><input type="text" id="cePack" maxlength="40" value="${esc(c.pack || "")}" placeholder="z. B. E-Bike 10S4P"></div>
+        <div class="field full"><label for="ceNote">Notiz</label><input type="text" id="ceNote" maxlength="200" value="${esc(c.note || "")}" placeholder="z. B. aus Laptop Dell, leicht verbeult"></div>
+      </div>
+      <div class="actions"><button class="btn primary" id="ceSave" type="button">Speichern</button></div>
+    </section>
+    <section class="card"><h2>Selbstentladung</h2><div id="sdBox">${sdHtml}</div></section>
+    <section class="card"><h2>Tests <span class="sub" style="text-transform:none;letter-spacing:0">${results.length || ""}</span></h2>
+      ${results.length ? results.map(r => `<div class="row tap" data-rid="${r.id}" tabindex="0" role="button"><div class="l"><b>${dateStr(r.time)}</b><small class="num">${nf(r.capMah)} mAh · ${riFmt(r.ri50 || r.ri100)} · ${nf(r.currentA, 2)} A</small></div>${sohTag(r)}</div>`).join("") : `<div class="note">Keine gespeicherten Tests.</div>`}
+    </section>
+    <div class="actions" id="ceAct">
+      <button class="btn primary" id="ceLabel" type="button">Etikett drucken</button>
+      <button class="btn" id="ceTest" type="button">Test starten</button>
+      <button class="btn danger" id="ceDel" type="button">Aus dem Bestand löschen</button>
+    </div>`);
+  const q = s => el.querySelector(s);
+  const packVis = () => q("#cePackF").hidden = q("#ceStatus").value !== "verbaut" && !q("#cePack").value;
+  q("#ceStatus").addEventListener("input", packVis); packVis();
+  q("#ceSave").addEventListener("click", async () => {
+    try {
+      await api("/api/cell", {no: c.no, name: q("#ceName").value.trim(), loc: q("#ceLoc").value.trim(), status: q("#ceStatus").value, pack: q("#cePack").value.trim(), note: q("#ceNote").value.trim()});
+      toast("Gespeichert"); await loadCellsData(true); if (!$("v-cells").hidden) renderCells();
+    } catch (e) { toast(e.message); }
+  });
+  el.querySelectorAll("[data-sd]").forEach(b => b.addEventListener("click", async () => {
+    const p = q("#sdPort")?.value;
+    try {
+      await api("/api/cell/sd", {no: c.no, action: b.dataset.sd, port: p, slot: +p || 1});
+      close(); await loadCellsData(true); if (!$("v-cells").hidden) renderCells(); openCell(c.no);
+      toast(b.dataset.sd === "measure" ? "Gemessen" : b.dataset.sd === "start" ? "Startspannung gespeichert" : "Abgebrochen");
+    } catch (e) { toast(e.message); }
+  }));
+  el.querySelectorAll("[data-rid]").forEach(e => e.addEventListener("click", () => { close(); openResult(+e.dataset.rid); }));
+  q("#ceLabel").addEventListener("click", () => openLabel([c]));
+  q("#ceTest").addEventListener("click", () => { close(); showView("live"); openStart(c); });
+  q("#ceDel").addEventListener("click", () => confirmInline(q("#ceAct"), `${c.id} aus dem Bestand löschen? Die Testergebnisse bleiben erhalten. Die Nummer wird nicht neu vergeben.`, async () => {
+    await api("/api/cell/delete", {no: c.no}); close(); await loadCellsData(true); renderCells(); toast("Gelöscht");
+  }));
+}
+
+// ======================================================================
+// Etiketten (z. B. Supvan E16 / Katasymbol-App: Bild einfügen)
+// ======================================================================
+const LABEL_SIZES = [["12x40", "12 × 40 mm"], ["14x40", "14 × 40 mm"], ["15x40", "15 × 40 mm"], ["15x50", "15 × 50 mm"], ["12x30", "12 × 30 mm"], ["15x30", "15 × 30 mm"]];
+const LABEL_DEF = {size: "14x40", qr: true, qrMode: "link", vals: true, grade: true, date: true, name: false};
+function labelOpts() { try { return {...LABEL_DEF, ...JSON.parse(localStorage.getItem("celldoc-label") || "{}")}; } catch (e) { return {...LABEL_DEF}; } }
+function qrText(c, o) {
+  if (o.qrMode === "id") return c.id;
+  const host = DEMO || !location.host ? "celldoc.local" : location.host;
+  return `http://${host}/#z${c.no}`;
+}
+function labelLines(c, o) {
+  const l = c.last || {}, lines = [];
+  if (o.name && c.name && c.name !== c.id) lines.push(c.name);
+  if (o.vals && l.cap) lines.push(`${nf(l.cap)} mAh · ${l.ri ? riFmt(l.ri) : "–"}`);
+  const g = [];
+  if (o.grade && l.cap) g.push(`Note ${l.grade || gradeOf(l.score)} · ${l.score} %`);
+  if (o.date && l.time) g.push(new Date(l.time * 1000).toLocaleDateString("de-AT", {day: "2-digit", month: "2-digit", year: "2-digit"}));
+  if (g.length) lines.push(g.join(" · "));
+  return lines;
+}
+function drawLabel(cv, c, o) {
+  const [W, L] = o.size.split("x").map(Number), px = 8;  // 203 dpi ≈ 8 Punkte je mm
+  const w = L * px, h = W * px, m = 6;
+  cv.width = w; cv.height = h;
+  const g = cv.getContext("2d");
+  g.fillStyle = "#fff"; g.fillRect(0, 0, w, h); g.fillStyle = "#000";
+  let x = m;
+  if (o.qr) {
+    const mat = qrEncode(qrText(c, o), "L"), n = mat.length;
+    const mod = Math.max(1, Math.floor((h - 2 * m) / n)), size = mod * n, y0 = Math.floor((h - size) / 2);
+    for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (mat[r][k]) g.fillRect(x + k * mod, y0 + r * mod, mod, mod);
+    x += size + px;
+  }
+  const tw = w - x - m, lines = labelLines(c, o);
+  const font = (sz, wt) => `${wt} ${sz}px -apple-system, "Segoe UI", Roboto, Arial, sans-serif`;
+  const fit = (t, sz, wt) => { g.font = font(sz, wt); while (sz > 8 && g.measureText(t).width > tw) { sz--; g.font = font(sz, wt); } return sz; };
+  // ID bekommt etwa die Hälfte der Höhe
+  const avail = h - 2 * m, idH = lines.length ? avail * (lines.length > 1 ? .46 : .58) : avail * .8;
+  const idSz = fit(c.id, Math.floor(idH * 1.05), 800);
+  const lnH = lines.length ? (avail - idSz * .95) / lines.length : 0;
+  const lnSz = lines.length ? Math.min(...lines.map(t => fit(t, Math.floor(lnH * .92), 600))) : 0;
+  let y = m + idSz * .82 + (avail - idSz * .95 - lnH * lines.length) / 2;
+  g.font = font(idSz, 800); g.textBaseline = "alphabetic"; g.fillText(c.id, x, y);
+  g.font = font(lnSz, 600);
+  lines.forEach(t => { y += lnH; g.fillText(t, x, y - lnH * .12); });
+  // reines Schwarz-Weiß, damit der Thermodrucker nichts rastert
+  const img = g.getImageData(0, 0, w, h), d = img.data;
+  for (let i = 0; i < d.length; i += 4) { const v = d[i] * .3 + d[i + 1] * .59 + d[i + 2] * .11 < 150 ? 0 : 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; }
+  g.putImageData(img, 0, 0);
+}
+function openLabel(list) {
+  const o = labelOpts();
+  const many = list.length > 1;
+  const {el} = openSheet(`
+    <div class="sheet-head"><h3>${many ? `Etiketten (${list.length})` : `Etikett ${esc(list[0].id)}`}</h3><button class="btn small" data-close type="button">Fertig</button></div>
+    <div class="lbl-prev" id="lbPrev"></div>
+    <div class="form">
+      <div class="field"><label for="lbSize">Etikettengröße</label><select id="lbSize">${LABEL_SIZES.map(([k, n]) => `<option value="${k}" ${o.size === k ? "selected" : ""}>${n}</option>`).join("")}</select></div>
+      <div class="field"><label for="lbQrMode">QR-Code enthält</label><select id="lbQrMode"><option value="link" ${o.qrMode === "link" ? "selected" : ""}>Link zur Zelle</option><option value="id" ${o.qrMode === "id" ? "selected" : ""}>Nur die Nummer</option></select></div>
+    </div>
+    <div class="checks">
+      <label class="switch"><span>QR-Code</span><input type="checkbox" id="lbQr" ${o.qr ? "checked" : ""}></label>
+      <label class="switch"><span>Kapazität und Innenwiderstand</span><input type="checkbox" id="lbVals" ${o.vals ? "checked" : ""}></label>
+      <label class="switch"><span>Note und Lebenszahl</span><input type="checkbox" id="lbGrade" ${o.grade ? "checked" : ""}></label>
+      <label class="switch"><span>Datum des Tests</span><input type="checkbox" id="lbDate" ${o.date ? "checked" : ""}></label>
+      <label class="switch"><span>Name</span><input type="checkbox" id="lbName" ${o.name ? "checked" : ""}></label>
+    </div>
+    <div class="actions"><button class="btn primary" id="lbSave" type="button" style="flex:1">${many ? `${list.length} Bilder speichern` : "Bild speichern"}</button><button class="btn" id="lbCsv" type="button">Liste für die App (CSV)</button></div>
+    <p class="note">Supvan E16 und andere Bluetooth-Drucker: Bild speichern, in der Katasymbol-App ein neues Etikett in derselben Größe anlegen, <b>Bild</b> einfügen und auf volle Größe ziehen. Die Bilder haben 203 dpi und sind reines Schwarz-Weiß. Für viele Etiketten auf einmal kann die App auch eine Tabelle importieren.</p>
+`);
+  const q = s => el.querySelector(s);
+  const read = () => ({size: q("#lbSize").value, qrMode: q("#lbQrMode").value, qr: q("#lbQr").checked, vals: q("#lbVals").checked, grade: q("#lbGrade").checked, date: q("#lbDate").checked, name: q("#lbName").checked});
+  const draw = () => {
+    const op = read();
+    try { localStorage.setItem("celldoc-label", JSON.stringify(op)); } catch (e) {}
+    q("#lbQrMode").parentElement.hidden = !op.qr;
+    const prev = q("#lbPrev"); prev.innerHTML = "";
+    list.slice(0, 6).forEach(c => { const cv = document.createElement("canvas"); drawLabel(cv, c, op); cv.setAttribute("role", "img"); cv.setAttribute("aria-label", "Etikett " + c.id); prev.appendChild(cv); });
+    if (list.length > 6) prev.insertAdjacentHTML("beforeend", `<div class="note">… und ${list.length - 6} weitere</div>`);
+  };
+  el.querySelectorAll("select,input").forEach(i => i.addEventListener("input", draw));
+  draw();
+  q("#lbSave").addEventListener("click", async () => {
+    const op = read();
+    for (const c of list) {
+      const cv = document.createElement("canvas"); drawLabel(cv, c, op);
+      const a = document.createElement("a"); a.href = cv.toDataURL("image/png"); a.download = `${c.id}.png`; document.body.appendChild(a); a.click(); a.remove();
+      if (list.length > 1) await new Promise(r => setTimeout(r, 350));
+    }
+  });
+  q("#lbCsv").addEventListener("click", () => exportCellsCsv(list, read()));
+}
+
+// ======================================================================
+// CSV (Excel mit Semikolon, UTF-8 mit BOM)
+// ======================================================================
+function csvDownload(name, rows) {
+  const cell = v => { const s = String(v ?? ""); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const txt = "﻿" + rows.map(r => r.map(cell).join(";")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([txt], {type: "text/csv;charset=utf-8"}));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+const num = (v, d = 0) => v == null || v === "" || isNaN(v) ? "" : Number(v).toFixed(d).replace(".", ",");
+const isoDate = t => t ? new Date(t * 1000).toLocaleDateString("de-AT") : "";
+function exportCellsCsv(list, o = labelOpts()) {
+  csvDownload(`celldoc-zellen-${new Date().toISOString().slice(0, 10)}.csv`, [
+    ["ID", "Nummer", "Name", "Zelltyp", "Status", "Lagerort", "Pack", "Kapazität mAh", "Innenwiderstand mΩ", "Lebenszahl %", "Note", "Energie Wh", "Letzter Test", "Tests", "Selbstentladung mV/Tag", "Selbstentladung", "Notiz", "Etikett Zeile 2", "Etikett Zeile 3", "QR-Code"],
+    ...list.map(c => { const l = c.last || {}, lines = labelLines(c, {...o, name: false}); return [c.id, c.no, c.name !== c.id ? c.name : "", c.presetName || "", STATUS_TXT[c.status] || c.status, c.loc || "", c.pack || "", num(l.cap), num(l.ri, 1), l.score ?? "", l.cap ? l.grade || gradeOf(l.score) : "", num(l.wh, 2), isoDate(l.time), (c.tests || []).length, c.sd?.mvDay != null ? num(c.sd.mvDay, 1) : "", c.sd ? (c.sd.state === "run" ? "läuft" : c.sd.grade) : "", c.note || "", lines[0] || "", lines[1] || "", qrText(c, o)]; }),
+  ]);
+}
+async function exportResultsCsv() {
+  try {
+    const list = await api("/api/results");
+    csvDownload(`celldoc-ergebnisse-${new Date().toISOString().slice(0, 10)}.csv`, [
+      ["Ergebnis", "Zelle", "Name", "Datum", "Anschluss", "Chemie", "Zelltyp", "Zellen", "Strom A", "Kapazität mAh", "Energie Wh", "Ø Spannung V", "Ri 100 % mΩ", "Ri 50 % mΩ", "Lebenszahl %", "geschätzt", "Urteil", "Max. Temperatur °C", "Dauer h", "Coulomb-Wirkungsgrad %"],
+      ...list.map(r => [r.id, r.cellId || "", r.name, dateStr(r.time), r.slot ? "Schacht " + r.slot : r.port, chemName(r.chem), r.presetName || "", r.cells, num(r.currentA, 2), num(r.capMah), num(r.energyWh, 2), num(r.avgV, 3), num(r.ri100, 1), num(r.ri50, 1), r.soh?.score ?? "", r.soh?.estimated ? "ja" : "nein", r.soh?.verdict || "", num(r.tempMax, 1), num((r.durationSec || 0) / 3600, 1), num(r.coulombEff, 1)]),
+    ]);
+  } catch (e) { toast(e.message); }
+}
+
+// ======================================================================
+// Pack zusammenstellen: gleich starke Zellen finden und auf Parallelgruppen verteilen
+// ======================================================================
+function buildPack(cands, S_, P_) {
+  const N = S_ * P_;
+  if (cands.length < N) return null;
+  const sorted = cands.slice().sort((a, b) => b.last.cap - a.last.cap);
+  // Fenster aus N aufeinanderfolgenden Zellen mit der kleinsten Streuung (bei Gleichstand die stärkeren)
+  let best = 0, bestScore = Infinity;
+  for (let i = 0; i + N <= sorted.length; i++) {
+    const hi = sorted[i].last.cap, lo = sorted[i + N - 1].last.cap, mean = (hi + lo) / 2;
+    const ris = sorted.slice(i, i + N).map(c => c.last.ri || 0).filter(Boolean);
+    const riSpread = ris.length ? (Math.max(...ris) - Math.min(...ris)) / (Math.max(...ris) || 1) : 0;
+    const sc = (hi - lo) / mean + riSpread * .25 + i * 1e-4;
+    if (sc < bestScore) { bestScore = sc; best = i; }
+  }
+  const chosen = sorted.slice(best, best + N);
+  // Schlangenreihe: 1→S, dann S→1 usw., danach Feinschliff durch Tauschen
+  const groups = [...Array(S_)].map(() => ({cells: [], sum: 0}));
+  chosen.forEach((c, i) => {
+    const r = Math.floor(i / S_), k = i % S_, g = groups[r % 2 ? S_ - 1 - k : k];
+    g.cells.push(c); g.sum += c.last.cap;
+  });
+  // Feinschliff durch Tauschen zwischen stärkster und schwächster Gruppe
+  for (let it = 0; it < 200; it++) {
+    groups.sort((a, b) => a.sum - b.sum);
+    const lo = groups[0], hi = groups[groups.length - 1], diff = hi.sum - lo.sum;
+    let swap = null, gain = 0;
+    for (const a of hi.cells) for (const b of lo.cells) {
+      const d = a.last.cap - b.last.cap;
+      if (d > 0 && d < diff && Math.abs(diff - 2 * d) < diff - gain) { gain = diff - Math.abs(diff - 2 * d); swap = [a, b, d]; }
+    }
+    if (!swap) break;
+    const [a, b, d] = swap;
+    hi.cells[hi.cells.indexOf(a)] = b; lo.cells[lo.cells.indexOf(b)] = a; hi.sum -= d; lo.sum += d;
+  }
+  groups.forEach(g => { g.ri = g.cells.reduce((s, c) => s + (c.last.ri || 0), 0) / g.cells.length; g.cells.sort((a, b) => a.no - b.no); });
+  groups.sort((a, b) => b.sum - a.sum);
+  return {groups, chosen};
+}
+async function openPack() {
+  try { await loadCellsData(); } catch (e) { return toast(e.message); }
+  const o = (() => { try { return JSON.parse(localStorage.getItem("celldoc-pack") || "{}"); } catch (e) { return {}; } })();
+  const {el, close} = openSheet(`
+    <div class="sheet-head"><h3>Pack zusammenstellen</h3><button class="btn small" data-close type="button">Schließen</button></div>
+    <p class="note">Sucht aus dem Bestand Zellen mit möglichst gleicher Kapazität und ähnlichem Innenwiderstand und verteilt sie so auf die Parallelgruppen, dass jede Gruppe gleich viel Kapazität hat.</p>
+    <div class="form num">
+      <div class="field"><label for="pkS">Zellen in Serie (S)</label><input type="number" id="pkS" min="1" max="30" value="${o.s || 7}"></div>
+      <div class="field"><label for="pkP">Parallel (P)</label><input type="number" id="pkP" min="1" max="30" value="${o.p || 2}"></div>
+      <div class="field"><label for="pkMin">Mindest-Lebenszahl</label><input type="number" id="pkMin" min="0" max="100" value="${o.min ?? 60}"></div>
+      <div class="field"><label for="pkChem">Chemie</label><select id="pkChem">${[...new Set(CELLS.filter(c => (c.cells || 1) === 1).map(c => c.chem || "liion"))].map(ch => `<option value="${ch}" ${(o.chem || "liion") === ch ? "selected" : ""}>${esc(chemName(ch))}</option>`).join("")}</select></div>
+      <div class="field"><label for="pkQ">Nur Zellen mit …</label><input type="search" id="pkQ" value="${esc(o.q || "")}" placeholder="z. B. Kiste 2 oder 30Q"></div>
+    </div>
+    <label class="switch"><span>Zellen mit auffälliger Selbstentladung weglassen</span><input type="checkbox" id="pkSd" ${o.sd !== false ? "checked" : ""}></label>
+    <label class="switch"><span>Nur Zellen mit gemessener Selbstentladung</span><input type="checkbox" id="pkSdReq" ${o.sdReq ? "checked" : ""}></label>
+    <div id="pkOut"></div>`);
+  const q = s => el.querySelector(s);
+  let res = null;
+  const calc = () => {
+    const S_ = clamp(+q("#pkS").value || 1, 1, 30), P_ = clamp(+q("#pkP").value || 1, 1, 30), mn = +q("#pkMin").value || 0, qq = q("#pkQ").value.trim();
+    try { localStorage.setItem("celldoc-pack", JSON.stringify({s: S_, p: P_, min: mn, q: qq, chem: q("#pkChem").value, sd: q("#pkSd").checked, sdReq: q("#pkSdReq").checked})); } catch (e) {}
+    const chem = q("#pkChem").value || "liion";
+    const cands = CELLS.filter(c => c.status === "ok" && c.last?.cap > 0 && c.last.score >= mn && cellMatches(c, qq) && (c.cells || 1) === 1 && (c.chem || "liion") === chem
+      && (!q("#pkSd").checked || !["auffällig", "schlecht"].includes(c.sd?.grade)) && (!q("#pkSdReq").checked || c.sd?.state === "done"));
+    res = buildPack(cands, S_, P_);
+    if (!res) { q("#pkOut").innerHTML = `<div class="banner info"><div><b>Zu wenige passende Zellen</b>Gebraucht werden ${S_ * P_}, im Bestand passen ${cands.length}. Mindest-Lebenszahl senken oder Filter lockern.</div></div>`; return; }
+    const sums = res.groups.map(g => g.sum), mn2 = Math.min(...sums), mx = Math.max(...sums);
+    const caps = res.chosen.map(c => c.last.cap), ris = res.chosen.map(c => c.last.ri).filter(Boolean);
+    const vNom = (INFO?.chemistries.find(c => c.id === chem) || {}).nominalV || 3.6;
+    q("#pkOut").innerHTML = `
+      <section class="card">
+        <div class="kv num"><div><span>Pack · ${S_ * P_} Zellen</span><b>${S_}S${P_}P</b></div><div><span>Kapazität</span><b>${nf(mn2)} mAh</b></div><div><span>Energie ca.</span><b>${nf(mn2 / 1000 * vNom * S_, 0)} Wh</b></div><div><span>Spannung</span><b>${nf(vNom * S_, 1)} V nom.</b></div></div>
+        <div class="note num">Gruppen weichen um ${nf(mx - mn2)} mAh ab (${nf((mx - mn2) / mn2 * 100, 1)} %). Zellen ${nf(Math.min(...caps))}–${nf(Math.max(...caps))} mAh${ris.length ? `, Innenwiderstand ${riFmt(Math.min(...ris))}–${riFmt(Math.max(...ris))}` : ""}. Passende Zellen im Bestand: ${CELLS.filter(c => c.status === "ok" && c.last?.cap > 0).length}.</div>
+        <div class="tbl"><table class="num"><thead><tr><th>Gruppe</th><th>Zellen</th><th>Summe</th><th>Ø Ri</th></tr></thead><tbody>
+          ${res.groups.map((g, k) => `<tr><td>${S_ > 1 ? k + 1 + "S" : "–"}</td><td>${g.cells.map(c => `<span class="cid sm">${esc(c.id)}</span>`).join(" ")}</td><td>${nf(g.sum)}</td><td>${riFmt(g.ri)}</td></tr>`).join("")}
+        </tbody></table></div>
+      </section>
+      <div class="form"><div class="field full"><label for="pkName">Name des Packs</label><input type="text" id="pkName" maxlength="40" value="${esc(`Pack ${S_}S${P_}P`)}"></div></div>
+      <div class="actions" id="pkAct"><button class="btn primary" id="pkUse" type="button">Als verbaut markieren</button><button class="btn" id="pkCsv" type="button">Liste (CSV)</button><button class="btn" id="pkLbl" type="button">Etiketten</button></div>`;
+    q("#pkCsv").addEventListener("click", () => csvDownload(`celldoc-pack-${S_}s${P_}p.csv`, [["Gruppe", "ID", "Name", "Kapazität mAh", "Innenwiderstand mΩ", "Lebenszahl %", "Lagerort"],
+      ...res.groups.flatMap((g, k) => g.cells.map(c => [k + 1, c.id, c.name, num(c.last.cap), num(c.last.ri, 1), c.last.score, c.loc || ""]))]));
+    q("#pkLbl").addEventListener("click", () => openLabel(res.chosen.slice().sort((a, b) => a.no - b.no)));
+    q("#pkUse").addEventListener("click", () => confirmInline(q("#pkAct"), `${res.chosen.length} Zellen als verbaut in „${q("#pkName").value.trim()}“ markieren?`, async () => {
+      await api("/api/cells/batch", {nos: res.chosen.map(c => c.no), status: "verbaut", pack: q("#pkName").value.trim()});
+      await loadCellsData(true); renderCells(); close(); toast("Als verbaut markiert");
+    }));
+  };
+  el.querySelectorAll("#pkS,#pkP,#pkMin,#pkChem,#pkQ,#pkSd,#pkSdReq").forEach(i => i.addEventListener("input", calc));
+  calc();
+}
+
+// ======================================================================
+// Datensicherung, MQTT
+// ======================================================================
+$("bkGo").addEventListener("click", () => {
+  if (DEMO) return toast("Im Demo-Modus nicht möglich");
+  location.href = "/api/backup" + ($("bkCurves").checked ? "?curves=1" : "");
+});
+$("bkFile").addEventListener("change", () => $("bkRestore").disabled = !$("bkFile").files.length);
+$("bkRestore").addEventListener("click", () => confirmInline($("bkRestore").parentElement, "Sicherung einspielen? Gleichnamige Zellen und Ergebnisse werden überschrieben.", async () => {
+  if (DEMO) return toast("Im Demo-Modus nicht möglich");
+  const fd = new FormData(); fd.append("backup", $("bkFile").files[0]);
+  const r = await fetch("/api/restore", {method: "POST", body: fd});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || "Wiederherstellung fehlgeschlagen");
+  toast(`${j.files} Dateien wiederhergestellt`); CELLS_AT = 0; loadSettings();
+}));
+$("bkCellsCsv").addEventListener("click", async () => { try { exportCellsCsv(await loadCellsData(true)); } catch (e) { toast(e.message); } });
+$("bkResCsv").addEventListener("click", exportResultsCsv);
+$("mqSave").addEventListener("click", async () => {
+  const b = {mqttOn: $("mqOn").checked, mqttHost: $("mqHost").value.trim(), mqttPort: +$("mqPort").value || 1883, mqttUser: $("mqUser").value.trim(), mqttBase: $("mqBase").value.trim() || "celldoc"};
+  if ($("mqPass").value) b.mqttPass = $("mqPass").value;
+  try { await api("/api/settings", b); $("mqPass").value = ""; toast("Gespeichert"); setTimeout(loadSettings, 2500); } catch (e) { toast(e.message); }
+});
+
+// Kleiner QR-Code-Erzeuger (Byte-Modus, Fehlerkorrektur L/M, Version 1–10)
+function qrEncode(text, ecl) {
+  const data = Array.from(new TextEncoder().encode(text));
+  // [EC-Codewörter je Block, Blöcke Gruppe 1, Daten je Block G1, Blöcke G2, Daten je Block G2]
+  const T = {
+    L: [[7,1,19,0,0],[10,1,34,0,0],[15,1,55,0,0],[20,1,80,0,0],[26,1,108,0,0],[18,2,68,0,0],[20,2,78,0,0],[24,2,97,0,0],[30,2,116,0,0],[18,2,68,2,69]],
+    M: [[10,1,16,0,0],[16,1,28,0,0],[26,1,44,0,0],[18,2,32,0,0],[24,2,43,0,0],[16,4,27,0,0],[18,4,31,0,0],[22,2,38,2,39],[22,3,36,2,37],[26,4,43,1,44]],
+  };
+  const ALIGN = [[], [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50]];
+  ecl = ecl === "M" ? "M" : "L";
+  let ver = 0, spec;
+  for (let v = 1; v <= 10; v++) {
+    const s = T[ecl][v - 1], cap = s[1] * s[2] + s[3] * s[4];
+    if (4 + (v < 10 ? 8 : 16) + data.length * 8 <= cap * 8) { ver = v; spec = s; break; }
+  }
+  if (!ver) throw new Error("Text zu lang für den QR-Code");
+  const capBytes = spec[1] * spec[2] + spec[3] * spec[4];
+  // Bitstrom
+  const bits = [];
+  const put = (val, n) => { for (let i = n - 1; i >= 0; i--) bits.push((val >>> i) & 1); };
+  put(4, 4); put(data.length, ver < 10 ? 8 : 16);
+  data.forEach(b => put(b, 8));
+  put(0, Math.min(4, capBytes * 8 - bits.length));
+  while (bits.length % 8) bits.push(0);
+  const cw = [];
+  for (let i = 0; i < bits.length; i += 8) cw.push(parseInt(bits.slice(i, i + 8).join(""), 2));
+  for (let p = 0; cw.length < capBytes; p++) cw.push(p % 2 ? 0x11 : 0xEC);
+  // Reed-Solomon über GF(256)
+  const EXP = new Array(512), LOG = new Array(256);
+  for (let i = 0, x = 1; i < 255; i++) { EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 256) x ^= 0x11D; }
+  for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+  const mul = (a, b) => a && b ? EXP[LOG[a] + LOG[b]] : 0;
+  const ecn = spec[0];
+  let gen = [1];
+  for (let i = 0; i < ecn; i++) {
+    const g = new Array(gen.length + 1).fill(0);
+    for (let j = 0; j < gen.length; j++) { g[j] ^= gen[j]; g[j + 1] ^= mul(gen[j], EXP[i]); }
+    gen = g;
+  }
+  const rs = block => {
+    const r = block.concat(new Array(ecn).fill(0));
+    for (let i = 0; i < block.length; i++) {
+      const c = r[i];
+      if (c) for (let j = 0; j < gen.length; j++) r[i + j] ^= mul(gen[j], c);
+    }
+    return r.slice(block.length);
+  };
+  const blocks = [];
+  let off = 0;
+  for (let g = 0; g < 2; g++) for (let b = 0; b < spec[1 + g * 2]; b++) { const n = spec[2 + g * 2]; blocks.push(cw.slice(off, off + n)); off += n; }
+  const ecs = blocks.map(rs);
+  const out = [];
+  const maxD = Math.max(...blocks.map(b => b.length));
+  for (let i = 0; i < maxD; i++) blocks.forEach(b => { if (i < b.length) out.push(b[i]); });
+  for (let i = 0; i < ecn; i++) ecs.forEach(e => out.push(e[i]));
+  // Matrix
+  const N = ver * 4 + 17;
+  const M = [...Array(N)].map(() => new Array(N).fill(0));
+  const F = [...Array(N)].map(() => new Array(N).fill(false));  // Funktionsmodule
+  const set = (r, c, v) => { M[r][c] = v ? 1 : 0; F[r][c] = true; };
+  const finder = (r, c) => {
+    for (let i = -1; i <= 7; i++) for (let j = -1; j <= 7; j++) {
+      const y = r + i, x = c + j;
+      if (y < 0 || x < 0 || y >= N || x >= N) continue;
+      const on = i >= 0 && i <= 6 && j >= 0 && j <= 6 && (i === 0 || i === 6 || j === 0 || j === 6 || (i >= 2 && i <= 4 && j >= 2 && j <= 4));
+      set(y, x, on);
+    }
+  };
+  finder(0, 0); finder(0, N - 7); finder(N - 7, 0);
+  for (let i = 8; i < N - 8; i++) { set(6, i, i % 2 === 0); set(i, 6, i % 2 === 0); }
+  const al = ALIGN[ver];
+  const last = al[al.length - 1];
+  for (const r of al) for (const c of al) {
+    if ((r === 6 && c === 6) || (r === 6 && c === last) || (r === last && c === 6)) continue;
+    for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) set(r + i, c + j, Math.max(Math.abs(i), Math.abs(j)) !== 1);
+  }
+  // Platz für Format- und Versionsinformation reservieren
+  for (let i = 0; i < 9; i++) { F[8][i] = F[i][8] = true; }
+  for (let i = 0; i < 8; i++) { F[8][N - 1 - i] = F[N - 1 - i][8] = true; }
+  set(N - 8, 8, 1);  // dunkles Modul
+  if (ver >= 7) for (let i = 0; i < 6; i++) for (let j = 0; j < 3; j++) { F[i][N - 11 + j] = F[N - 11 + j][i] = true; }
+  // Daten im Zickzack einsetzen
+  const dbits = [];
+  out.forEach(b => { for (let i = 7; i >= 0; i--) dbits.push((b >> i) & 1); });
+  let k = 0;
+  for (let c = N - 1; c > 0; c -= 2) {
+    if (c === 6) c--;
+    for (let n = 0; n < N; n++) {
+      const up = ((c + 1) & 2) === 0, r = up ? N - 1 - n : n;
+      for (let d = 0; d < 2; d++) {
+        const x = c - d;
+        if (!F[r][x]) M[r][x] = k < dbits.length ? dbits[k++] : 0;
+      }
+    }
+  }
+  const MASKS = [(r, c) => (r + c) % 2 === 0, (r) => r % 2 === 0, (r, c) => c % 3 === 0, (r, c) => (r + c) % 3 === 0,
+    (r, c) => (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0, (r, c) => (r * c) % 2 + (r * c) % 3 === 0,
+    (r, c) => ((r * c) % 2 + (r * c) % 3) % 2 === 0, (r, c) => ((r + c) % 2 + (r * c) % 3) % 2 === 0];
+  const bch = (val, poly, len) => { let v = val << len; const top = Math.floor(Math.log2(poly)); while (v && Math.floor(Math.log2(v)) >= top) v ^= poly << (Math.floor(Math.log2(v)) - top); return (val << len) | v; };
+  const placeInfo = (A, mask) => {
+    const fmt = bch(((ecl === "L" ? 1 : 0) << 3) | mask, 0x537, 10) ^ 0x5412;
+    for (let i = 0; i < 15; i++) {
+      const b = (fmt >> i) & 1;
+      // um das obere linke Suchmuster
+      if (i < 6) A[i][8] = b; else if (i < 8) A[i + 1][8] = b; else A[N - 15 + i][8] = b;
+      if (i < 8) A[8][N - 1 - i] = b; else if (i < 9) A[8][7] = b; else A[8][14 - i] = b;
+    }
+    A[N - 8][8] = 1;
+    if (ver >= 7) {
+      const vi = bch(ver, 0x1F25, 12);
+      for (let i = 0; i < 18; i++) { const b = (vi >> i) & 1, a = Math.floor(i / 3), c = i % 3 + N - 11; A[a][c] = b; A[c][a] = b; }
+    }
+  };
+  const penalty = A => {
+    let p = 0;
+    for (let t = 0; t < 2; t++) for (let i = 0; i < N; i++) {
+      let run = 1;
+      for (let j = 1; j < N; j++) {
+        const a = t ? A[j][i] : A[i][j], b = t ? A[j - 1][i] : A[i][j - 1];
+        if (a === b) { run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1;
+      }
+    }
+    for (let i = 0; i < N - 1; i++) for (let j = 0; j < N - 1; j++) { const s = A[i][j] + A[i + 1][j] + A[i][j + 1] + A[i + 1][j + 1]; if (s === 0 || s === 4) p += 3; }
+    const pat = [1, 0, 1, 1, 1, 0, 1];
+    for (let t = 0; t < 2; t++) for (let i = 0; i < N; i++) for (let j = 0; j + 7 <= N; j++) {
+      let ok = true;
+      for (let q = 0; q < 7 && ok; q++) ok = (t ? A[j + q][i] : A[i][j + q]) === pat[q];
+      if (ok) p += 40;
+    }
+    let dark = 0; A.forEach(r => r.forEach(v => dark += v));
+    p += Math.floor(Math.abs(dark * 20 / (N * N) - 10)) * 10;
+    return p;
+  };
+  let best = null, bestP = Infinity;
+  for (let m = 0; m < 8; m++) {
+    const A = M.map(r => r.slice());
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (!F[r][c] && MASKS[m](r, c)) A[r][c] ^= 1;
+    placeInfo(A, m);
+    const p = penalty(A);
+    if (p < bestP) { bestP = p; best = A; }
+  }
+  return best;
+}
+
+// ======================================================================
 // Demo-Modus (ohne Gerät, z. B. für GitHub)
 // ======================================================================
 const DEMO_INFO = {
@@ -1271,7 +2007,7 @@ const DEMO_INFO = {
     ["lghg2", "LG INR18650-HG2", 3000, 25], ["vtc6", "Sony/Murata US18650VTC6", 3000, 20], ["ncrb", "Panasonic NCR18650B", 3350, 45], ["p28a", "Molicel INR18650-P28A", 2800, 15],
     ["s40t", "Samsung INR21700-40T", 4000, 15], ["s50e", "Samsung INR21700-50E", 5000, 30], ["lfp26", "LiFePO4 26650 (3000 mAh)", 3000, 25]]
     .map(([id, name, capMah, riNew]) => ({id, name, chem: id === "lfp26" ? "lfp" : "liion", capMah, riNew})),
-  limits: {maxPowerW: 30, maxCurrentA: 5, maxCurrentB: 8}, nextCellNo: 6,
+  limits: {maxPowerW: 30, maxCurrentA: 5, maxCurrentB: 8}, nextCellNo: 53,
 };
 const demoCurveV = x => { x = clamp(x, 0, 1); return 4.12 - .42 * x - .70 * Math.pow(x, 10) - .05 * (1 - Math.exp(-30 * x)); };
 function demoCurve(cap, cur, upTo) {
@@ -1279,14 +2015,53 @@ function demoCurve(cap, cur, upTo) {
   for (let t = 0; t <= tEnd; t += 60) { const q = cur * 1000 * t / 3600; pts.push([Math.round(t + 15000), +demoCurveV(q / cap).toFixed(3), -cur, -Math.round(q), +(27 + q / cap * 6).toFixed(1)]); }
   return pts;
 }
+const DEMO_OFF = Math.max(0, Math.floor(Date.now() / 1000) - 3 * 3600 - 1761390000);  // Demo-Daten wirken immer aktuell
 const DEMO_RESULTS = [
-  {id: 5, name: "Akku Taschenlampe", time: 1761390000, port: "A", chem: "liion", preset: "s30q", presetName: "Samsung INR18650-30Q", cells: 1, nomCapMah: 3000, riNew: 25, currentA: .5, cutoffV: 3, capMah: 2941, energyWh: 10.71, avgV: 3.642, ri100: 22.4, ri50: 24.1, riCurve: [[0, 22.4], [600, 23.0], [1200, 23.5], [1500, 24.1], [2100, 26.0], [2700, 31.2]], startOcv: 4.188, restOcv: 3.462, rechargeMah: 2988, rechargeWh: 11.62, rechargeSec: 11520, coulombEff: 98.4, energyEff: 92.2, after: "full", tempMax: 30.9, tempRise: 6.1, throttled: false, durationSec: 47100, soh: {score: 96, low: 96, high: 96, estimated: false, capScore: 95, riScore: 98, capRatio: 98, refCapMah: 3000, verdict: "Wie neu"}},
-  {id: 4, name: "Zelle #4", time: 1761290000, port: "A", chem: "liion", preset: "lgmj1", presetName: "LG INR18650-MJ1", cells: 1, nomCapMah: 3500, riNew: 35, currentA: .5, cutoffV: 3, capMah: 2838, energyWh: 10.12, avgV: 3.566, ri100: 34, ri50: 38, riCurve: [[0, 34], [700, 35.5], [1400, 38], [2100, 41], [2700, 48]], startOcv: 4.174, restOcv: 3.441, rechargeMah: 2893, rechargeWh: 11.07, rechargeSec: 11380, coulombEff: 98.1, energyEff: 91.4, after: "full", tempMax: 31.6, tempRise: 8.4, throttled: false, durationSec: 49800, baselineCapMah: 3110, soh: {score: 65, low: 65, high: 65, estimated: false, capScore: 53, riScore: 94, capRatio: 81.1, refCapMah: 3500, verdict: "Gut gebraucht"}},
-  {id: 3, name: "Drohnenakku 3S", time: 1761200000, port: "B", chem: "lipo", preset: "", presetName: "", cells: 3, nomCapMah: 2200, riNew: 0, currentA: 2, cutoffV: 3.2, capMah: 1954, energyWh: 21.53, avgV: 11.02, ri100: 41.5, ri50: 47.2, cellRi: [14.8, 15.3, 17.1], riCurve: [[0, 41.5], [500, 44], [1000, 47.2], [1500, 51]], startOcv: 12.58, restOcv: 10.9, after: "none", tempMax: 34.2, tempRise: 11.8, throttled: false, durationSec: 5400, soh: {score: 87, low: 77, high: 97, estimated: true, capScore: 72, riScore: 100, capRatio: 88.8, refCapMah: 2200, verdict: "Sehr gut"}},
-  {id: 2, name: "Laptop-Akku Zelle 2", time: 1761100000, port: "A", chem: "liion", preset: "", presetName: "", cells: 1, nomCapMah: 0, riNew: 0, currentA: .5, cutoffV: 3, capMah: 1612, energyWh: 5.71, avgV: 3.54, ri100: 98, ri50: 112, riCurve: [[0, 98], [500, 104], [800, 112], [1300, 131]], startOcv: 4.152, restOcv: 3.39, rechargeMah: 1690, rechargeWh: 6.4, rechargeSec: 8200, coulombEff: 95.4, energyEff: 89.2, after: "full", tempMax: 33.1, tempRise: 9.5, throttled: true, durationSec: 31000, soh: {score: 20, low: 13, high: 27, estimated: true, capScore: 5, riScore: 35, capRatio: 62, refCapMah: 2600, verdict: "Nur für kleine Lasten"}},
-  {id: 1, name: "Zelle #1", time: 1761000000, port: "A", chem: "liion", preset: "vtc6", presetName: "Sony/Murata US18650VTC6", cells: 1, nomCapMah: 3000, riNew: 20, currentA: 1, cutoffV: 3, capMah: 2655, energyWh: 9.42, avgV: 3.548, ri100: 29, ri50: 31, riCurve: [[0, 29], [900, 30], [1300, 31], [2000, 34]], startOcv: 4.181, restOcv: 3.47, rechargeMah: 2702, rechargeWh: 10.3, rechargeSec: 9900, coulombEff: 98.3, energyEff: 91.5, after: "full", tempMax: 36.4, tempRise: 13.2, throttled: false, durationSec: 31200, soh: {score: 58, low: 58, high: 58, estimated: false, capScore: 66, riScore: 63, capRatio: 88.5, refCapMah: 3000, verdict: "Gut gebraucht"}},
+  {id: 5, cell: 5, cellId: "CD-0005", name: "Akku Taschenlampe", time: 1761390000, port: "A", chem: "liion", preset: "s30q", presetName: "Samsung INR18650-30Q", cells: 1, nomCapMah: 3000, riNew: 25, currentA: .5, cutoffV: 3, capMah: 2941, energyWh: 10.71, avgV: 3.642, ri100: 22.4, ri50: 24.1, riCurve: [[0, 22.4], [600, 23.0], [1200, 23.5], [1500, 24.1], [2100, 26.0], [2700, 31.2]], startOcv: 4.188, restOcv: 3.462, rechargeMah: 2988, rechargeWh: 11.62, rechargeSec: 11520, coulombEff: 98.4, energyEff: 92.2, after: "full", tempMax: 30.9, tempRise: 6.1, throttled: false, durationSec: 47100, soh: {score: 96, low: 96, high: 96, estimated: false, capScore: 95, riScore: 98, capRatio: 98, refCapMah: 3000, verdict: "Wie neu"}},
+  {id: 4, cell: 4, cellId: "CD-0004", name: "Akkuschrauber 1", time: 1761290000, port: "A", chem: "liion", preset: "lgmj1", presetName: "LG INR18650-MJ1", cells: 1, nomCapMah: 3500, riNew: 35, currentA: .5, cutoffV: 3, capMah: 2838, energyWh: 10.12, avgV: 3.566, ri100: 34, ri50: 38, riCurve: [[0, 34], [700, 35.5], [1400, 38], [2100, 41], [2700, 48]], startOcv: 4.174, restOcv: 3.441, rechargeMah: 2893, rechargeWh: 11.07, rechargeSec: 11380, coulombEff: 98.1, energyEff: 91.4, after: "full", tempMax: 31.6, tempRise: 8.4, throttled: false, durationSec: 49800, baselineCapMah: 3110, soh: {score: 65, low: 65, high: 65, estimated: false, capScore: 53, riScore: 94, capRatio: 81.1, refCapMah: 3500, verdict: "Gut gebraucht"}},
+  {id: 3, cell: 3, cellId: "CD-0003", name: "Drohnenakku 3S", time: 1761200000, port: "B", chem: "lipo", preset: "", presetName: "", cells: 3, nomCapMah: 2200, riNew: 0, currentA: 2, cutoffV: 3.2, capMah: 1954, energyWh: 21.53, avgV: 11.02, ri100: 41.5, ri50: 47.2, cellRi: [14.8, 15.3, 17.1], riCurve: [[0, 41.5], [500, 44], [1000, 47.2], [1500, 51]], startOcv: 12.58, restOcv: 10.9, after: "none", tempMax: 34.2, tempRise: 11.8, throttled: false, durationSec: 5400, soh: {score: 87, low: 77, high: 97, estimated: true, capScore: 72, riScore: 100, capRatio: 88.8, refCapMah: 2200, verdict: "Sehr gut"}},
+  {id: 2, cell: 2, cellId: "CD-0002", name: "Laptop-Akku Zelle 2", time: 1761100000, port: "A", chem: "liion", preset: "", presetName: "", cells: 1, nomCapMah: 0, riNew: 0, currentA: .5, cutoffV: 3, capMah: 1612, energyWh: 5.71, avgV: 3.54, ri100: 98, ri50: 112, riCurve: [[0, 98], [500, 104], [800, 112], [1300, 131]], startOcv: 4.152, restOcv: 3.39, rechargeMah: 1690, rechargeWh: 6.4, rechargeSec: 8200, coulombEff: 95.4, energyEff: 89.2, after: "full", tempMax: 33.1, tempRise: 9.5, throttled: true, durationSec: 31000, soh: {score: 20, low: 13, high: 27, estimated: true, capScore: 5, riScore: 35, capRatio: 62, refCapMah: 2600, verdict: "Nur für kleine Lasten"}},
+  {id: 1, cell: 1, cellId: "CD-0001", name: "Zelle 1", time: 1761000000, port: "A", chem: "liion", preset: "vtc6", presetName: "Sony/Murata US18650VTC6", cells: 1, nomCapMah: 3000, riNew: 20, currentA: 1, cutoffV: 3, capMah: 2655, energyWh: 9.42, avgV: 3.548, ri100: 29, ri50: 31, riCurve: [[0, 29], [900, 30], [1300, 31], [2000, 34]], startOcv: 4.181, restOcv: 3.47, rechargeMah: 2702, rechargeWh: 10.3, rechargeSec: 9900, coulombEff: 98.3, energyEff: 91.5, after: "full", tempMax: 36.4, tempRise: 13.2, throttled: false, durationSec: 31200, soh: {score: 58, low: 58, high: 58, estimated: false, capScore: 66, riScore: 63, capRatio: 88.5, refCapMah: 3000, verdict: "Gut gebraucht"}},
 ];
-const demo = {t0: Date.now(), phase: "discharge", job: {port: "A", name: "Zelle #6", chem: "liion", preset: "s30q", cells: 1, currentA: .5, nomCapMah: 3000, cutoffV: 3, preCharge: true, restMin: 30, after: "full"}, startMah: 1240, results: DEMO_RESULTS.slice()};
+
+// Demo-Bestand: einige echte Testergebnisse und viele Zellen aus alten Laptop-Akkus
+const DEMO_CELLS = (() => {
+  let seed = 11; const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647;
+  const T = 1761390000 + DEMO_OFF, day = 86400;
+  const mk = (no, o) => ({no, id: "CD-" + String(no).padStart(4, "0"), name: o.name || "CD-" + String(no).padStart(4, "0"), chem: o.chem || "liion", preset: o.preset || "", presetName: o.presetName || "",
+    cells: o.cells || 1, nomCapMah: o.nom || 0, riNew: o.riNew || 0, loc: o.loc || "", note: o.note || "", status: o.status || "ok", pack: o.pack || "", created: o.created || T - 40 * day,
+    tests: o.tests || [], first: o.first, last: o.last, sd: o.sd});
+  const last = (id, time, cap, ri, score, wh, est, low, high) => ({id, time, cap, ri, score, wh, est: !!est, low: low ?? score, high: high ?? score, grade: gradeOf(score)});
+  const cells = [
+    mk(1, {name: "Zelle 1", preset: "vtc6", presetName: "Sony/Murata US18650VTC6", nom: 3000, riNew: 20, loc: "Kiste 1", tests: [1], first: {id: 1, time: T - 390000, cap: 2655}, last: last(1, T - 390000, 2655, 31, 58, 9.42),
+      sd: {state: "done", v0: 4.176, v1: 4.158, t0: T - 380000, t1: T - 380000 + 14 * day, days: 14, mvDay: 1.3, grade: "gut"}}),
+    mk(2, {name: "Laptop-Akku Zelle 2", loc: "Kiste 3", status: "defekt", note: "wird beim Laden warm", tests: [2], first: {id: 2, time: T - 290000, cap: 1612}, last: last(2, T - 290000, 1612, 112, 20, 5.71, true, 13, 27),
+      sd: {state: "done", v0: 4.171, v1: 3.902, t0: T - 280000, t1: T - 280000 + 14 * day, days: 14, mvDay: 19.2, grade: "schlecht"}}),
+    mk(3, {name: "Drohnenakku 3S", chem: "lipo", cells: 3, nom: 2200, loc: "Regal Modellbau", tests: [3], first: {id: 3, time: T - 190000, cap: 1954}, last: last(3, T - 190000, 1954, 47.2, 87, 21.53, true, 77, 97)}),
+    mk(4, {name: "Akkuschrauber 1", preset: "lgmj1", presetName: "LG INR18650-MJ1", nom: 3500, riNew: 35, loc: "Kiste 1", tests: [4], first: {id: 4, time: T - 3000000, cap: 3110}, last: last(4, T - 100000, 2838, 38, 65, 10.12)}),
+    mk(5, {name: "Akku Taschenlampe", preset: "s30q", presetName: "Samsung INR18650-30Q", nom: 3000, riNew: 25, loc: "Taschenlampe", tests: [5], first: {id: 5, time: T, cap: 2941}, last: last(5, T, 2941, 24.1, 96, 10.71),
+      sd: {state: "run", v0: 4.181, t0: T + 3600}}),
+    mk(6, {preset: "s30q", presetName: "Samsung INR18650-30Q", nom: 3000, riNew: 25, created: T + 8000}),
+  ];
+  const src = [["Laptop Dell E6430", "Kiste 2"], ["Laptop Lenovo T440", "Kiste 2"], ["Laptop HP 8460p", "Kiste 3"], ["Akkupack Werkstatt", "Kiste 1"]];
+  const types = [["s25r", "Samsung INR18650-25R", 2500, 22], ["ncrb", "Panasonic NCR18650B", 3350, 45], ["", "", 0, 0], ["", "", 0, 0], ["lghg2", "LG INR18650-HG2", 3000, 25]];
+  for (let no = 7; no <= 52; no++) {
+    const [srcN, loc] = src[Math.floor(rnd() * src.length)], [pid, pname, nom, riNew] = types[Math.floor(rnd() * types.length)];
+    const ref = nom || 2600, health = .55 + rnd() * .5, cap = Math.round(ref * Math.min(1.02, health) / 10) * 10;
+    const ri = Math.round((riNew || 45) * (1 + (1 - health) * 3 + rnd() * .3) * 10) / 10;
+    const capS = clamp((cap / ref - .6) / .4, 0, 1), riS = clamp((2.5 * (riNew || 45) - ri) / (1.5 * (riNew || 45)), 0, 1);
+    const score = Math.round((capS * .7 + riS * .3) * 100), time = T - Math.floor(rnd() * 35) * day;
+    let sd;
+    const r = rnd();
+    if (r < .45) { const mv = rnd() < .85 ? +(rnd() * 2.6 + .4).toFixed(1) : +(rnd() * 20 + 6).toFixed(1); sd = {state: "done", v0: 4.17, v1: +(4.17 - mv * 14 / 1000).toFixed(3), t0: time + 3600, t1: time + 3600 + 14 * day, days: 14, mvDay: mv, grade: mv < 3 ? "gut" : mv < 8 ? "auffällig" : "schlecht"}; }
+    else if (r < .6) sd = {state: "run", v0: 4.168, t0: time + 3600};
+    cells.push(mk(no, {name: `${srcN} Zelle ${(no - 7) % 6 + 1}`, preset: pid, presetName: pname, nom, riNew, loc, created: time - 3 * day, tests: [], first: {id: 0, time, cap}, last: last(0, time, cap, ri, score, +(cap * 3.63 / 1000).toFixed(2), !nom, Math.max(0, score - 9), Math.min(100, score + 9)), sd,
+      status: no > 46 ? "verbaut" : "ok", pack: no > 46 ? "Gartenlampe 2P" : ""}));
+  }
+  return cells;
+})();
+DEMO_RESULTS.forEach(r => r.time += DEMO_OFF);
+const demo = {t0: Date.now(), phase: "discharge", cells: DEMO_CELLS, job: {port: "A", name: "CD-0006", cell: 6, cellId: "CD-0006", chem: "liion", preset: "s30q", cells: 1, currentA: .5, nomCapMah: 3000, cutoffV: 3, preCharge: true, restMin: 30, after: "full"}, startMah: 1240, results: DEMO_RESULTS.slice()};
 function demoState() {
   const el = (Date.now() - demo.t0) / 1000, d = demo, j = d.job, act = active(d.phase);
   const cap = 2930, mah = d.phase === "discharge" ? d.startMah + el * 1.5 : 0;
@@ -1294,7 +2069,7 @@ function demoState() {
   const i = d.phase === "discharge" ? -(j.currentA + (Math.random() - .5) * .002) : ["charge", "precharge", "recharge"].includes(d.phase) ? .98 : 0;
   const pB = j.port === "B";
   return {
-    version: "1.0.0", uptime: 86400, wifi: {ap: false, ssid: "Heimnetz", ip: "192.168.1.47", rssi: -58}, time: Date.now() / 1000 | 0, riInOhm: false,
+    version: "1.0.0", uptime: 86400, wifi: {ap: false, ssid: "Heimnetz", ip: "192.168.1.47", rssi: -58}, time: Date.now() / 1000 | 0, riInOhm: false, prefix: "CD", mqtt: "verbunden",
     phase: d.phase, error: d.error || "", lastResult: d.results[0]?.id || 0, job: j, elapsed: 18000 + el, phaseElapsed: 9000 + el,
     mah, wh: mah * 3.72 / 1000, capMah: 0, riLast: 24.1, riCount: 9, riPulse: false, throttle: 1, throttled: false, saturated: false,
     eta: d.phase === "discharge" ? (j.nomCapMah - mah) / (j.currentA * 1000) * 3600 : 0, soc: act ? clamp(100 - mah / j.nomCapMah * 100, 0, 100) : 96,
@@ -1317,11 +2092,11 @@ function demoSlot(k, base) {
   const empty = {ok: false, v: 0, i: 0, p: 0};
   if (st.phase === "precharge" || st.phase === "charge") {
     const v = 3.95 + Math.min(.2, el / 6000), i = .97 + (Math.random() - .5) * .004;
-    return {slot: k, phase: st.phase, error: "", lastResult: 0, job: {port: "S" + k, name: "Akku Werkstatt", chem: "liion", preset: "s25r", cells: 1, currentA: .5, nomCapMah: 2500, cutoffV: 3, preCharge: true, restMin: 30, after: "storage"},
+    return {slot: k, phase: st.phase, error: "", lastResult: 0, job: {port: "S" + k, name: "Laptop Dell E6430 Zelle 3", cell: 9, cellId: "CD-0009", chem: "liion", preset: "s25r", cells: 1, currentA: .5, nomCapMah: 2500, cutoffV: 3, preCharge: true, restMin: 30, after: "storage"},
       elapsed: 2950 + el, phaseElapsed: 2950 + el, mah: 820 + el * .27, wh: 3.3, capMah: 0, riLast: 0, riPulse: false, throttle: 1, throttled: false, saturated: false, soc: 72,
       ports: [{ok: true, v, i, p: v * i}, empty], loadPort: "A", loadTarget: 0, temps: {cell: 31.2 + (Math.random() - .5) * .1, sink: base.temps.sink}, charger: {mode: "4.2", charging: true, full: false}};
   }
-  if (st.phase === "done") return {slot: k, phase: "done", error: "", lastResult: 2, job: {port: "S" + k, name: "Laptop-Akku Zelle 2", chem: "liion", preset: "", cells: 1, currentA: .5, nomCapMah: 0, cutoffV: 3, preCharge: true, restMin: 30, after: "storage"},
+  if (st.phase === "done") return {slot: k, phase: "done", error: "", lastResult: 2, last: {cellId: "CD-0002", cap: 1612, score: 20, grade: "D"}, job: {port: "S" + k, name: "Laptop-Akku Zelle 2", cell: 2, cellId: "CD-0002", chem: "liion", preset: "", cells: 1, currentA: .5, nomCapMah: 0, cutoffV: 3, preCharge: true, restMin: 30, after: "storage"},
     soc: 52, ports: [{ok: true, v: 3.812, i: 0, p: 0}, empty], loadPort: "A", loadTarget: 0, temps: {cell: 23.4, sink: base.temps.sink}, charger: {mode: "off", charging: false, full: false}};
   if (st.phase === "error") return {slot: k, phase: "error", error: st.error, lastResult: 0, job: {port: "S" + k, name: "Zelle", chem: "liion", cells: 1}, soc: -1,
     ports: [{ok: true, v: 3.7, i: 0, p: 0}, empty], loadPort: "A", loadTarget: 0, temps: {cell: 22.1, sink: base.temps.sink}, charger: {mode: "off"}};
@@ -1329,7 +2104,7 @@ function demoSlot(k, base) {
 }
 function demoMiniState() {
   const b = demoState();
-  return {version: b.version, uptime: b.uptime, wifi: b.wifi, time: b.time, riInOhm: false, mini: true, slotCount: MINI_N, oled: true,
+  return {version: b.version, uptime: b.uptime, wifi: b.wifi, time: b.time, riInOhm: false, prefix: "CD", mqtt: b.mqtt, mini: true, slotCount: MINI_N, oled: true,
     limits: {...b.limits, sinkStop: 85}, fan: {duty: 45, rpm: 0}, bal: {ok: false, cells: []},
     slots: [1, 2, 3, 4].slice(0, MINI_N).map(k => demoSlot(k, b))};
 }
@@ -1360,16 +2135,46 @@ async function demoApi(path, body) {
   if (path === "/api/results") return demo.results;
   if (path.startsWith("/api/result?")) { const r = demo.results.find(x => x.id === id); if (!r) throw new Error("Ergebnis nicht gefunden"); return path.includes("curve=1") ? demoCurve(r.capMah / .985, r.currentA, r.capMah) : r; }
   if (path.startsWith("/api/result/delete")) { demo.results = demo.results.filter(x => x.id !== id); return {ok: true}; }
-  if (path === "/api/settings" && body === undefined) return {wifiSsid: "Heimnetz", chargeWarnC: 40, chargeStopC: 45, dischargeWarnC: 45, dischargeStopC: 55, sinkWarnC: 75, sinkStopC: 90, restMin: 30, riInOhm: false, buzzer: true, storageUsed: 81920, storageTotal: 1441792};
+  if (path === "/api/cells") return demo.cells;
+  if (path.startsWith("/api/cell?")) { const no = +(path.match(/no=(\d+)/) || [])[1]; const c = demo.cells.find(x => x.no === no); if (!c) throw new Error("Zelle nicht gefunden"); return JSON.parse(JSON.stringify(c)); }
+  if (path === "/api/cell") {
+    let c = demo.cells.find(x => x.no === body.no);
+    if (!c) { const no = Math.max(...demo.cells.map(x => x.no)) + 1; c = {no, id: "CD-" + String(no).padStart(4, "0"), status: "ok", tests: [], created: Date.now() / 1000 | 0, chem: body.chem || "liion", preset: body.preset || "", presetName: (DEMO_INFO.presets.find(p => p.id === body.preset) || {}).name || "", nomCapMah: body.nomCapMah || 0}; demo.cells.push(c); }
+    ["name", "loc", "note", "status", "pack"].forEach(k => { if (body[k] !== undefined) c[k] = body[k]; });
+    if (!c.name) c.name = c.id;
+    return {ok: true, no: c.no, id: c.id};
+  }
+  if (path === "/api/cells/batch") { demo.cells.filter(c => body.nos.includes(c.no)).forEach(c => ["status", "pack", "loc"].forEach(k => { if (body[k] !== undefined) c[k] = body[k]; })); return {ok: true}; }
+  if (path === "/api/cell/delete") { demo.cells = demo.cells.filter(c => c.no !== body.no); return {ok: true}; }
+  if (path === "/api/cell/sd") {
+    const c = demo.cells.find(x => x.no === body.no), now = Date.now() / 1000 | 0;
+    if (body.action === "reset") delete c.sd;
+    else if (body.action === "start") c.sd = {state: "run", v0: 4.172, t0: now};
+    else { if (now - c.sd.t0 < 6 * 3600) throw new Error("Frühestens 6 Stunden nach dem Start messen, besser nach 7–14 Tagen"); }
+    return {ok: true};
+  }
+  if (path === "/api/settings" && body === undefined) return {cellPrefix: "CD", nextCellNo: Math.max(...demo.cells.map(x => x.no)) + 1, mqttOn: true, mqttHost: "homeassistant.local", mqttPort: 1883, mqttUser: "celldoc", mqttPassSet: true, mqttBase: "celldoc", wifiSsid: "Heimnetz", chargeWarnC: 40, chargeStopC: 45, dischargeWarnC: 45, dischargeStopC: 55, sinkWarnC: 75, sinkStopC: 90, restMin: 30, riInOhm: false, buzzer: true, storageUsed: 81920, storageTotal: 1441792};
   if (path === "/api/diag" && MINI_N) return {ina: Array(MINI_N).fill(true), dac: true, oled: true, balancer: false, taps: [], heap: 172000, chip: "ESP32-D0WD-V3",
     sensors: [...Array(MINI_N)].map((_, k) => ({addr: "28FF4A1B6216031" + k, t: 24 + k * 2.3, role: "cell" + (k + 1)})).concat([{addr: "28FF91C3611604E2", t: 41.7, role: "sink"}])};
   if (path === "/api/diag") return {inaA: true, inaB: true, dac: true, balancer: true, taps: [0, 0, 0, 0, 0, 0], heap: 187000, chip: "ESP32-D0WD-V3",
     sensors: [{addr: "28FF4A1B62160318", t: 30.1, role: "cell"}, {addr: "28FF91C3611604E2", t: 41.7, role: "sink"}, {addr: "28FF07D2701603A9", t: 22.4, role: "pack"}]};
   if (path === "/api/wifi/scan") return [{ssid: "Heimnetz", rssi: -52, open: false}, {ssid: "Werkstatt", rssi: -71, open: false}];
-  if (path === "/api/start") { if (active(demo.phase)) throw new Error("Es läuft bereits ein Vorgang"); demo.phase = body.mode === "charge" ? "charge" : "discharge"; demo.job = {...demo.job, ...body, name: body.name || "Zelle #6"}; demo.t0 = Date.now(); demo.startMah = 0; return {ok: true}; }
+  if (path === "/api/start") { if (active(demo.phase)) throw new Error("Es läuft bereits ein Vorgang"); demo.phase = body.mode === "charge" ? "charge" : "discharge";
+    let c = demo.cells.find(x => x.no === body.cell);
+    if (!c && body.mode === "test") { const no = Math.max(...demo.cells.map(x => x.no)) + 1; c = {no, id: "CD-" + String(no).padStart(4, "0"), name: body.name || "CD-" + String(no).padStart(4, "0"), status: "ok", tests: [], chem: body.chem, preset: body.preset, created: Date.now() / 1000 | 0}; demo.cells.push(c); }
+    demo.job = {...demo.job, ...body, cell: c?.no || 0, cellId: c?.id || "", name: body.name || c?.name || ""}; demo.t0 = Date.now(); demo.startMah = 0; return {ok: true}; }
   if (path === "/api/stop") { demo.phase = "error"; demo.error = "Von Hand gestoppt"; return {ok: true}; }
   if (path === "/api/ack") { demo.phase = "idle"; return {ok: true}; }
   return {ok: true};
+}
+
+// QR-Code auf dem Etikett: http://celldoc.local/#z42 öffnet die Zelle
+function openFromHash() {
+  const m = location.hash.match(/^#(?:z(\d+)|[A-Za-z0-9]+-(\d+))$/);
+  if (!m) return;
+  const no = +(m[1] || m[2]);
+  history.replaceState(null, "", location.pathname + location.search);
+  showView("cells"); openCell(no);
 }
 
 // ======================================================================
@@ -1386,7 +2191,12 @@ async function demoApi(path, body) {
   if (!tab) try { tab = localStorage.getItem("celldoc-tab"); } catch (e) {}
   if (location.hash.startsWith("#m-")) tab = "manual";
   await refresh();
-  showView(["live", "results", "manual", "settings"].includes(tab) ? tab : "live");
+  if (/^#(z\d+|[A-Za-z0-9]+-\d+)$/.test(location.hash)) tab = "cells";
+  showView(["live", "cells", "results", "manual", "settings"].includes(tab) ? tab : "live");
+  // ohne Internet hat CellDoc keine Uhr: Zeit vom Browser übernehmen
+  if (!DEMO && RAW && !RAW.time) api("/api/time", {t: Math.floor(Date.now() / 1000)}).catch(() => {});
+  openFromHash();
+  window.addEventListener("hashchange", openFromHash);
   renderLiveChart(true);
   setInterval(() => { if (!document.hidden) refresh(); }, 1000);
   if (params.has("result")) openResult(+params.get("result"));
