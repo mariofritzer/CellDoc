@@ -4,6 +4,7 @@
 #include <WiFi.h>
 #include "drivers.h"
 #include "settings.h"
+#include "soh.h"
 #include "slot.h"
 
 using namespace mcfg;
@@ -74,17 +75,21 @@ static void drawOverview() {
       u8g2.setDrawColor(0);
     }
     float soc = sl.socPercent();
-    if (m.v > 0.5f)
+    bool done = sl.phase() == Phase::Done && sl.lastScore() >= 0;
+    if (done && NSLOTS > 2)
+      // fertig: Etikett-Nummer und Note, damit die Zelle beim Herausnehmen zugeordnet werden kann
+      snprintf(buf, sizeof(buf), "%d %s %c%d", s + 1, sl.lastCellId().c_str(), soh::grade(sl.lastScore()), sl.lastScore());
+    else if (m.v > 0.5f)
       snprintf(buf, sizeof(buf), "%d %.2fV %3s%% %s", s + 1, m.v, soc >= 0 ? String(int(soc)).c_str() : "--", shortPhase(sl.phase()));
     else
       snprintf(buf, sizeof(buf), "%d  leer", s + 1);
     u8g2.drawUTF8(2, y + 10, buf);
     if (NSLOTS <= 2) {
-      // zweite Zeile: mAh oder Lebenszahl
-      if (sl.phase() == Phase::Done && sl.lastScore() >= 0)
-        snprintf(buf, sizeof(buf), "  Lebenszahl %d %%", sl.lastScore());
+      // zweite Zeile: Zelle und Note oder mAh
+      if (done)
+        snprintf(buf, sizeof(buf), "  %s  Note %c  %d%%", sl.lastCellId().c_str(), soh::grade(sl.lastScore()), sl.lastScore());
       else if (sl.active())
-        snprintf(buf, sizeof(buf), "  %.0f mAh  %.2f A", sl.mah(), m.i);
+        snprintf(buf, sizeof(buf), "  %s %.0fmAh", sl.job().cellId.c_str(), sl.mah());
       else
         buf[0] = 0;
       u8g2.drawUTF8(2, y + 21, buf);
@@ -110,10 +115,19 @@ static void drawDetail() {
   if (sl.phase() == Phase::Error) {
     u8g2.drawUTF8(0, 56, sl.error().substring(0, 21).c_str());
   } else if (sl.phase() == Phase::Done && sl.lastScore() >= 0) {
-    snprintf(buf, sizeof(buf), "Lebenszahl %d %%", sl.lastScore());
-    u8g2.drawUTF8(0, 56, buf);
+    // Fertig: Nummer groß, damit sie aufs Etikett übertragen werden kann
+    u8g2.setDrawColor(0);
+    u8g2.drawBox(0, 14, 128, 34);
+    u8g2.setDrawColor(1);
+    u8g2.setFont(u8g2_font_logisoso16_tf);
+    String id = sl.lastCellId();
+    u8g2.drawUTF8((128 - u8g2.getUTF8Width(id.c_str())) / 2, 34, id.c_str());
+    u8g2.setFont(u8g2_font_6x10_tf);
+    snprintf(buf, sizeof(buf), "Note %c  Lebenszahl %d", soh::grade(sl.lastScore()), sl.lastScore());
+    u8g2.drawUTF8((128 - u8g2.getUTF8Width(buf)) / 2, 46, buf);
+    u8g2.drawUTF8(0, 60, "OK: bestätigen");
   } else if (sl.active()) {
-    snprintf(buf, sizeof(buf), "%.0f mAh", sl.mah());
+    snprintf(buf, sizeof(buf), "%s  %.0f mAh", sl.job().cellId.c_str(), sl.mah());
     u8g2.drawUTF8(0, 56, buf);
   } else {
     u8g2.drawUTF8(0, 56, "OK: Test starten");

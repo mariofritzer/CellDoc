@@ -17,3 +17,7 @@ void sendOk();
 bool readBody(JsonDocument& d);
 void addCommon(JsonObject o);  // Version, Laufzeit, WLAN, Uhrzeit
 }  // namespace web
+
+namespace webdata {
+void routes();  // Bestand, Selbstentladung, Uhrzeit, Datensicherung (web_data.cpp)
+}

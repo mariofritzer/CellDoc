@@ -51,6 +51,15 @@ void Settings::toJson(JsonObject o, bool withSecrets) const {
   o["riInOhm"] = riInOhm;
   o["buzzer"] = buzzer;
   o["nextCellNo"] = nextCellNo;
+  o["nextResultId"] = nextResultId;
+  o["cellPrefix"] = cellPrefix;
+  o["mqttOn"] = mqttOn;
+  o["mqttHost"] = mqttHost;
+  o["mqttPort"] = mqttPort;
+  o["mqttUser"] = mqttUser;
+  if (withSecrets) o["mqttPass"] = mqttPass;
+  else o["mqttPassSet"] = mqttPass.length() > 0;
+  o["mqttBase"] = mqttBase;
 }
 
 static float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
@@ -80,7 +89,29 @@ void Settings::fromJson(JsonObjectConst o) {
   restMin = uint16_t(clampf(o["restMin"] | restMin, 0, 240));
   riInOhm = o["riInOhm"] | riInOhm;
   buzzer = o["buzzer"] | buzzer;
+  // Ältere Firmware hatte nur einen Zähler für Ergebnisse
+  if (o["nextResultId"].is<uint32_t>()) nextResultId = o["nextResultId"];
+  else if (o["nextCellNo"].is<uint32_t>()) nextResultId = max(nextResultId, o["nextCellNo"].as<uint32_t>());
   nextCellNo = o["nextCellNo"] | nextCellNo;
+  if (o["cellPrefix"].is<const char*>()) {
+    String p = o["cellPrefix"].as<const char*>();
+    p.trim();
+    p.toUpperCase();
+    String clean;
+    for (char c : p)
+      if (isalnum((unsigned char)c) && clean.length() < 6) clean += c;
+    if (clean.length()) cellPrefix = clean;
+  }
+  mqttOn = o["mqttOn"] | mqttOn;
+  if (o["mqttHost"].is<const char*>()) mqttHost = o["mqttHost"].as<const char*>();
+  mqttPort = uint16_t(clampf(o["mqttPort"] | mqttPort, 1, 65535));
+  if (o["mqttUser"].is<const char*>()) mqttUser = o["mqttUser"].as<const char*>();
+  if (o["mqttPass"].is<const char*>()) mqttPass = o["mqttPass"].as<const char*>();
+  if (o["mqttBase"].is<const char*>()) {
+    String b = o["mqttBase"].as<const char*>();
+    b.trim();
+    if (b.length() && b.indexOf('#') < 0 && b.indexOf('+') < 0) mqttBase = b;
+  }
 }
 
 bool Settings::load() {

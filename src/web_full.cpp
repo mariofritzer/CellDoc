@@ -1,6 +1,7 @@
 // CellDoc – gerätespezifische Web-API (großer Prüfstand)
 #include <ArduinoJson.h>
 #include <WebServer.h>
+#include "cells.h"
 #include "config.h"
 #include "hal.h"
 #include "profiles.h"
@@ -21,7 +22,7 @@ static void handleState() {
   JsonDocument d;
   JsonObject o = d.to<JsonObject>();
   web::addCommon(o);
-  tester.stateJson(o);
+  device::fillState(o);
   sendJson(d);
 }
 
@@ -73,6 +74,7 @@ static bool parseJob(JsonDocument& b, JobConfig& c) {
   c.name.trim();
   if (c.name.length() > 40) c.name = c.name.substring(0, 40);
   c.presetId = String(b["preset"] | "");
+  c.cellNo = b["cell"].is<const char*>() ? cells::parseRef(b["cell"].as<const char*>()) : (b["cell"] | 0u);
   c.nomCapMah = b["nomCapMah"] | 0.0f;
   c.riNewMilli = b["riNew"] | 0.0f;
   c.currentA = b["currentA"] | 0.5f;
@@ -214,9 +216,46 @@ void routes() {
   server.on("/api/calibrate", HTTP_POST, handleCalibrate);
 }
 
-bool busy() {
-  Phase p = tester.phase();
-  return p != Phase::Idle && p != Phase::Done && p != Phase::Error;
+bool busy() { return tester.active(); }
+
+void fillState(JsonObject o) { tester.stateJson(o); }
+
+String cellVoltage(JsonDocument& b, float& v) {
+  Port p = String(b["port"] | "A") == "B" ? PORT_B : PORT_A;
+  if (tester.active()) return "Während eines Vorgangs nicht möglich";
+  int n = b["cells"] | 1;
+  if (n < 1) n = 1;
+  const PortMeas& pm = hal.m().port[p];
+  if (!pm.ok) return "Strommesser antwortet nicht";
+  v = pm.v / n;
+  return "";
+}
+
+bool cellInUse(uint32_t no) { return tester.active() && tester.cellNo() == no; }
+
+const char* model() { return "CellDoc"; }
+
+void mqttEntities(std::vector<MqttEntity>& e) {
+  e.push_back({"phase", "Status", "phase:value_json.phase", "", ""});
+  e.push_back({"zelle", "Zelle", "{{ value_json.job.cellId | default('') }}", "", ""});
+  e.push_back({"spannung_a", "Spannung A", "{{ value_json.ports[0].v }}", "V", "voltage"});
+  e.push_back({"strom_a", "Strom A", "{{ value_json.ports[0].i }}", "A", "current"});
+  e.push_back({"spannung_b", "Spannung B", "{{ value_json.ports[1].v }}", "V", "voltage"});
+  e.push_back({"strom_b", "Strom B", "{{ value_json.ports[1].i }}", "A", "current"});
+  e.push_back({"ladung", "Ladung", "{{ value_json.mah | default(0) | round(0) }}", "mAh", ""});
+  e.push_back({"ladezustand", "Ladezustand", "{{ value_json.soc if value_json.soc >= 0 else None }}", "%", "battery"});
+  e.push_back({"temp_zelle", "Temperatur Zelle", "{{ value_json.temps.cell | default(None) }}", "°C", "temperature"});
+  e.push_back({"temp_pack", "Temperatur Pack", "{{ value_json.temps.pack | default(None) }}", "°C", "temperature"});
+  e.push_back({"temp_kuehlkoerper", "Temperatur Kühlkörper", "{{ value_json.temps.sink | default(None) }}", "°C", "temperature"});
+  e.push_back({"luefter", "Lüfter", "{{ value_json.fan.rpm }}", "rpm", ""});
+  e.push_back({"letzte_zelle", "Letzte Zelle", "{{ value_json.last.cellId | default('') }}", "", ""});
+  e.push_back({"letzte_kapazitaet", "Letzte Kapazität", "{{ value_json.last.cap | default(None) }}", "mAh", ""});
+  e.push_back({"letzte_lebenszahl", "Letzte Lebenszahl", "{{ value_json.last.score | default(None) }}", "%", ""});
+  e.push_back(MqttEntity("stopp", "Stoppen", "stop", "", "", true));
+}
+
+void mqttCommand(const String& cmd) {
+  if (cmd == "stop") tester.stop("Über Home Assistant gestoppt");
 }
 
 void killAll() { hal.killAll(); }

@@ -7,6 +7,7 @@
 #include <WebServer.h>
 #include <WiFi.h>
 #include "config.h"
+#include "mqtt.h"
 #include "settings.h"
 #include "storage.h"
 #include "web_device.h"
@@ -67,12 +68,6 @@ static void handleIndex() {
   server.send_P(200, "text/html; charset=utf-8", (const char*)INDEX_GZ, INDEX_GZ_LEN);
 }
 
-static void handleResults() {
-  JsonDocument d;
-  storage::listResults(d.to<JsonArray>());
-  sendJson(d);
-}
-
 static void handleResult() {
   uint32_t id = server.arg("id").toInt();
   bool curve = server.arg("curve") == "1";
@@ -104,8 +99,12 @@ static void handleSettingsPost() {
   // WLAN-Daten laufen über /api/wifi
   b.remove("wifiSsid");
   b.remove("wifiPass");
+  b.remove("nextCellNo");
+  b.remove("nextResultId");
+  if (b["mqttPass"].is<const char*>() && !strlen(b["mqttPass"].as<const char*>())) b.remove("mqttPass");  // leer = unverändert
   settings.fromJson(b.as<JsonObjectConst>());
   settings.save();
+  mqtt::reconfigure();
   sendOk();
 }
 
@@ -149,6 +148,8 @@ void addCommon(JsonObject o) {
   time_t now = time(nullptr);
   o["time"] = now > 1700000000 ? uint32_t(now) : 0;
   o["riInOhm"] = settings.riInOhm;
+  o["prefix"] = settings.cellPrefix;
+  o["mqtt"] = mqtt::status();
 }
 
 static void handleUpdateDone() {
@@ -231,12 +232,12 @@ void begin() {
   if (MDNS.begin(cfg::HOSTNAME)) MDNS.addService("http", "tcp", 80);
 
   server.on("/", HTTP_GET, handleIndex);
-  server.on("/api/results", HTTP_GET, handleResults);
   server.on("/api/result", HTTP_GET, handleResult);
   server.on("/api/result/delete", HTTP_POST, handleResultDelete);
   server.on("/api/settings", HTTP_GET, handleSettingsGet);
   server.on("/api/settings", HTTP_POST, handleSettingsPost);
   device::routes();
+  webdata::routes();
   server.on("/api/wifi/scan", HTTP_GET, handleWifiScan);
   server.on("/api/wifi", HTTP_POST, handleWifiSave);
   server.on("/api/restart", HTTP_POST, handleRestart);
@@ -248,6 +249,7 @@ void begin() {
 void update() {
   if (ap) dns.processNextRequest();
   server.handleClient();
+  mqtt::update();
   if (restartPending && millis() > restartAt) {
     device::killAll();
     delay(100);

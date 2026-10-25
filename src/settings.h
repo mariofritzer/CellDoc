@@ -33,7 +33,16 @@ struct Settings {
   uint16_t restMin = 30;
   bool riInOhm = false;
   bool buzzer = true;
-  uint32_t nextCellNo = 1;
+  uint32_t nextCellNo = 1;    // nächste Zellnummer (Etikett)
+  uint32_t nextResultId = 1;  // nächste Ergebnisnummer
+  String cellPrefix = "CD";   // Zell-ID = Präfix-0042
+
+  // MQTT für Home Assistant
+  bool mqttOn = false;
+  String mqttHost;
+  uint16_t mqttPort = 1883;
+  String mqttUser, mqttPass;
+  String mqttBase = "celldoc";
 
   void toJson(JsonObject o, bool withSecrets) const;
   void fromJson(JsonObjectConst o);

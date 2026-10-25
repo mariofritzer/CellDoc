@@ -26,6 +26,8 @@ struct JobConfig {
   uint8_t cells = 1;
   String name;
   String presetId;
+  uint32_t cellNo = 0;   // Zelle im Bestand, 0 = neu anlegen (nur Test)
+  String cellId;         // z. B. CD-0042
   float nomCapMah = 0;   // 0 = unbekannt
   float riNewMilli = 0;  // 0 = unbekannt
   float currentA = 0.5f;
@@ -56,6 +58,8 @@ class Tester {
   void acknowledge();  // Fehler/Fertig quittieren
 
   Phase phase() const { return phase_; }
+  bool active() const;
+  uint32_t cellNo() const { return job_.cellNo; }
   void stateJson(JsonObject o) const;
   void curveJson(JsonArray a) const;
 
@@ -116,6 +120,14 @@ class Tester {
 
   uint32_t lastResultId_ = 0;
   const Chemistry* idleChem_ = nullptr;
+  // letztes Ergebnis für Anzeige und MQTT
+  String lastCellId_;
+  float lastCap_ = 0;
+  int lastScore_ = -1;
+  // Selbstentladung: 1 h nach dem Vollladen Startspannung merken
+  uint32_t sdArmAt_ = 0;
+  void checkSelfDischarge(uint32_t now);
+  String linkCell(JobConfig& c, bool create);
 };
 
 extern Tester tester;

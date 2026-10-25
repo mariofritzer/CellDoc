@@ -98,4 +98,12 @@ inline const char* verdict(int score) {
   return "Ersetzen";
 }
 
+// Note fürs Etikett: A ≥ 85, B ≥ 70, C ≥ 50, sonst D
+inline char grade(int score) {
+  if (score >= 85) return 'A';
+  if (score >= 70) return 'B';
+  if (score >= 50) return 'C';
+  return 'D';
+}
+
 }  // namespace soh

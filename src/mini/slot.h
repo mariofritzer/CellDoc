@@ -12,6 +12,8 @@ enum class After : uint8_t { None, Full, Storage };
 struct SlotJob {
   const Chemistry* chem = nullptr;
   String name, presetId;
+  uint32_t cellNo = 0;  // Zelle im Bestand, 0 = neu anlegen (nur Test)
+  String cellId;
   float nomCapMah = 0, riNewMilli = 0;
   float currentA = 0.5f, cutoffV = 0;
   bool preCharge = true;
@@ -35,6 +37,8 @@ class Slot {
   float mah() const;
   uint32_t lastResult() const { return lastResultId_; }
   int lastScore() const { return lastScore_; }
+  const String& lastCellId() const { return lastCellId_; }
+  uint32_t cellNo() const { return job_.cellNo; }
   const String& error() const { return error_; }
   const SlotJob& job() const { return job_; }
   void stateJson(JsonObject o) const;
@@ -81,6 +85,11 @@ class Slot {
   uint32_t ptInterval_ = 10, lastPtSec_ = 0;
   uint32_t lastResultId_ = 0;
   int lastScore_ = -1;
+  float lastCap_ = 0;
+  String lastCellId_;
+  uint32_t sdArmAt_ = 0;
+  String linkCell(SlotJob& j, bool create);
+  void checkSelfDischarge(uint32_t now);
 };
 
 extern Slot slots[4];

@@ -1,6 +1,7 @@
 // CellDoc Mini – gerätespezifische Web-API (mehrere Schächte)
 #include <ArduinoJson.h>
 #include <WebServer.h>
+#include "cells.h"
 #include "display.h"
 #include "hal_mini.h"
 #include "profiles.h"
@@ -30,6 +31,11 @@ void handleState() {
   JsonDocument d;
   JsonObject o = d.to<JsonObject>();
   web::addCommon(o);
+  device::fillState(o);
+  sendJson(d);
+}
+
+void fillStateImpl(JsonObject o) {
   o["mini"] = true;
   o["slotCount"] = NSLOTS;
   o["oled"] = display::available();
@@ -48,7 +54,6 @@ void handleState() {
   b["cells"].to<JsonArray>();
   JsonArray arr = o["slots"].to<JsonArray>();
   for (int s = 0; s < NSLOTS; s++) slots[s].stateJson(arr.add<JsonObject>());
-  sendJson(d);
 }
 
 void handleCurve() {
@@ -100,6 +105,7 @@ void handleStart() {
   j.name.trim();
   if (j.name.length() > 40) j.name = j.name.substring(0, 40);
   j.presetId = String(b["preset"] | "");
+  j.cellNo = b["cell"].is<const char*>() ? cells::parseRef(b["cell"].as<const char*>()) : (b["cell"] | 0u);
   j.nomCapMah = b["nomCapMah"] | 0.0f;
   j.riNewMilli = b["riNew"] | 0.0f;
   j.currentA = b["currentA"] | 0.5f;
@@ -229,6 +235,52 @@ bool busy() {
 }
 
 void killAll() { hal.killAll(); }
+
+void fillState(JsonObject o) { fillStateImpl(o); }
+
+String cellVoltage(JsonDocument& b, float& v) {
+  int s = slotArg(&b);
+  if (slots[s].active()) return "Schacht " + String(s + 1) + " ist gerade belegt";
+  if (!hal.inaOk(s)) return "Strommesser von Schacht " + String(s + 1) + " antwortet nicht";
+  v = hal.m(s).v;
+  return "";
+}
+
+bool cellInUse(uint32_t no) {
+  for (int s = 0; s < NSLOTS; s++)
+    if (slots[s].active() && slots[s].cellNo() == no) return true;
+  return false;
+}
+
+const char* model() {
+  static char m[16];
+  snprintf(m, sizeof(m), "CellDoc Mini %d", NSLOTS);
+  return m;
+}
+
+void mqttEntities(std::vector<MqttEntity>& e) {
+  for (int s = 0; s < NSLOTS; s++) {
+    String k = String(s + 1), p = "value_json.slots[" + String(s) + "]", o = "s" + k + "_", n = "Schacht " + k + " ";
+    e.push_back({o + "phase", n + "Status", "phase:" + p + ".phase", "", ""});
+    e.push_back({o + "zelle", n + "Zelle", "{{ " + p + ".job.cellId | default('') }}", "", ""});
+    e.push_back({o + "spannung", n + "Spannung", "{{ " + p + ".ports[0].v }}", "V", "voltage"});
+    e.push_back({o + "strom", n + "Strom", "{{ " + p + ".ports[0].i }}", "A", "current"});
+    e.push_back({o + "ladung", n + "Ladung", "{{ " + p + ".mah | default(0) | round(0) }}", "mAh", ""});
+    e.push_back({o + "ladezustand", n + "Ladezustand", "{{ " + p + ".soc if " + p + ".soc >= 0 else None }}", "%", "battery"});
+    e.push_back({o + "temp", n + "Temperatur", "{{ " + p + ".temps.cell | default(None) }}", "°C", "temperature"});
+    e.push_back({o + "kapazitaet", n + "Letzte Kapazität", "{{ " + p + ".last.cap | default(None) }}", "mAh", ""});
+    e.push_back({o + "lebenszahl", n + "Letzte Lebenszahl", "{{ " + p + ".last.score | default(None) }}", "%", ""});
+    e.push_back(MqttEntity(o + "stopp", n + "stoppen", "stop" + k, "", "", true));
+  }
+  e.push_back({"temp_kuehlkoerper", "Temperatur Kühlkörper", "{{ value_json.slots[0].temps.sink | default(None) }}", "°C", "temperature"});
+}
+
+void mqttCommand(const String& cmd) {
+  if (!cmd.startsWith("stop")) return;
+  int s = cmd.substring(4).toInt();
+  for (int k = 0; k < NSLOTS; k++)
+    if (s == 0 || s == k + 1) slots[k].stop("Über Home Assistant gestoppt");
+}
 
 void idle() { hal.update(millis()); }
 

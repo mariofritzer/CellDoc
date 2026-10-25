@@ -12,6 +12,7 @@ bool begin() {
   if (!LittleFS.begin(true)) return false;
   if (!LittleFS.exists("/r")) LittleFS.mkdir("/r");
   if (!LittleFS.exists("/c")) LittleFS.mkdir("/c");
+  if (!LittleFS.exists("/z")) LittleFS.mkdir("/z");  // Zellenbestand
   return true;
 }
 

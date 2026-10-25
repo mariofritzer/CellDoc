@@ -1,4 +1,5 @@
 #include "tester.h"
+#include "cells.h"
 #include <time.h>
 #include "config.h"
 #include "ocv.h"
@@ -133,9 +134,11 @@ String Tester::startTest(const JobConfig& cIn) {
   }
   String e = precheck(c, c.preCharge || c.after != After::None, true);
   if (e.length()) return e;
+  e = linkCell(c, true);
+  if (e.length()) return e;
   job_ = c;
   if (job_.cutoffV <= 0) job_.cutoffV = job_.chem->cutoffV;
-  if (!job_.name.length()) job_.name = "Zelle #" + String(settings.nextCellNo);
+  sdArmAt_ = 0;
 
   // Zähler und Messwerte zurücksetzen
   preChargeMah_ = startOcv_ = restOcv_ = capMah_ = energyWh_ = 0;
@@ -158,10 +161,14 @@ String Tester::startTest(const JobConfig& cIn) {
   return "";
 }
 
-String Tester::startManualCharge(const JobConfig& c) {
+String Tester::startManualCharge(const JobConfig& cIn) {
+  JobConfig c = cIn;
   String e = precheck(c, true, false);
   if (e.length()) return e;
+  e = linkCell(c, false);
+  if (e.length()) return e;
   job_ = c;
+  sdArmAt_ = 0;
   error_ = "";
   nPts_ = 0;
   ptInterval_ = 10;
@@ -171,10 +178,14 @@ String Tester::startManualCharge(const JobConfig& c) {
   return "";
 }
 
-String Tester::startManualDischarge(const JobConfig& c) {
+String Tester::startManualDischarge(const JobConfig& cIn) {
+  JobConfig c = cIn;
   String e = precheck(c, false, true);
   if (e.length()) return e;
+  e = linkCell(c, false);
+  if (e.length()) return e;
   job_ = c;
+  sdArmAt_ = 0;
   if (job_.cutoffV <= 0) job_.cutoffV = job_.chem->cutoffV;
   error_ = "";
   nPts_ = 0;
@@ -241,7 +252,39 @@ void Tester::enter(Phase p) {
 // ---------------------------------------------------------------------------
 // Hauptschleife
 
+bool Tester::active() const { return isActive(phase_); }
+
+// Zelle aus dem Bestand verknüpfen; ein Test legt bei Bedarf eine neue an
+String Tester::linkCell(JobConfig& c, bool create) {
+  if (!c.cellNo && !create) return "";
+  cells::JobCell jc;
+  jc.no = c.cellNo;
+  jc.name = c.name;
+  jc.presetId = c.presetId;
+  jc.chem = c.chem ? c.chem->id : "liion";
+  jc.cellCount = c.cells;
+  jc.nomCapMah = c.nomCapMah;
+  jc.riNewMilli = c.riNewMilli;
+  String e = cells::prepare(jc);
+  if (e.length()) return e;
+  c.cellNo = jc.no;
+  c.cellId = jc.id;
+  c.name = jc.name;
+  c.presetId = jc.presetId;
+  c.nomCapMah = jc.nomCapMah;
+  c.riNewMilli = jc.riNewMilli;
+  return "";
+}
+
+void Tester::checkSelfDischarge(uint32_t now) {
+  if (!sdArmAt_ || phase_ != Phase::Done || int32_t(now - sdArmAt_) < 0) return;
+  sdArmAt_ = 0;
+  float v = hal.m().port[job_.port].v / max<uint8_t>(1, job_.cells);
+  if (job_.cellNo && v > 3.0f) cells::sdStart(job_.cellNo, v);
+}
+
 void Tester::update(uint32_t now) {
+  checkSelfDischarge(now);
   if (!isActive(phase_)) return;
   safety(now);
   if (!isActive(phase_)) return;
@@ -575,12 +618,14 @@ void Tester::finishTest() {
   SohInput in{job_.chem, job_.cells, capMah_, ri50 > 0 ? ri50 : ri100, job_.nomCapMah, job_.riNewMilli};
   SohResult r = soh::compute(in);
 
-  uint32_t id = settings.nextCellNo++;
+  uint32_t id = settings.nextResultId++;
   settings.save();
 
   JsonDocument d;
   d["id"] = id;
   d["name"] = job_.name;
+  d["cell"] = job_.cellNo;
+  d["cellId"] = job_.cellId;
   time_t now = time(nullptr);
   d["time"] = now > 1700000000 ? uint32_t(now) : 0;
   d["port"] = job_.port == PORT_A ? "A" : "B";
@@ -634,11 +679,17 @@ void Tester::finishTest() {
   s["capRatio"] = roundf(r.capRatio * 1000) / 10;
   s["refCapMah"] = r.refCapMah;
   s["verdict"] = soh::verdict(r.score);
-  float base = storage::baselineCapacity(job_.name, id);
+  float base = cells::firstCapacity(job_.cellNo);
   if (base > 0) d["baselineCapMah"] = base;
 
   storage::saveResult(id, d, pts_, nPts_);
+  cells::addResult(job_.cellNo, d);
   lastResultId_ = id;
+  lastCellId_ = job_.cellId;
+  lastCap_ = capMah_;
+  lastScore_ = r.score;
+  // nach dem Vollladen in einer Stunde die Startspannung für die Selbstentladung merken
+  if (job_.after == After::Full && job_.cells == 1 && job_.chem->lithium) sdArmAt_ = millis() + 3600000UL;
   enter(Phase::Done);
   hal.beep(800);
 }
@@ -656,6 +707,8 @@ void Tester::stateJson(JsonObject o) const {
     JsonObject j = o["job"].to<JsonObject>();
     j["port"] = job_.port == PORT_A ? "A" : "B";
     j["name"] = job_.name;
+    j["cell"] = job_.cellNo;
+    j["cellId"] = job_.cellId;
     j["chem"] = job_.chem ? job_.chem->id : "";
     j["preset"] = job_.presetId;
     j["cells"] = job_.cells;
@@ -685,6 +738,13 @@ void Tester::stateJson(JsonObject o) const {
     }
   }
   o["soc"] = roundf(socPercent());
+  if (lastScore_ >= 0) {
+    JsonObject l = o["last"].to<JsonObject>();
+    l["cellId"] = lastCellId_;
+    l["cap"] = roundf(lastCap_);
+    l["score"] = lastScore_;
+    l["grade"] = String(soh::grade(lastScore_));
+  }
 
   for (int p = 0; p < 2; p++) {
     JsonObject po = o["ports"].add<JsonObject>();

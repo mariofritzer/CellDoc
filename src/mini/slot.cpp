@@ -1,4 +1,5 @@
 #include "slot.h"
+#include "cells.h"
 #include <time.h>
 #include "ocv.h"
 #include "settings.h"
@@ -84,10 +85,12 @@ String Slot::startTest(const SlotJob& jIn) {
   j.chem = findChemistry("liion");
   String e = precheck(j, true, true);
   if (e.length()) return e;
+  e = linkCell(j, true);
+  if (e.length()) return e;
   job_ = j;
+  sdArmAt_ = 0;
   if (job_.cutoffV <= 0) job_.cutoffV = job_.chem->cutoffV;
   if (job_.cutoffV < 2.7f) job_.cutoffV = 2.7f;
-  if (!job_.name.length()) job_.name = "Zelle #" + String(settings.nextCellNo);
   preMah_ = startOcv_ = restOcv_ = capMah_ = energyWh_ = reMah_ = reWh_ = 0;
   reSec_ = 0;
   riCount_ = riStage_ = 0;
@@ -105,10 +108,14 @@ String Slot::startTest(const SlotJob& jIn) {
   return "";
 }
 
-String Slot::startCharge(const SlotJob& j) {
+String Slot::startCharge(const SlotJob& jIn) {
+  SlotJob j = jIn;
   String e = precheck(j, true, false);
   if (e.length()) return e;
+  e = linkCell(j, false);
+  if (e.length()) return e;
   job_ = j;
+  sdArmAt_ = 0;
   job_.chem = findChemistry("liion");
   error_ = "";
   nPts_ = 0;
@@ -119,10 +126,14 @@ String Slot::startCharge(const SlotJob& j) {
   return "";
 }
 
-String Slot::startDischarge(const SlotJob& j) {
+String Slot::startDischarge(const SlotJob& jIn) {
+  SlotJob j = jIn;
   String e = precheck(j, false, true);
   if (e.length()) return e;
+  e = linkCell(j, false);
+  if (e.length()) return e;
   job_ = j;
+  sdArmAt_ = 0;
   job_.chem = findChemistry("liion");
   if (job_.cutoffV < 2.7f) job_.cutoffV = job_.chem->cutoffV;
   error_ = "";
@@ -175,7 +186,38 @@ void Slot::enter(Phase p) {
 
 // ---------------------------------------------------------------------------
 
+String Slot::linkCell(SlotJob& j, bool create) {
+  if (!j.cellNo && !create) return "";
+  cells::JobCell c;
+  c.no = j.cellNo;
+  c.name = j.name;
+  c.presetId = j.presetId;
+  c.chem = "liion";
+  c.nomCapMah = j.nomCapMah;
+  c.riNewMilli = j.riNewMilli;
+  for (int k = 0; k < NSLOTS; k++)
+    if (k != s_ && c.no && slots[k].active() && slots[k].cellNo() == c.no)
+      return "Diese Zelle steckt schon in Schacht " + String(k + 1);
+  String e = cells::prepare(c);
+  if (e.length()) return e;
+  j.cellNo = c.no;
+  j.cellId = c.id;
+  j.name = c.name;
+  j.presetId = c.presetId;
+  j.nomCapMah = c.nomCapMah;
+  j.riNewMilli = c.riNewMilli;
+  return "";
+}
+
+void Slot::checkSelfDischarge(uint32_t now) {
+  if (!sdArmAt_ || phase_ != Phase::Done || int32_t(now - sdArmAt_) < 0) return;
+  sdArmAt_ = 0;
+  float v = hal.m(s_).v;
+  if (job_.cellNo && v > 3.0f) cells::sdStart(job_.cellNo, v);
+}
+
 void Slot::update(uint32_t now) {
+  checkSelfDischarge(now);
   if (!active()) return;
   safety(now);
   if (!active()) return;
@@ -381,11 +423,13 @@ void Slot::finish() {
     if (d < best) { best = d; ri50 = riR_[k]; }
   }
   SohResult r = soh::compute({job_.chem, 1, capMah_, ri50 > 0 ? ri50 : ri100, job_.nomCapMah, job_.riNewMilli});
-  uint32_t id = settings.nextCellNo++;
+  uint32_t id = settings.nextResultId++;
   settings.save();
   JsonDocument d;
   d["id"] = id;
   d["name"] = job_.name;
+  d["cell"] = job_.cellNo;
+  d["cellId"] = job_.cellId;
   time_t now = time(nullptr);
   d["time"] = now > 1700000000 ? uint32_t(now) : 0;
   d["port"] = "S" + String(s_ + 1);
@@ -436,11 +480,15 @@ void Slot::finish() {
   so["capRatio"] = roundf(r.capRatio * 1000) / 10;
   so["refCapMah"] = r.refCapMah;
   so["verdict"] = soh::verdict(r.score);
-  float base = storage::baselineCapacity(job_.name, id);
+  float base = cells::firstCapacity(job_.cellNo);
   if (base > 0) d["baselineCapMah"] = base;
   storage::saveResult(id, d, pts_, nPts_);
+  cells::addResult(job_.cellNo, d);
   lastResultId_ = id;
   lastScore_ = r.score;
+  lastCap_ = capMah_;
+  lastCellId_ = job_.cellId;
+  if (job_.after == After::Full) sdArmAt_ = millis() + 3600000UL;
   enter(Phase::Done);
   hal.beep(800);
 }
@@ -458,6 +506,8 @@ void Slot::stateJson(JsonObject o) const {
     JsonObject j = o["job"].to<JsonObject>();
     j["port"] = "S" + String(s_ + 1);
     j["name"] = job_.name;
+    j["cell"] = job_.cellNo;
+    j["cellId"] = job_.cellId;
     j["chem"] = "liion";
     j["preset"] = job_.presetId;
     j["cells"] = 1;
@@ -485,6 +535,13 @@ void Slot::stateJson(JsonObject o) const {
     }
   }
   o["soc"] = roundf(socPercent());
+  if (lastScore_ >= 0) {
+    JsonObject l = o["last"].to<JsonObject>();
+    l["cellId"] = lastCellId_;
+    l["cap"] = roundf(lastCap_);
+    l["score"] = lastScore_;
+    l["grade"] = String(soh::grade(lastScore_));
+  }
   JsonArray ports = o["ports"].to<JsonArray>();
   JsonObject p = ports.add<JsonObject>();
   p["ok"] = m.ok;
