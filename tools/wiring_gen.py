@@ -294,52 +294,47 @@ p = pin(380, 500, "l", "SDA", 5); wire(p, (320, 500)); label(320, 500, "SDA", "r
 p = pin(380, 530, "l", "SCL", 6); wire(p, (320, 530)); label(320, 530, "SCL", "r")
 p = pin(530, 380, "r", "IN−", 7); pwire(p, (700, 380)); label(700, 380, "NODE_B", "l")
 note(392, 568, "A0 → VCC (Adresse 0x41)")
-# Balancer
-box(80, 600, 70, 236)
-t(80, 592, "J4", 12, REF); t(115, 852, "JST-XH 2S–6S", 11, REF, "middle", "bold")
+# Balancer: je Abgriff ein Teiler 100 kΩ / 10 kΩ, Mitte als Netz TAPk zum ADS1115
+box(80, 600, 70, 300)
+t(80, 592, "J4", 12, REF); t(115, 918, "JST-XH 2S–6S", 11, REF, "middle", "bold")
+GBUS = 400
 for k in range(7):
-    y = 620 + k * 32
+    y = 620 + k * 44
     p = pin(150, y, "r", f"B{k}", k + 1)
     if k == 0:
-        wire(p, (190, y), (190, y + 14)); gnd(190, y + 14)
-    else:
-        wire(p, (210, y))
-box(210, 640, 90, 182)
-t(210, 632, "RN1", 12, REF)
-for k in range(6):
-    y = 652 + k * 32
-    line(210, y, 300, y, COMP, 0.6, 'stroke-dasharray="2 3"')
-p = pin(255, 822, "d", "GND", None, L=10); gnd(255, 832)
-t(320, 870, "6 × 100 kΩ / 10 kΩ", 10, REF, "middle"); t(320, 884, "0,1 %, Teiler 1 : 11", 10, REF, "middle")
-taps = []
-for k in range(6):
-    y = 652 + k * 32
-    taps.append((300, y))
+        wire(p, (GBUS, y)); dot(GBUS, y) if False else None
+        continue
+    wire(p, (190, y))
+    res_h(190, 270, y, f"R{32 + k}", "100 kΩ")
+    wire((270, y), (300, y)); dot(290, y)
+    wire((290, y), (290, y - 14)); t(290, y - 18, f"TAP{k}", 11, "#000", "middle")
+    res_h(300, 380, y, f"R{38 + k}", "10 kΩ")
+    wire((380, y), (GBUS, y)); dot(GBUS, y)
+wire((GBUS, 620), (GBUS, 904)); gnd(GBUS, 904)
 # ADS1115 ×2
-for idx, (ux, uy, ref, addr, chans) in enumerate([(430, 606, "U7", "0x48", 4), (430, 790, "U8", "0x49", 2)]):
+for idx, (ux, uy, ref, addr, chans) in enumerate([(470, 606, "U7", "0x48", 4), (470, 790, "U8", "0x49", 2)]):
     h = 150 if chans == 4 else 140
     box(ux, uy, 130, h)
     t(ux, uy - 8, ref, 12, REF); t(ux + 130, uy - 8, f"ADS1115 · {addr}", 11, REF, "end")
     for j in range(4):
-        y = uy + 20 + j * 30 if chans == 4 else uy + 20 + j * 30
+        y = uy + 20 + j * 30
         p = pin(ux, y, "l", f"A{j}", j + 4)
-        k = j + (0 if idx == 0 else 4)
+        k = j + 1 + (0 if idx == 0 else 4)
         if j < chans:
-            tx, ty = taps[k]
-            wire(p, (ux - 40 - k * 4, y), (ux - 40 - k * 4, ty), (tx, ty)) if ty != y else wire(p, (tx, ty))
+            wire(p, (ux - 60, y)); label(ux - 60, y, f"TAP{k}", "r")
         else:
             nc(*p)
     yy = [uy + 20, uy + 48, uy + 76, uy + 104, uy + 132] if chans == 4 else [uy + 18, uy + 44, uy + 70, uy + 96, uy + 122]
     p = pin(ux + 130, yy[0], "r", "VDD", 8); wire(p, (ux + 170, yy[0])); pwr(ux + 170, yy[0], "+3V3", "r")
     p = pin(ux + 130, yy[1], "r", "GND", 1); wire(p, (ux + 170, yy[1])); gnd(ux + 170, yy[1], "r")
-    p = pin(ux + 130, yy[2], "r", "SCL", 10); wire(p, (ux + 200, yy[2])); label(ux + 200, yy[2], "SCL", "l")
-    p = pin(ux + 130, yy[3], "r", "SDA", 9); wire(p, (ux + 200, yy[3])); label(ux + 200, yy[3], "SDA", "l")
+    p = pin(ux + 130, yy[2], "r", "SCL", 10); wire(p, (ux + 210, yy[2])); label(ux + 210, yy[2], "SCL", "l")
+    p = pin(ux + 130, yy[3], "r", "SDA", 9); wire(p, (ux + 210, yy[3])); label(ux + 210, yy[3], "SDA", "l")
     p = pin(ux + 130, yy[4], "r", "ADDR", 2)
     if idx == 0:
         wire(p, (ux + 170, yy[4])); gnd(ux + 170, yy[4], "r")
     else:
         wire(p, (ux + 170, yy[4])); pwr(ux + 170, yy[4], "+3V3", "r")
-note(66, 946, "B0 = Minus des Packs = GND. Teiler-Ausgang k = Summe der Zellen 1…k ÷ 11.")
+note(66, 946, "B0 = Minus des Packs = GND. TAPk = (Zellen 1…k) ÷ 11, Zelle k = TAPk − TAPk−1.")
 
 # ---------------------------------------------------------------- Temperatur, Lüfter, Summer
 section(50, 976, 720, 1548, "Temperatur, Lüfter, Summer")
@@ -449,7 +444,7 @@ rows = [
     ("D1, D2", "Schottky 15SQ045", "2"),
     ("F0 / F1 / F2", "Flachsicherung 3 A / 7,5 A / 10 A", "3"),
     ("R16, R17", "0,1 Ω / 5 W", "2"),
-    ("RN1", "6 × 100 kΩ + 6 × 10 kΩ, 0,1 %", "12"),
+    ("R33–R44", "Balancer-Teiler 100 kΩ / 10 kΩ, 0,1 %", "6/6"),
     ("R", "1 kΩ ×6 · 7,5 kΩ ×1 · 10 kΩ ×12 · 4,7 kΩ ×3", ""),
     ("C1, C2", "10 nF (Regler-Kompensation)", "2"),
     ("M1 / BZ1", "CPU-Kühler 4-Pin 12 V / Summer 5 V", "1/1"),
