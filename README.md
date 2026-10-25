@@ -7,7 +7,7 @@
   <img src="docs/img/live-desktop-light.png" alt="CellDoc Weboberfläche: laufender Kapazitätstest mit Akkuanzeige, Temperaturen, Testablauf und Entladekurve">
 </picture>
 
-> **Ausprobieren ohne Hardware:** [Demo im Browser](https://mariofritzer.github.io/CellDoc/) (Beispielwerte)
+> **Ausprobieren ohne Hardware:** [Demo im Browser](https://mariofritzer.github.io/CellDoc/) (Beispielwerte) · **Installieren:** [Webflasher](https://mariofritzer.github.io/CellDoc/flash/)
 
 ## Was CellDoc kann
 
@@ -76,9 +76,9 @@ Schaltpläne für alle drei Varianten, Stücklisten und Bedienung: **[docs/mini.
 
 ### Erstinstallation per USB
 
-1. Unter [Releases](../../releases) die Datei **`celldoc-factory.bin`** laden (`latest` = neuester Stand). Für die Mini: `celldoc-mini1-factory.bin`, `-mini2-` oder `-mini4-`.
-2. ESP32 per USB anschließen und im Chrome oder Edge den [ESP Web Flasher von Espressif](https://espressif.github.io/esptool-js/) öffnen.
-3. *Connect*, Datei an Adresse **0x0** eintragen, *Program*.
+Am einfachsten mit dem **[CellDoc Webflasher](https://mariofritzer.github.io/CellDoc/flash/)**: ESP32 per USB anschließen, im Chrome oder Edge Gerät wählen (CellDoc, Mini 1, 2 oder 4), *Verbinden und installieren*. Er spielt immer den neuesten Stand von `main` auf.
+
+Von Hand: unter [Releases](../../releases) die Datei **`celldoc-factory.bin`** laden (Mini: `celldoc-mini1-factory.bin`, `-mini2-` oder `-mini4-`) und mit dem [ESP Web Flasher von Espressif](https://espressif.github.io/esptool-js/) an Adresse **0x0** schreiben.
 
 Alternativ mit PlatformIO: `pio run -t upload`
 

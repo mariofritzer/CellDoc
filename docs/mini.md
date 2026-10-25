@@ -87,7 +87,9 @@ Zum Vergrößern anklicken. Jeder Plan enthält Stückliste und Hinweise. Erzeug
 
 ## Firmware
 
-Unter [Releases](https://github.com/mariofritzer/CellDoc/releases) gibt es für jede Variante zwei Dateien:
+Am einfachsten mit dem **[Webflasher](https://mariofritzer.github.io/CellDoc/flash/?dev=mini2)** im Chrome oder Edge: Variante wählen, *Verbinden und installieren*.
+
+Alternativ gibt es unter [Releases](https://github.com/mariofritzer/CellDoc/releases) für jede Variante zwei Dateien:
 
 | Variante | Erstinstallation (Adresse 0x0) | Update über die Weboberfläche |
 |---|---|---|

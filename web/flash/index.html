@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CellDoc Webflasher</title>
+<meta name="description" content="CellDoc und CellDoc Mini direkt aus dem Browser auf einen ESP32 flashen.">
+<meta name="theme-color" content="#eef1f4">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='9' y='5' width='14' height='24' rx='4' fill='%230f9d76'/%3E%3Crect x='13' y='2' width='6' height='4' rx='1.5' fill='%230f9d76'/%3E%3C/svg%3E">
+<script type="module" src="https://unpkg.com/esp-web-tools@10.1.1/dist/web/install-button.js?module"></script>
+<style>
+:root{
+  --bg:#eef1f4; --card:#ffffff; --fg:#14181d; --muted:#6b7480; --line:#dfe3e8; --fill:#f3f5f8;
+  --accent:#0f9d76; --accent-soft:rgba(15,157,118,.10); --danger:#d63b3b; --warn:#c98f00; --on-accent:#ffffff;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;
+  --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b0d10; --card:#171a1f; --fg:#eef1f5; --muted:#8d96a3; --line:#2a2f37; --fill:#20242a;
+  --accent:#2fc496; --accent-soft:rgba(47,196,150,.12); --danger:#f06161; --warn:#f2bd2f; --on-accent:#06281e;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b0d10; --card:#171a1f; --fg:#eef1f5; --muted:#8d96a3; --line:#2a2f37; --fill:#20242a;
+  --accent:#2fc496; --accent-soft:rgba(47,196,150,.12); --danger:#f06161; --warn:#f2bd2f; --on-accent:#06281e;
+  color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--font);-webkit-font-smoothing:antialiased}
+.wrap{max-width:880px;margin:0 auto;padding:28px 16px 64px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+h1{font-size:34px;line-height:1.1;letter-spacing:-.02em;margin:0;font-weight:800}
+.sub{color:var(--muted);margin:4px 0 0}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:14px;font-weight:600;color:var(--fg);text-decoration:none}
+.chip:hover{border-color:var(--accent)}
+.card{background:var(--card);border-radius:22px;padding:22px;margin-bottom:16px}
+h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 14px;font-weight:700}
+.devices{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:720px){.devices{grid-template-columns:repeat(2,1fr)}}
+.dev{position:relative;display:block;cursor:pointer}
+.dev input{position:absolute;opacity:0;pointer-events:none}
+.dev .box{height:100%;background:var(--fill);border:2px solid transparent;border-radius:16px;padding:14px 14px 12px;transition:border-color .15s,background .15s}
+.dev:hover .box{border-color:var(--line)}
+.dev input:checked + .box{border-color:var(--accent);background:var(--accent-soft)}
+.dev input:focus-visible + .box{outline:3px solid var(--accent);outline-offset:2px}
+.dev svg{display:block;margin-bottom:10px;color:var(--accent)}
+.dev b{display:block;font-size:17px}
+.dev span{display:block;color:var(--muted);font-size:13px;line-height:1.35;margin-top:2px}
+.detail{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+.detail dl{display:grid;grid-template-columns:auto 1fr;gap:2px 14px;margin:0;font-size:14px}
+.detail dt{color:var(--muted)}
+.detail dd{margin:0;font-weight:600}
+.btn{appearance:none;border:0;border-radius:14px;padding:14px 26px;font:600 17px var(--font);background:var(--accent);color:var(--on-accent);cursor:pointer;display:inline-flex;align-items:center;gap:10px}
+.btn:hover{filter:brightness(1.06)}
+.btn:disabled{opacity:.5;cursor:default}
+.alert{border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.45;margin:0}
+.alert.warn{background:rgba(201,143,0,.12);color:var(--fg)}
+.alert.err{background:rgba(214,59,59,.12);color:var(--fg)}
+.alert b{font-weight:700}
+ol.steps{list-style:none;counter-reset:s;margin:0;padding:0;display:grid;gap:14px}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:32px 1fr;gap:12px;align-items:start}
+ol.steps li::before{content:counter(s);width:32px;height:32px;border-radius:50%;background:var(--fill);display:grid;place-items:center;font-weight:700;font-size:15px}
+ol.steps li>div>b{display:block}
+ol.steps p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:720px){.grid2{grid-template-columns:1fr}}
+ul.plain{margin:0;padding-left:18px;font-size:14px;color:var(--muted)}
+ul.plain li{margin:4px 0}
+ul.plain b{color:var(--fg)}
+code{font-family:var(--mono);font-size:.9em;background:var(--fill);padding:1px 6px;border-radius:6px}
+a{color:var(--accent)}
+footer{color:var(--muted);font-size:13px;text-align:center;margin-top:24px}
+esp-web-install-button{--esp-tools-button-color:var(--accent);--esp-tools-button-text-color:var(--on-accent);--esp-tools-button-border-radius:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>CellDoc Webflasher</h1>
+      <p class="sub">Firmware direkt aus dem Browser auf den ESP32 spielen, ohne Software zu installieren.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="chip" href="../">Demo</a>
+      <a class="chip" href="https://github.com/mariofritzer/CellDoc">GitHub</a>
+    </div>
+  </header>
+
+  <section class="card">
+    <h2>1 · Gerät wählen</h2>
+    <div class="devices" role="radiogroup" aria-label="Gerät">
+      <label class="dev"><input type="radio" name="dev" value="celldoc" checked><div class="box">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="9" width="28" height="18" rx="4"/><rect x="8" y="14" width="7" height="8" rx="1.5" fill="currentColor"/><rect x="19" y="14" width="7" height="8" rx="1.5"/></svg>
+        <b>CellDoc</b><span>Großer Prüfstand · alle Akkutypen · 30 W</span></div></label>
+      <label class="dev"><input type="radio" name="dev" value="celldoc-mini1"><div class="box">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><rect x="12" y="5" width="10" height="25" rx="3"/><rect x="15" y="3" width="4" height="2" fill="currentColor"/></svg>
+        <b>Mini 1</b><span>1 Schacht 18650 · 2 A</span></div></label>
+      <label class="dev"><input type="radio" name="dev" value="celldoc-mini2"><div class="box">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="10" height="25" rx="3"/><rect x="19" y="5" width="10" height="25" rx="3"/></svg>
+        <b>Mini 2</b><span>2 Schächte 18650 · 2 A</span></div></label>
+      <label class="dev"><input type="radio" name="dev" value="celldoc-mini4"><div class="box">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="6.5" height="25" rx="2.5"/><rect x="10" y="5" width="6.5" height="25" rx="2.5"/><rect x="18" y="5" width="6.5" height="25" rx="2.5"/><rect x="26" y="5" width="6.5" height="25" rx="2.5"/></svg>
+        <b>Mini 4</b><span>4 Schächte 18650 · 1 A</span></div></label>
+    </div>
+
+    <div class="detail">
+      <dl>
+        <dt>Firmware</dt><dd id="fwName">–</dd>
+        <dt>Version</dt><dd id="fwVer">wird geladen …</dd>
+        <dt>Chip</dt><dd>ESP32 (DevKit V1, WROOM-32)</dd>
+      </dl>
+      <esp-web-install-button id="installer" manifest="manifest-celldoc.json">
+        <button slot="activate" class="btn" type="button">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+          Verbinden und installieren
+        </button>
+        <p slot="unsupported" class="alert err"><b>Dieser Browser kann nicht flashen.</b> Bitte am Computer <b>Chrome</b>, <b>Edge</b> oder <b>Opera</b> verwenden. Safari, Firefox und Handys unterstützen Web Serial nicht.</p>
+        <p slot="not-allowed" class="alert err"><b>Nur über HTTPS möglich.</b> Bitte die Seite über <a href="https://mariofritzer.github.io/CellDoc/flash/">mariofritzer.github.io/CellDoc/flash</a> öffnen.</p>
+      </esp-web-install-button>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>2 · So geht's</h2>
+      <ol class="steps">
+        <li><div><b>ESP32 per USB anschließen</b><p>Ein Datenkabel verwenden, reine Ladekabel funktionieren nicht.</p></div></li>
+        <li><div><b>„Verbinden und installieren“ klicken</b><p>Im Fenster den Port wählen, meist „CP2102“, „CH340“ oder „USB Serial“.</p></div></li>
+        <li><div><b>Installieren</b><p>Beim ersten Mal „Gerät löschen“ anhaken. Bei einem Update nicht löschen, dann bleiben Einstellungen und Ergebnisse erhalten.</p></div></li>
+        <li><div><b>WLAN einrichten</b><p>Nach dem Neustart öffnet CellDoc den Hotspot <b>CellDoc-XXXX</b>, Passwort <code>celldoc1</code>. Die Seite öffnet sich von selbst, sonst <code>192.168.4.1</code> aufrufen.</p></div></li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>Wenn es hakt</h2>
+      <ul class="plain">
+        <li><b>Kein Port in der Liste:</b> USB-Treiber installieren, <a href="https://www.silabs.com/developer-tools/usb-to-uart-bridge-vcp-drivers">CP210x</a> oder <a href="https://www.wch-ic.com/downloads/CH341SER_EXE.html">CH340</a>, und ein anderes Kabel probieren.</li>
+        <li><b>„Failed to connect“:</b> Während des Verbindens die <b>BOOT</b>-Taste am ESP32 gedrückt halten, bis der Fortschritt startet.</li>
+        <li><b>Port belegt:</b> Arduino IDE, PlatformIO-Monitor oder andere serielle Programme schließen.</li>
+        <li><b>Spätere Updates</b> gehen ohne Kabel: in der CellDoc-Oberfläche unter Einstellungen → Firmware-Update die <code>…-firmware.bin</code> aus den <a href="https://github.com/mariofritzer/CellDoc/releases/tag/latest">Releases</a> hochladen.</li>
+        <li><b>Vorsicht:</b> Während des Flashens keine Akkus eingesetzt lassen.</li>
+      </ul>
+    </section>
+  </div>
+
+  <footer>CellDoc · MIT-Lizenz · Flashen mit <a href="https://esphome.github.io/esp-web-tools/">ESP Web Tools</a></footer>
+</div>
+
+<script>
+const NAMES = {
+  "celldoc": "CellDoc",
+  "celldoc-mini1": "CellDoc Mini 1",
+  "celldoc-mini2": "CellDoc Mini 2",
+  "celldoc-mini4": "CellDoc Mini 4"
+};
+const inst = document.getElementById("installer");
+const fwName = document.getElementById("fwName");
+const fwVer = document.getElementById("fwVer");
+
+async function choose(id) {
+  inst.setAttribute("manifest", "manifest-" + id + ".json");
+  fwName.textContent = NAMES[id];
+  fwVer.textContent = "wird geladen …";
+  try { localStorage.setItem("celldoc-flash", id); } catch (e) {}
+  try {
+    const r = await fetch("manifest-" + id + ".json", { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const m = await r.json();
+    fwVer.textContent = m.version || "–";
+  } catch (e) {
+    fwVer.textContent = "nicht verfügbar";
+  }
+}
+
+// Vorauswahl: ?dev=mini2, sonst zuletzt gewählt
+let start = "celldoc";
+const q = new URLSearchParams(location.search).get("dev");
+if (q && NAMES["celldoc-" + q]) start = "celldoc-" + q;
+else if (q && NAMES[q]) start = q;
+else { try { const s = localStorage.getItem("celldoc-flash"); if (s && NAMES[s]) start = s; } catch (e) {} }
+document.querySelector(`input[value="${start}"]`).checked = true;
+document.querySelectorAll('input[name="dev"]').forEach(r => r.addEventListener("change", () => choose(r.value)));
+choose(start);
+</script>
+</body>
+</html>

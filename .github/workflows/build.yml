@@ -125,8 +125,9 @@ jobs:
           files: out/*.bin
           generate_release_notes: true
 
-  # Weboberfläche im Demo-Modus auf GitHub Pages
+  # GitHub Pages: Weboberfläche im Demo-Modus + Webflasher unter /flash/
   demo:
+    needs: build
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -137,7 +138,40 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - run: mkdir -p site && cp web/index.html site/index.html
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: fw
+          merge-multiple: true
+
+      - name: Seite zusammenstellen
+        run: |
+          mkdir -p site/flash
+          cp web/index.html site/index.html
+          cp web/flash/index.html site/flash/index.html
+          VER="dev-$(git rev-parse --short HEAD) · $(date -u +%Y-%m-%d)"
+          for id in celldoc celldoc-mini1 celldoc-mini2 celldoc-mini4; do
+            case $id in
+              celldoc) title="CellDoc" ;;
+              celldoc-mini1) title="CellDoc Mini 1" ;;
+              celldoc-mini2) title="CellDoc Mini 2" ;;
+              celldoc-mini4) title="CellDoc Mini 4" ;;
+            esac
+            cp fw/$id-factory.bin site/flash/
+            cat > site/flash/manifest-$id.json <<EOF
+          {
+            "name": "$title",
+            "version": "$VER",
+            "new_install_prompt_erase": true,
+            "builds": [
+              { "chipFamily": "ESP32", "parts": [ { "path": "$id-factory.bin", "offset": 0 } ] }
+            ]
+          }
+          EOF
+          done
+          ls -la site/flash
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
