@@ -1,5 +1,6 @@
 // CellDoc Mini – optionales OLED (SH1106 128×64) mit drei Tastern
 #include "display.h"
+#include "assign.h"
 #include <U8g2lib.h>
 #include <WiFi.h>
 #include "drivers.h"
@@ -47,6 +48,7 @@ static const char* shortPhase(Phase p) {
 // Standardtest über die Taster: unbekannte 18650, halber Maximalstrom, danach Lagerspannung
 static void quickStart(uint8_t s) {
   SlotJob j;
+  j.cellNo = assign::no(s);  // gescannte Zelle, sonst neue
   j.currentA = 0.5f;
   j.preCharge = true;
   j.restMin = settings.restMin;
@@ -79,6 +81,8 @@ static void drawOverview() {
     if (done && NSLOTS > 2)
       // fertig: Etikett-Nummer und Note, damit die Zelle beim Herausnehmen zugeordnet werden kann
       snprintf(buf, sizeof(buf), "%d %s %c%d", s + 1, sl.lastCellId().c_str(), soh::grade(sl.lastScore()), sl.lastScore());
+    else if (m.v > 0.5f && sl.phase() == Phase::Idle && assign::no(s))
+      snprintf(buf, sizeof(buf), "%d %.2fV %s", s + 1, m.v, assign::id(s).c_str());
     else if (m.v > 0.5f)
       snprintf(buf, sizeof(buf), "%d %.2fV %3s%% %s", s + 1, m.v, soc >= 0 ? String(int(soc)).c_str() : "--", shortPhase(sl.phase()));
     else
@@ -128,6 +132,9 @@ static void drawDetail() {
     u8g2.drawUTF8(0, 60, "OK: bestätigen");
   } else if (sl.active()) {
     snprintf(buf, sizeof(buf), "%s  %.0f mAh", sl.job().cellId.c_str(), sl.mah());
+    u8g2.drawUTF8(0, 56, buf);
+  } else if (assign::no(sel)) {
+    snprintf(buf, sizeof(buf), "%s  OK: Test", assign::id(sel).c_str());
     u8g2.drawUTF8(0, 56, buf);
   } else {
     u8g2.drawUTF8(0, 56, "OK: Test starten");

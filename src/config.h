@@ -24,6 +24,9 @@ constexpr uint8_t PIN_FAN_PWM    = 25;  // über AO3400, Signal invertiert
 constexpr uint8_t PIN_FAN_TACH   = 39;
 constexpr uint8_t PIN_BUZZER     = 17;
 constexpr uint8_t PIN_BUTTON     = 0;   // BOOT-Taste = Not-Aus
+// QR-Scanner (optional, GM861S, 3,3 V, 9600 Baud) – gleiche Pins bei CellDoc und Mini
+constexpr uint8_t PIN_SCAN_RX    = 19;  // vom TX des Scanners
+constexpr uint8_t PIN_SCAN_TX    = 18;  // zum RX des Scanners
 
 // ---------- I2C-Adressen ----------
 constexpr uint8_t ADDR_INA_A   = 0x40;

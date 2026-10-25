@@ -144,6 +144,21 @@ wire(p, (dr[0], 1322), dr); gnd(*sr)
 wire((330, 1430), g); label(330, 1430, "BUZZER", "r")
 note(66, 1500, "Lüfter und Summer werden über AO3400 nach GND geschaltet (Gate 10 kΩ Pulldown).")
 
+# QR-Scanner (optional): GM861S, 3,3 V, UART 9600 Baud
+t(520, 1274, "QR-Scanner (optional)", 11, REF, "start", "bold")
+box(520, 1300, 70, 104)
+t(555, 1356, "QR", 14, PINNAME, "middle", "bold")
+t(520, 1292, f"U{6 + N}", 12, REF); t(590, 1420, "GM861S · 3,3 V", 10, REF, "end")
+for k, (n_, net) in enumerate([("VCC", "+3V3"), ("GND", "GND"), ("TX", "SCAN_TX"), ("RX", "SCAN_RX")]):
+    yy = 1300 + 16 + k * 24
+    p = pin(590, yy, "r", n_, k + 1)
+    if net == "+3V3":
+        wire(p, (640, yy)); pwr(640, yy, "+3V3", "r")
+    elif net == "GND":
+        wire(p, (640, yy)); gnd(640, yy, "r")
+    else:
+        wire(p, (705, yy)); label(705, yy, net, "l")
+
 # ================================================================ Mitte: ESP32
 EX, EY, EW, SP = 860, 96, 200, 36
 EH = 14 * SP + 60
@@ -157,7 +172,7 @@ t(EX + 100, EY + EH / 2, "ESP32-WROOM-32", 12, PINNAME, "middle", "bold", rot=-9
 chg = {k: (f"CHG{k}" if k <= N else None) for k in range(1, 5)}
 left = [("EN", None), ("IO36/VP", None), ("IO39/VN", "BTN_NEXT"), ("IO34", "BTN_PREV"), ("IO35", "BTN_OK"), ("IO32", chg[3]), ("IO33", chg[4]),
         ("IO25", "FAN"), ("IO26", chg[1]), ("IO27", chg[2]), ("IO14", None), ("IO12", None), ("IO13", None), ("GND", "GND"), ("VIN", "+5V")]
-right = [("IO23", None), ("IO22", "SCL"), ("TX0", None), ("RX0", None), ("IO21", "SDA"), ("IO19", None), ("IO18", None), ("IO5", None),
+right = [("IO23", None), ("IO22", "SCL"), ("TX0", None), ("RX0", None), ("IO21", "SDA"), ("IO19", "SCAN_TX"), ("IO18", "SCAN_RX"), ("IO5", None),
          ("TX2/IO17", "BUZZER"), ("RX2/IO16", "LOAD_EN_N"), ("IO4", "ONEWIRE"), ("IO2", None), ("IO15", None), ("GND", "GND"), ("3V3", "+3V3")]
 for i, (n_, net) in enumerate(left):
     y = EY + 40 + i * SP
@@ -196,6 +211,7 @@ rows = [
     ("F", f"F0 {'5' if N == 4 else '3'} A · {N} × 3 A (je Schacht)", str(N + 1)),
     ("J", f"DC-Buchse {SUPPLY} · {N} × 18650-Halter", ""),
     ("SW, BZ1, M1", "3 Taster (opt.) · Summer · Lüfter 5 V", ""),
+    (f"U{6 + N}", "QR-Scanner GM861S, 3,3 V (optional)", "(1)"),
     ("", "Kühlkörper: " + ("ca. 60 × 40 mm" if N == 1 else "ca. 100 × 60 mm + Lüfter"), ""),
 ]
 y0b = 730
@@ -213,7 +229,8 @@ for k, s_ in enumerate([
     "4. SENSEk als eigene Leitung direkt vom Zellpol.",
     "5. TP4056 ohne Schutz-IC: Schutz macht die Firmware.",
     "6. Ungenutzte Pins (×) frei; IO0/2/5/12/15 = Boot.",
-    "7. Netzlabel mit gleichem Namen sind verbunden."]):
+    "7. Netzlabel mit gleichem Namen sind verbunden.",
+    "8. QR-Scanner optional, UART 9600 Baud, 3,3-V-Pegel."]):
     if yh + 40 + k * 21 < 1540:
         t(752, yh + 40 + k * 21, s_, 11, "#222")
 

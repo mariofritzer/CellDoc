@@ -26,9 +26,21 @@ def version():
         return "dev"
 
 
+def inline_scripts(html):
+    # <script src="vendor/…"></script> wird in die Seite eingebettet, damit CellDoc ohne Internet auskommt
+    import re
+
+    def rep(m):
+        path = os.path.join(ROOT, "web", m.group(1))
+        with open(path, "rb") as f:
+            return b"<script>" + f.read() + b"</script>"
+
+    return re.sub(rb'<script src="(vendor/[A-Za-z0-9_.-]+)"></script>', rep, html)
+
+
 def main():
     with open(SRC, "rb") as f:
-        raw = f.read()
+        raw = inline_scripts(f.read())
     data = gzip.compress(raw, compresslevel=9, mtime=0)
     lines = []
     for k in range(0, len(data), 20):

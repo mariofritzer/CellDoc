@@ -1,6 +1,7 @@
 // CellDoc Mini – gerätespezifische Web-API (mehrere Schächte)
 #include <ArduinoJson.h>
 #include <WebServer.h>
+#include "assign.h"
 #include "cells.h"
 #include "display.h"
 #include "hal_mini.h"
@@ -54,6 +55,7 @@ void fillStateImpl(JsonObject o) {
   b["cells"].to<JsonArray>();
   JsonArray arr = o["slots"].to<JsonArray>();
   for (int s = 0; s < NSLOTS; s++) slots[s].stateJson(arr.add<JsonObject>());
+  assign::stateJson(o, arr);
 }
 
 void handleCurve() {
@@ -274,6 +276,10 @@ void mqttEntities(std::vector<MqttEntity>& e) {
   }
   e.push_back({"temp_kuehlkoerper", "Temperatur Kühlkörper", "{{ value_json.slots[0].temps.sink | default(None) }}", "°C", "temperature"});
 }
+
+void onScan(uint32_t no, const String& id) { assign::onScan(no, id); }
+void scanTick(uint32_t now) { assign::tick(now); }
+void scanState(JsonObject) {}  // steht schon in den Schächten
 
 void mqttCommand(const String& cmd) {
   if (!cmd.startsWith("stop")) return;

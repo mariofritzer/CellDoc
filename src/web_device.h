@@ -23,6 +23,11 @@ struct MqttEntity {
       : obj(o), name(n), tpl(t), unit(u), dclass(d), button(b) {}
 };
 const char* model();
+
+// QR-Scanner am Gerät: no = Zelle (0 = unbekannter Code)
+void onScan(uint32_t no, const String& id);
+void scanTick(uint32_t now);
+void scanState(JsonObject o);  // gerätespezifische Zuordnung für /api/state
 void mqttEntities(std::vector<MqttEntity>& out);
 void mqttCommand(const String& cmd);
 }  // namespace device

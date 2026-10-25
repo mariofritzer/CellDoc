@@ -8,6 +8,7 @@
 #include <WiFi.h>
 #include "config.h"
 #include "mqtt.h"
+#include "scanner.h"
 #include "settings.h"
 #include "storage.h"
 #include "web_device.h"
@@ -150,6 +151,8 @@ void addCommon(JsonObject o) {
   o["riInOhm"] = settings.riInOhm;
   o["prefix"] = settings.cellPrefix;
   o["mqtt"] = mqtt::status();
+  scanner::fill(o);
+  device::scanState(o);
 }
 
 static void handleUpdateDone() {
@@ -211,6 +214,7 @@ static void startAp() {
 }
 
 void begin() {
+  scanner::begin();
   WiFi.setHostname(cfg::HOSTNAME);
   if (settings.wifiSsid.length()) {
     WiFi.mode(WIFI_STA);
@@ -250,6 +254,7 @@ void update() {
   if (ap) dns.processNextRequest();
   server.handleClient();
   mqtt::update();
+  scanner::update();
   if (restartPending && millis() > restartAt) {
     device::killAll();
     delay(100);

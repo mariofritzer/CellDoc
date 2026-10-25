@@ -258,6 +258,32 @@ void mqttCommand(const String& cmd) {
   if (cmd == "stop") tester.stop("Über Home Assistant gestoppt");
 }
 
+// Gescannte Zelle wird im Startdialog vorausgewählt (10 Minuten lang)
+static uint32_t scanNo = 0, scanAt = 0;
+static String scanId;
+
+void onScan(uint32_t no, const String& id) {
+  if (!no) {
+    hal.beep(400);
+    return;
+  }
+  hal.beep(60);
+  scanNo = no;
+  scanId = id;
+  scanAt = millis();
+}
+
+void scanTick(uint32_t now) {
+  if (scanNo && (now - scanAt > 600000UL || (tester.active() && tester.cellNo() == scanNo))) scanNo = 0;
+}
+
+void scanState(JsonObject o) {
+  if (!scanNo) return;
+  JsonObject a = o["assigned"].to<JsonObject>();
+  a["no"] = scanNo;
+  a["id"] = scanId;
+}
+
 void killAll() { hal.killAll(); }
 
 void idle() { hal.update(millis()); }

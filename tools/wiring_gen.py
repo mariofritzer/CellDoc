@@ -111,6 +111,22 @@ for idx, (ux, uy, ref, addr, chans) in enumerate([(470, 606, "U7", "0x48", 4), (
 note(66, 946, "B0 = Minus des Packs = GND. TAPk = (Zellen 1…k) ÷ 11, Zelle k = TAPk − TAPk−1.")
 
 # ---------------------------------------------------------------- Temperatur, Lüfter, Summer
+
+# QR-Scanner (optional): GM861S, 3,3 V, UART 9600 Baud
+t(560, 414, "QR-Scanner (optional)", 11, REF, "start", "bold")
+box(560, 440, 70, 104)
+t(595, 496, "QR", 14, PINNAME, "middle", "bold")
+t(560, 432, "U15", 12, REF); t(630, 560, "GM861S · 3,3 V", 10, REF, "end")
+for k, (n_, net) in enumerate([("VCC", "+3V3"), ("GND", "GND"), ("TX", "SCAN_TX"), ("RX", "SCAN_RX")]):
+    yy = 440 + 16 + k * 24
+    p = pin(630, yy, "r", n_, k + 1)
+    if net == "+3V3":
+        wire(p, (670, yy)); pwr(670, yy, "+3V3", "u")
+    elif net == "GND":
+        wire(p, (680, yy)); gnd(680, yy, "r")
+    else:
+        wire(p, (708, yy)); label(708, yy, net, "l")
+
 section(50, 976, 720, 1548, "Temperatur, Lüfter, Summer")
 # 1-Wire mit drei DS18B20
 wire((110, 1040), (400, 1040)); pwr(110, 1040, "+3V3", "l")
@@ -174,7 +190,7 @@ t(EX, EY - 10, "U1", 12, REF); t(EX + EW, EY - 10, "ESP32 DevKit V1 (30 Pin)", 1
 t(EX + 100, EY + EH / 2, "ESP32-WROOM-32", 12, PINNAME, "middle", "bold", rot=-90)
 left = [("EN", None), ("IO36/VP", None), ("IO39/VN", "FAN_TACH"), ("IO34", "CHG_CHRG"), ("IO35", "CHG_STDBY"), ("IO32", "CHG_42"), ("IO33", "CHG_STOP"),
         ("IO25", "FAN_PWM"), ("IO26", "K1_IN"), ("IO27", "K2_IN"), ("IO14", None), ("IO12", None), ("IO13", None), ("GND", "GND"), ("VIN", "+5V")]
-right = [("IO23", None), ("IO22", "SCL"), ("TX0", None), ("RX0", None), ("IO21", "SDA"), ("IO19", None), ("IO18", None), ("IO5", None),
+right = [("IO23", None), ("IO22", "SCL"), ("TX0", None), ("RX0", None), ("IO21", "SDA"), ("IO19", "SCAN_TX"), ("IO18", "SCAN_RX"), ("IO5", None),
          ("TX2/IO17", "BUZZER"), ("RX2/IO16", "LOAD_EN_N"), ("IO4", "ONEWIRE"), ("IO2", None), ("IO15", None), ("GND", "GND"), ("3V3", "+3V3")]
 for i, (n, net) in enumerate(left):
     y = EY + 40 + i * SP
@@ -220,11 +236,12 @@ rows = [
     ("C1, C2", "10 nF (Regler-Kompensation)", "2"),
     ("M1 / BZ1", "CPU-Kühler 4-Pin 12 V / Summer 5 V", "1/1"),
     ("J1–J4", "DC-Buchse · 18650-Halter · XT60 · JST-XH", ""),
+    ("U15", "QR-Scanner GM861S, 3,3 V (optional)", "(1)"),
 ]
-y = 766
+y = 762
 for r in rows:
     t(752, y, r[0], 11, PINNUM); t(870, y, r[1], 11, "#222"); t(1168, y, r[2], 11, "#222", "end")
-    line(748, y + 5, 1172, y + 5, COMP, .5, 'opacity=".4"'); y += 24
+    line(748, y + 5, 1172, y + 5, COMP, .5, 'opacity=".4"'); y += 23
 
 # ---------------------------------------------------------------- Hinweise
 section(740, 1306, 1180, 1548, "Hinweise")
