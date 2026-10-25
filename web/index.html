@@ -95,6 +95,12 @@ h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0;line-height:1.1
 .chart{width:100%;height:auto;display:block}
 .legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
 .legend i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.slot-tile{background:var(--fill);padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0;cursor:pointer;border:2px solid transparent}
+.slot-tile.on{border-color:var(--charge);background:var(--card)}
+.slot-tile span{font-size:12px;color:var(--muted)}
+.slot-tile b{font-size:19px;font-weight:650;white-space:nowrap}
+.slot-tile:focus-visible{outline:2px solid var(--rest);outline-offset:2px}
+.sdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle}
 .balcells{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:8px}
 .balcell{background:var(--fill);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:4px;font-size:12px}
 .balcell b{font-size:16px}
@@ -533,8 +539,15 @@ tr:last-child td{border-bottom:0}
       </ul>
       <h4>Laden und Entladen von Hand</h4>
       <p>Im Startdialog „Laden“ oder „Entladen“ wählen. Entladen läuft mit Konstantstrom bis zur eingestellten Schlussspannung. Dabei gelten dieselben Sicherheitsgrenzen wie im Test.</p>
+      <h4>CellDoc Mini</h4>
+      <ul>
+        <li>Die Mini prüft nur <b>18650 Li-Ion</b> (4,2 V), in 1, 2 oder 4 Schächten gleichzeitig. Jeder Schacht hat seinen eigenen Lader, seine Last und seinen Temperaturfühler.</li>
+        <li>In der Weboberfläche oben unter <b>Schächte</b> einen Schacht antippen. Live, Starten, Stoppen und die Kalibrierung beziehen sich dann auf diesen Schacht.</li>
+        <li>Mit OLED und Tastern: <b>◀ / ▶</b> wählt den Schacht, <b>OK</b> öffnet die Detailansicht, in der Detailansicht eines freien Schachts startet <b>OK</b> einen Standardtest (unbekannte Zelle, 0,5 A, danach Lagerspannung). <b>OK lang</b> stoppt, <b>OK</b> bestätigt ein Ergebnis oder einen Fehler.</li>
+        <li>Ohne Fühler an der Zelle startet ein Schacht nicht.</li>
+      </ul>
       <h4>Firmware aktualisieren</h4>
-      <p>Neue Versionen gibt es auf GitHub unter Releases. Die Datei <b>celldoc-firmware.bin</b> unter Einstellungen → Firmware-Update hochladen. Einstellungen und Ergebnisse bleiben erhalten.</p>
+      <p>Neue Versionen gibt es auf GitHub unter Releases. Unter Einstellungen → Firmware-Update die passende Datei hochladen: <b>celldoc-firmware.bin</b> für CellDoc, <b>celldoc-mini1/2/4-firmware.bin</b> für die Mini mit 1, 2 oder 4 Schächten. Einstellungen und Ergebnisse bleiben erhalten.</p>
     </section>
   </main>
 
@@ -637,7 +650,12 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dur = s => { s = Math.max(0, Math.round(s || 0)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? `${h} h ${m} min` : `${m} min ${s % 60} s`; };
 const dateStr = t => t ? new Date(t * 1000).toLocaleString("de-AT", {day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit"}) : "ohne Datum";
 
-let S = null, INFO = null, SETTINGS = null, curveCache = [], lastCurveAt = 0;
+let S = null, RAW = null, INFO = null, SETTINGS = null, curveCache = [], lastCurveAt = 0;
+let SEL = 0;  // gewählter Schacht (Mini)
+const isMini = () => !!(RAW && RAW.slots);
+const slotQ = () => isMini() ? "?slot=" + (SEL + 1) : "";
+const slotBody = (b = {}) => isMini() ? {...b, slot: SEL + 1} : b;
+try { SEL = +localStorage.getItem("celldoc-slot") || 0; } catch (e) {}
 const params = new URLSearchParams(location.search);
 let DEMO = params.has("demo") || location.protocol === "file:";
 
@@ -770,6 +788,7 @@ function renderLive() {
   const pIdx = (job.port === "B" || (!isAct && s.ports[0].v < .5 && s.ports[1].v > .5)) ? 1 : 0;
   const port = s.ports[pIdx];
   const [label, color] = PHASE[ph] || PHASE.idle;
+  $("live-h").firstChild.textContent = isMini() ? `Schacht ${SEL + 1} ` : "Live ";
   const pill = $("modePill"); pill.textContent = label; pill.style.background = `var(${color})`;
   cellColor = ph === "error" ? "--danger" : (color === "--muted" || color === "--rest") ? (port.i < -0.01 ? "--discharge" : "--charge") : color;
 
@@ -783,9 +802,9 @@ function renderLive() {
   $("vBig").innerHTML = port.v > 0.3 ? `${nf(port.v, 3)}<small>V</small>` : `–<small>V</small>`;
   let sub = "Kein Akku erkannt";
   if (isAct || ph === "done" || ph === "error") {
-    const bits = [job.name, job.preset ? (INFO?.presets.find(p => p.id === job.preset) || {}).name : chemName(job.chem), job.cells > 1 ? job.cells + "S" : "", "Anschluss " + job.port].filter(Boolean);
+    const bits = [job.name, job.preset ? (INFO?.presets.find(p => p.id === job.preset) || {}).name : chemName(job.chem), job.cells > 1 ? job.cells + "S" : "", isMini() ? "" : "Anschluss " + job.port].filter(Boolean);
     sub = bits.map(esc).join(" · ");
-  } else if (port.v > .3) sub = `Anschluss ${pIdx ? "B" : "A"} · bereit für einen Test`;
+  } else if (port.v > .3) sub = isMini() ? "Zelle erkannt · bereit für einen Test" : `Anschluss ${pIdx ? "B" : "A"} · bereit für einen Test`;
   $("vSub").innerHTML = sub;
   socTarget = (s.soc != null && s.soc >= 0 && port.v > .3) ? s.soc : -1;
   let socL = socTarget >= 0 ? `Ladezustand <b style="color:var(--fg)">${nf(socTarget)} %</b>` : "";
@@ -818,7 +837,7 @@ function renderLive() {
   const L = s.limits || {}, t = s.temps || {};
   const chg = ["precharge", "recharge", "charge"].includes(ph);
   let th = "";
-  if (pIdx === 0 || t.cell != null) th += tempBox("Zelle (A)", t.cell, chg ? L.chargeWarn : L.dischargeWarn, chg ? L.chargeStop : L.dischargeStop);
+  if (pIdx === 0 || t.cell != null) th += tempBox(isMini() ? "Zelle" : "Zelle (A)", t.cell, chg ? L.chargeWarn : L.dischargeWarn, chg ? L.chargeStop : L.dischargeStop);
   if (pIdx === 1 || t.pack != null) th += tempBox("Pack (B)", t.pack, L.dischargeWarn, L.dischargeStop);
   th += tempBox("Kühlkörper", t.sink, L.sinkWarn, L.sinkStop);
   $("temps").innerHTML = th;
@@ -841,11 +860,29 @@ function renderLive() {
   if (acEl.dataset.k !== ac) {
     acEl.innerHTML = ac; acEl.dataset.k = ac;
     $("aStop")?.addEventListener("click", stopJob);
-    $("aAck")?.addEventListener("click", async () => { await api("/api/ack", {}); refresh(); });
+    $("aAck")?.addEventListener("click", async () => { await api("/api/ack", slotBody()); refresh(); });
     $("aStart")?.addEventListener("click", openStart);
   }
 
   // Anschlüsse
+  if (isMini()) {
+    $("ports-h").textContent = "Schächte";
+    $("ports").style.gridTemplateColumns = RAW.slots.length > 2 ? "1fr 1fr" : `repeat(${RAW.slots.length}, 1fr)`;
+    const pl = sl => (PHASE[sl.phase] || PHASE.idle)[0].replace("Test · ", "");
+    const html = RAW.slots.map((sl, k) => {
+      const p = sl.ports[0], c = (PHASE[sl.phase] || PHASE.idle)[1];
+      return `<div class="slot-tile${k === SEL ? " on" : ""}" data-slot="${k}" role="button" tabindex="0" aria-pressed="${k === SEL}"><span>Schacht ${k + 1}</span><b>${p.ok ? (p.v > .5 ? nf(p.v, 3) + " V" : "leer") : "Messung fehlt"}</b><span><i class="sdot" style="background:var(${c})"></i>${esc(pl(sl))}${sl.soc >= 0 && p.v > .5 ? " · " + nf(sl.soc) + " %" : ""}</span></div>`;
+    }).join("");
+    if ($("ports").dataset.k !== html) {
+      $("ports").innerHTML = html; $("ports").dataset.k = html;
+      $("ports").querySelectorAll("[data-slot]").forEach(el => {
+        const go = () => { SEL = +el.dataset.slot; try { localStorage.setItem("celldoc-slot", SEL); } catch (e) {} curveCache = []; lastShownResult = -1; refresh().then(() => renderLiveChart(true)); };
+        el.addEventListener("click", go); el.addEventListener("keydown", e => { if (e.key === "Enter") go(); });
+      });
+    }
+    $("balWrap").hidden = true;
+    $("fanLine").textContent = `Lüfter ${RAW.fan?.duty ?? 0} %${RAW.oled ? " · Display angeschlossen" : ""}`;
+  } else {
   $("ports").innerHTML = s.ports.map((p, k) => `<div><span>Anschluss ${k ? "B · Pack" : "A · Zelle"}${s.loadPort === (k ? "B" : "A") && s.loadTarget > 0 ? " · Last" : ""}</span><b>${p.ok ? (p.v > .3 ? nf(p.v, 3) + " V" : "leer") : "Messung fehlt"}</b><span>${p.ok && Math.abs(p.i) > .002 ? nf(p.i, 3) + " A" : "&nbsp;"}</span></div>`).join("");
   const bc = s.bal?.cells || [];
   $("balWrap").hidden = !bc.length;
@@ -855,10 +892,11 @@ function renderLive() {
       `<div class="balcell"><span>Differenz</span><b>${nf((Math.max(...bc) - mn) * 1000)} mV</b></div>`;
   }
   $("fanLine").textContent = `Lüfter ${s.fan?.duty ?? 0} % · ${nf(s.fan?.rpm ?? 0)} U/min · Lader ${s.charger?.mode === "off" ? "aus" : s.charger?.mode + " V"}${s.charger?.charging ? " · lädt" : ""}${s.charger?.full ? " · voll" : ""}`;
+  }
 
   // Kopfzeile
   const w = s.wifi || {};
-  $("hdrChips").innerHTML = `<span class="chip"><span class="dot ${w.ap ? "off" : ""}"></span>${w.ap ? "Hotspot " + esc(w.ssid) : "WLAN " + nf(w.rssi) + " dBm"}</span><span class="chip">${esc(w.ip || "")}</span><span class="chip">v${esc(s.version)}</span>`;
+  $("hdrChips").innerHTML = `<span class="chip"><span class="dot ${w.ap ? "off" : ""}"></span>${w.ap ? "Hotspot " + esc(w.ssid) : "WLAN " + nf(w.rssi) + " dBm"}</span><span class="chip">${esc(w.ip || "")}</span>${isMini() ? `<span class="chip">Mini ${RAW.slots.length}</span>` : ""}<span class="chip">v${esc(s.version)}</span>`;
 }
 
 // Entladekurven immer vom Entladeschluss bis zur Ladeschlussspannung zeigen
@@ -875,7 +913,7 @@ async function renderLiveChart(force) {
   const ph = s.phase;
   if (force || (active(ph) && Date.now() - lastCurveAt > 10000) || (!curveCache.length && active(ph))) {
     lastCurveAt = Date.now();
-    try { curveCache = await api("/api/curve"); } catch (e) {}
+    try { curveCache = await api("/api/curve" + slotQ()); } catch (e) {}
   }
   const job = s.job || {}, cells = job.cells || 1;
   const pts = curveCache;
@@ -913,7 +951,7 @@ async function renderLastResult() {
 }
 
 async function stopJob() {
-  if (!confirmInline($("liveActions"), "Wirklich stoppen? Der laufende Test geht verloren.", async () => { await api("/api/stop", {}); refresh(); })) return;
+  if (!confirmInline($("liveActions"), "Wirklich stoppen? Der laufende Test geht verloren.", async () => { await api("/api/stop", slotBody()); refresh(); })) return;
 }
 
 // Bestätigung direkt in der Seite (Dialoge sind im Browser oft gesperrt)
@@ -930,7 +968,12 @@ function confirmInline(host, text, onYes) {
 
 async function refresh() {
   try {
-    S = await api("/api/state");
+    RAW = await api("/api/state");
+    if (RAW.slots) {
+      if (SEL >= RAW.slots.length) SEL = 0;
+      const sl = RAW.slots[SEL];
+      S = {...RAW, ...sl, temps: {...(RAW.temps || {}), ...(sl.temps || {})}, limits: RAW.limits};
+    } else S = RAW;
     renderLive();
     renderLiveChart(false);
     renderLastResult();
@@ -958,7 +1001,7 @@ function openSheet(html) {
 
 function openStart() {
   if (!INFO) return;
-  const pB = S.ports[1].v > .5 && S.ports[0].v < .5;
+  const pB = !isMini() && S.ports[1].v > .5 && S.ports[0].v < .5;
   const presetOpts = INFO.presets.map(p => `<option value="${p.id}">${esc(p.name)} · ${nf(p.capMah)} mAh</option>`).join("");
   const chemOpts = INFO.chemistries.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
   const {el, close} = openSheet(`
@@ -966,7 +1009,8 @@ function openStart() {
     <div class="seg" role="group" aria-label="Betriebsart" id="stMode">
       <button type="button" data-m="test" aria-pressed="true">Kapazitätstest</button><button type="button" data-m="charge" aria-pressed="false">Laden</button><button type="button" data-m="discharge" aria-pressed="false">Entladen</button>
     </div>
-    <div class="seg" role="group" aria-label="Anschluss" id="stPort">
+    ${isMini() ? `<div class="note">Schacht ${SEL + 1} · 18650 Li-Ion · max. ${nf(INFO.limits.maxCurrentA, 1)} A</div>` : ""}
+    <div class="seg" role="group" aria-label="Anschluss" id="stPort"${isMini() ? " hidden" : ""}>
       <button type="button" data-p="A" aria-pressed="${!pB}">A · Einzelzelle</button><button type="button" data-p="B" aria-pressed="${pB}">B · Pack</button>
     </div>
     <div class="form">
@@ -1026,7 +1070,7 @@ function openStart() {
     q("#stGo").disabled = mode === "charge" && !canCharge;
   }
   ["#stType", "#stChem", "#stCells", "#stCap", "#stCur", "#stPre", "#stRest", "#stAfter"].forEach(s => q(s).addEventListener("input", () => upd(s === "#stChem")));
-  q("#stType").value = INFO.presets[0].id; upd(true);
+  q("#stType").value = INFO.presets[0]?.id || "unknown"; if (isMini()) { q("#stAfter").value = "storage"; q("#stCur").max = INFO.limits.maxCurrentA; } upd(true);
   q("#stGo").addEventListener("click", async () => {
     const type = q("#stType").value;
     const body = {
@@ -1037,7 +1081,7 @@ function openStart() {
       preCharge: q("#stPre").checked && !q("#fPre").hidden, restMin: +q("#stRest").value || 0,
       after: q("#fAfter").hidden ? "none" : q("#stAfter").value,
     };
-    try { await api("/api/start", body); close(); curveCache = []; refresh(); toast("Gestartet"); }
+    try { await api("/api/start", slotBody(body)); close(); curveCache = []; refresh(); toast("Gestartet"); }
     catch (e) { const er = q("#stErr"); er.hidden = false; er.textContent = e.message; }
   });
 }
@@ -1102,7 +1146,7 @@ async function openResult(id) {
   const cells = r.cells || 1;
   const {el, close} = openSheet(`
     <div class="sheet-head"><h3>${esc(r.name)}</h3><button class="btn small" data-close type="button">Schließen</button></div>
-    <div class="note num">${dateStr(r.time)} · Anschluss ${esc(r.port)} · ${esc(chemName(r.chem))}${cells > 1 ? " · " + cells + "S" : ""}</div>
+    <div class="note num">${dateStr(r.time)} · ${r.slot ? "Schacht " + r.slot : "Anschluss " + esc(r.port)} · ${esc(chemName(r.chem))}${cells > 1 ? " · " + cells + "S" : ""}</div>
     <section class="card">${resultSummary(r, false)}</section>
     <section class="card"><h2>Entladekurve</h2><svg class="chart" id="rC" viewBox="0 0 720 260" role="img" aria-label="Entladekurve"></svg></section>
     ${r.riCurve?.length > 1 ? `<section class="card"><h2>Innenwiderstand über der Entladung</h2><svg class="chart" id="rRi" viewBox="0 0 720 200" role="img" aria-label="Innenwiderstand"></svg></section>` : ""}
@@ -1134,17 +1178,23 @@ async function loadSettings() {
     $("wifiInfo").textContent = w.ap ? `Hotspot aktiv: ${w.ssid} · ${w.ip}` : `Verbunden mit ${w.ssid || st.wifiSsid} · ${w.ip}`;
     if (!$("wSsid").value) $("wSsid").value = st.wifiSsid || "";
     await loadDiag();
+    kUpd();
   } catch (e) { toast(e.message); }
 }
 async function loadDiag() {
   const d = await api("/api/diag");
-  const role = {cell: "Zelle (A)", pack: "Pack (B)", sink: "Kühlkörper", "": "nicht verwendet"};
+  const role = isMini()
+    ? Object.fromEntries([...RAW.slots.map((_, k) => ["cell" + (k + 1), "Zelle Schacht " + (k + 1)]), ["sink", "Kühlkörper"], ["", "nicht verwendet"]])
+    : {cell: "Zelle (A)", pack: "Pack (B)", sink: "Kühlkörper", "": "nicht verwendet"};
   $("sensorList").innerHTML = d.sensors.length ? d.sensors.map(s => `<div class="row"><div class="l"><b>${s.t > -100 ? nf(s.t, 1) + " °C" : "Fehler"}</b><small style="font-family:var(--mono)">${esc(s.addr)}</small></div>
     <select data-addr="${esc(s.addr)}" style="width:auto" aria-label="Rolle">${Object.entries(role).map(([k, v]) => `<option value="${k}" ${s.role === k ? "selected" : ""}>${v}</option>`).join("")}</select></div>`).join("") : `<div class="empty">Keine DS18B20 gefunden</div>`;
   const okc = b => b ? `<b style="color:var(--charge)">ok</b>` : `<b style="color:var(--danger)">fehlt</b>`;
   const st = SETTINGS || {};
-  $("diag").innerHTML = [["Strommesser A (INA226 0x40)", okc(d.inaA)], ["Strommesser B (INA226 0x41)", okc(d.inaB)], ["Last-Sollwert (MCP4725)", okc(d.dac)], ["Balancer (2× ADS1115)", okc(d.balancer)],
-    ["Balancer-Abgriffe", d.taps.map(v => nf(v, 2)).join(" · ") + " V"], ["Freier Speicher (RAM)", nf(d.heap / 1024) + " kB"],
+  const rows = isMini()
+    ? [...(d.ina || []).map((ok, k) => [`Strommesser Schacht ${k + 1} (INA226 0x${(0x40 + k).toString(16)})`, okc(ok)]), ["Last-Sollwerte (MCP4728)", okc(d.dac)], ["Display (SH1106)", d.oled ? okc(true) : `<span class="note">nicht angeschlossen</span>`]]
+    : [["Strommesser A (INA226 0x40)", okc(d.inaA)], ["Strommesser B (INA226 0x41)", okc(d.inaB)], ["Last-Sollwert (MCP4725)", okc(d.dac)], ["Balancer (2× ADS1115)", okc(d.balancer)],
+       ["Balancer-Abgriffe", d.taps.map(v => nf(v, 2)).join(" · ") + " V"]];
+  $("diag").innerHTML = [...rows, ["Freier Speicher (RAM)", nf(d.heap / 1024) + " kB"],
     ["Ergebnisspeicher", st.storageTotal ? `${nf(st.storageUsed / 1024)} von ${nf(st.storageTotal / 1024)} kB` : "–"], ["Chip", esc(d.chip)], ["Firmware", "v" + esc(S?.version || "")]]
     .map(([a, b]) => `<div class="row"><span class="note" style="font-size:14px">${a}</span><span>${b}</span></div>`).join("");
 }
@@ -1174,16 +1224,23 @@ $("wList").addEventListener("change", e => { if (e.target.value) $("wSsid").valu
 $("wSave").addEventListener("click", async () => {
   try { await api("/api/wifi", {ssid: $("wSsid").value.trim(), pass: $("wPass").value}); toast("Gespeichert. CellDoc startet neu und verbindet sich mit dem WLAN."); } catch (e) { toast(e.message); }
 });
+function kPorts() {
+  const sel = $("kPort");
+  const want = isMini() ? RAW.slots.map((_, k) => `<option value="${k + 1}">Schacht ${k + 1}</option>`).join("") : `<option>A</option><option>B</option>`;
+  if (sel.dataset.k !== want) { sel.innerHTML = want; sel.dataset.k = want; sel.previousElementSibling.textContent = isMini() ? "Schacht" : "Anschluss"; }
+  [...$("kWhat").options].forEach(o => { if (o.value === "balancer") o.hidden = isMini(); });
+}
 const kUpd = () => {
+  kPorts();
   const w = $("kWhat").value;
   $("kTapF").hidden = w !== "balancer"; $("kValF").hidden = w === "zero" || w === "reset";
   $("kPort").parentElement.hidden = w === "balancer" || w === "reset";
-  const p = S?.ports[$("kPort").value === "B" ? 1 : 0];
+  const p = isMini() ? RAW.slots[(+$("kPort").value || 1) - 1]?.ports[0] : S?.ports[$("kPort").value === "B" ? 1 : 0];
   $("kShown").textContent = w === "voltage" && p ? `Angezeigt: ${nf(p.v, 3)} V` : w === "current" && p ? `Angezeigt: ${nf(Math.abs(p.i), 3)} A` : "";
 };
 ["kWhat", "kPort"].forEach(id => $(id).addEventListener("input", kUpd));
 $("kGo").addEventListener("click", async () => {
-  try { await api("/api/calibrate", {what: $("kWhat").value, port: $("kPort").value, tap: (+$("kTap").value || 1) - 1, actual: +$("kVal").value}); toast("Abgeglichen"); } catch (e) { toast(e.message); }
+  try { await api("/api/calibrate", {what: $("kWhat").value, port: $("kPort").value, slot: +$("kPort").value || 1, tap: (+$("kTap").value || 1) - 1, actual: +$("kVal").value}); toast("Abgeglichen"); } catch (e) { toast(e.message); }
 });
 $("fwFile").addEventListener("change", () => $("fwGo").disabled = !$("fwFile").files.length);
 $("fwGo").addEventListener("click", () => {
@@ -1249,12 +1306,52 @@ function demoState() {
     bal: {ok: true, cells: pB ? [3.871, 3.866, 3.842] : []},
   };
 }
+// Mini-Demo: ?mini=1, ?mini=2 oder ?mini=4
+const MINI_N = [1, 2, 4].includes(+params.get("mini")) ? +params.get("mini") : 0;
+const demoSlots = {2: {phase: "precharge"}, 3: {phase: "done"}, 4: {phase: "idle"}};
+function demoSlot(k, base) {
+  const pick = ({phase, error, lastResult, job, elapsed, phaseElapsed, mah, wh, capMah, riLast, riPulse, throttle, throttled, saturated, eta, soc, ports, loadPort, loadTarget, temps, charger}) =>
+    ({phase, error, lastResult, job, elapsed, phaseElapsed, mah, wh, capMah, riLast, riPulse, throttle, throttled, saturated, eta, soc, ports, loadPort, loadTarget, temps, charger});
+  if (k === 1) return {slot: 1, ...pick(base), job: {...base.job, port: "S1"}};
+  const st = demoSlots[k] || {phase: "idle"}, el = (Date.now() - demo.t0) / 1000;
+  const empty = {ok: false, v: 0, i: 0, p: 0};
+  if (st.phase === "precharge" || st.phase === "charge") {
+    const v = 3.95 + Math.min(.2, el / 6000), i = .97 + (Math.random() - .5) * .004;
+    return {slot: k, phase: st.phase, error: "", lastResult: 0, job: {port: "S" + k, name: "Akku Werkstatt", chem: "liion", preset: "s25r", cells: 1, currentA: .5, nomCapMah: 2500, cutoffV: 3, preCharge: true, restMin: 30, after: "storage"},
+      elapsed: 2950 + el, phaseElapsed: 2950 + el, mah: 820 + el * .27, wh: 3.3, capMah: 0, riLast: 0, riPulse: false, throttle: 1, throttled: false, saturated: false, soc: 72,
+      ports: [{ok: true, v, i, p: v * i}, empty], loadPort: "A", loadTarget: 0, temps: {cell: 31.2 + (Math.random() - .5) * .1, sink: base.temps.sink}, charger: {mode: "4.2", charging: true, full: false}};
+  }
+  if (st.phase === "done") return {slot: k, phase: "done", error: "", lastResult: 2, job: {port: "S" + k, name: "Laptop-Akku Zelle 2", chem: "liion", preset: "", cells: 1, currentA: .5, nomCapMah: 0, cutoffV: 3, preCharge: true, restMin: 30, after: "storage"},
+    soc: 52, ports: [{ok: true, v: 3.812, i: 0, p: 0}, empty], loadPort: "A", loadTarget: 0, temps: {cell: 23.4, sink: base.temps.sink}, charger: {mode: "off", charging: false, full: false}};
+  if (st.phase === "error") return {slot: k, phase: "error", error: st.error, lastResult: 0, job: {port: "S" + k, name: "Zelle", chem: "liion", cells: 1}, soc: -1,
+    ports: [{ok: true, v: 3.7, i: 0, p: 0}, empty], loadPort: "A", loadTarget: 0, temps: {cell: 22.1, sink: base.temps.sink}, charger: {mode: "off"}};
+  return {slot: k, phase: "idle", error: "", lastResult: 0, soc: -1, ports: [{ok: true, v: 0, i: 0, p: 0}, empty], loadPort: "A", loadTarget: 0, temps: {sink: base.temps.sink}, charger: {mode: "off"}};
+}
+function demoMiniState() {
+  const b = demoState();
+  return {version: b.version, uptime: b.uptime, wifi: b.wifi, time: b.time, riInOhm: false, mini: true, slotCount: MINI_N, oled: true,
+    limits: {...b.limits, sinkStop: 85}, fan: {duty: 45, rpm: 0}, bal: {ok: false, cells: []},
+    slots: [1, 2, 3, 4].slice(0, MINI_N).map(k => demoSlot(k, b))};
+}
+
 async function demoApi(path, body) {
   await new Promise(r => setTimeout(r, 60));
   const id = +(path.match(/id=(\d+)/) || [])[1];
-  if (path === "/api/state") return demoState();
-  if (path === "/api/info") return DEMO_INFO;
-  if (path === "/api/curve") {
+  const slot = body?.slot || +(path.match(/slot=(\d+)/) || [])[1] || 1;
+  if (path === "/api/state") return MINI_N ? demoMiniState() : demoState();
+  if (path === "/api/info") return MINI_N ? {...DEMO_INFO, chemistries: DEMO_INFO.chemistries.filter(c => c.id === "liion"), presets: DEMO_INFO.presets.filter(p => p.chem === "liion" && p.name.includes("18650")),
+    limits: {maxCurrentA: MINI_N > 2 ? 1 : 2, maxCurrentB: 0, maxPowerW: 16}, slots: MINI_N, mini: true} : DEMO_INFO;
+  if (MINI_N && slot > 1) {
+    if (path.startsWith("/api/curve")) {
+      const ph = (demoSlots[slot] || {}).phase;
+      if (ph === "precharge") { const c = []; for (let t = 0; t < 2950; t += 30) c.push([t, +(3.62 + .33 * (1 - Math.exp(-t / 1500))).toFixed(3), .97, Math.round(t * .97 / 3.6), 29]); return c; }
+      return [];
+    }
+    if (path === "/api/start") { demoSlots[slot] = {phase: body.mode === "discharge" ? "manualdischarge" : "precharge"}; return {ok: true}; }
+    if (path === "/api/stop") { demoSlots[slot] = {phase: "error", error: "Von Hand gestoppt"}; return {ok: true}; }
+    if (path === "/api/ack") { demoSlots[slot] = {phase: "idle"}; return {ok: true}; }
+  }
+  if (path.startsWith("/api/curve")) {
     if (demo.phase !== "discharge") return [];
     const mah = demo.startMah + (Date.now() - demo.t0) / 1000 * 1.5;
     const pre = []; for (let t = 0; t < 12000; t += 120) pre.push([t, +(3.6 + .6 * (1 - Math.exp(-t / 3000))).toFixed(3), t < 10800 ? .98 : 0, Math.round(t / 3.6 * .98 / 1000 * 1000) / 1000, 27]);
@@ -1264,6 +1361,8 @@ async function demoApi(path, body) {
   if (path.startsWith("/api/result?")) { const r = demo.results.find(x => x.id === id); if (!r) throw new Error("Ergebnis nicht gefunden"); return path.includes("curve=1") ? demoCurve(r.capMah / .985, r.currentA, r.capMah) : r; }
   if (path.startsWith("/api/result/delete")) { demo.results = demo.results.filter(x => x.id !== id); return {ok: true}; }
   if (path === "/api/settings" && body === undefined) return {wifiSsid: "Heimnetz", chargeWarnC: 40, chargeStopC: 45, dischargeWarnC: 45, dischargeStopC: 55, sinkWarnC: 75, sinkStopC: 90, restMin: 30, riInOhm: false, buzzer: true, storageUsed: 81920, storageTotal: 1441792};
+  if (path === "/api/diag" && MINI_N) return {ina: Array(MINI_N).fill(true), dac: true, oled: true, balancer: false, taps: [], heap: 172000, chip: "ESP32-D0WD-V3",
+    sensors: [...Array(MINI_N)].map((_, k) => ({addr: "28FF4A1B6216031" + k, t: 24 + k * 2.3, role: "cell" + (k + 1)})).concat([{addr: "28FF91C3611604E2", t: 41.7, role: "sink"}])};
   if (path === "/api/diag") return {inaA: true, inaB: true, dac: true, balancer: true, taps: [0, 0, 0, 0, 0, 0], heap: 187000, chip: "ESP32-D0WD-V3",
     sensors: [{addr: "28FF4A1B62160318", t: 30.1, role: "cell"}, {addr: "28FF91C3611604E2", t: 41.7, role: "sink"}, {addr: "28FF07D2701603A9", t: 22.4, role: "pack"}]};
   if (path === "/api/wifi/scan") return [{ssid: "Heimnetz", rssi: -52, open: false}, {ssid: "Werkstatt", rssi: -71, open: false}];

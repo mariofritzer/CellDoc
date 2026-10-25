@@ -64,11 +64,19 @@ ESP32 DevKit, 2× INA226 (Strom/Spannung), MCP4725 + LM358 + 2× IRFP250N (Konst
 
 Schaltung, Pinbelegung und Einkaufsliste: **[docs/hardware.md](docs/hardware.md)**
 
+## CellDoc Mini
+
+Die kleine Version nur für **18650 Li-Ion**: laden, entladen, Kapazität, Innenwiderstand und Lebenszahl, in drei Größen mit **1, 2 oder 4 Schächten**, die gleichzeitig laufen. 5-V-Netzteil, ein TP4056 und eine kleine Konstantstromlast pro Schacht (2 A bzw. 1 A bei vier Schächten), optional ein OLED mit drei Tastern. Weboberfläche und Ergebnisse sind dieselben wie beim großen CellDoc.
+
+<img src="docs/img/mini4-desktop.png" alt="Weboberfläche der CellDoc Mini 4 mit Schachtübersicht">
+
+Schaltpläne für alle drei Varianten, Stücklisten und Bedienung: **[docs/mini.md](docs/mini.md)** · [Demo Mini 4](https://mariofritzer.github.io/CellDoc/?mini=4)
+
 ## Firmware installieren
 
 ### Erstinstallation per USB
 
-1. Unter [Releases](../../releases) die Datei **`celldoc-factory.bin`** laden (`latest` = neuester Stand).
+1. Unter [Releases](../../releases) die Datei **`celldoc-factory.bin`** laden (`latest` = neuester Stand). Für die Mini: `celldoc-mini1-factory.bin`, `-mini2-` oder `-mini4-`.
 2. ESP32 per USB anschließen und im Chrome oder Edge den [ESP Web Flasher von Espressif](https://espressif.github.io/esptool-js/) öffnen.
 3. *Connect*, Datei an Adresse **0x0** eintragen, *Program*.
 
@@ -76,7 +84,7 @@ Alternativ mit PlatformIO: `pio run -t upload`
 
 ### Updates
 
-Unter **Einstellungen → Firmware-Update** die Datei **`celldoc-firmware.bin`** hochladen. Einstellungen und Ergebnisse bleiben erhalten.
+Unter **Einstellungen → Firmware-Update** die Datei **`celldoc-firmware.bin`** hochladen (Mini: `celldoc-mini<n>-firmware.bin`). Einstellungen und Ergebnisse bleiben erhalten.
 
 ## Erste Schritte
 
@@ -101,6 +109,7 @@ Bei unbekannten Zellen zeigt CellDoc einen Bereich (z. B. „≈ 55–70 %“). 
 pip install platformio
 pio run -e esp32dev            # baut Firmware und bettet web/index.html ein
 pio run -e esp32dev -t upload  # flasht per USB
+pio run -e mini2 -t upload     # CellDoc Mini mit 2 Schächten (mini1, mini2, mini4)
 pio device monitor             # serielle Ausgabe, 115200 Baud
 ```
 
@@ -114,6 +123,7 @@ Die Weboberfläche ist eine einzelne Datei: [`web/index.html`](web/index.html). 
 | `src/profiles.h` | Akkuchemien und Zelltypen |
 | `src/soh.h` | Lebenszahl |
 | `src/web.*` | WLAN, REST-API, Firmware-Update |
+| `src/mini/` | CellDoc Mini: Schächte, OLED, eigene Web-API |
 | `web/index.html` | Weboberfläche inkl. Handbuch |
 
 Jeder Push auf `main` baut die Firmware über GitHub Actions und aktualisiert die Vorabversion `latest`. Ein Tag `v1.2.3` erzeugt ein normales Release.
