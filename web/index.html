@@ -203,6 +203,9 @@ tr:last-child td{border-bottom:0}
 .pick .row{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--fill)}
 .pick .row+.row{border-top:1px solid var(--line)}
 .cell-h{display:flex;align-items:center;gap:10px}
+.scanbox{position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:4/3}
+.scanbox video{width:100%;height:100%;object-fit:cover;display:block}
+.scanbox i{position:absolute;inset:16% 22%;border:3px solid #fff;border-radius:14px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -278,7 +281,8 @@ tr:last-child td{border-bottom:0}
     <section class="card">
       <h2>Zellenbestand <span class="sub" id="cellCount" style="text-transform:none;letter-spacing:0"></span></h2>
       <div class="toolbar">
-        <input type="search" id="cSearch" class="grow" placeholder="Nummer, Name, Ort, Notiz …" aria-label="Zellen durchsuchen" autocomplete="off">
+        <input type="search" id="cSearch" class="grow" placeholder="Nummer, Name, Ort …" aria-label="Zellen durchsuchen" autocomplete="off">
+        <button class="btn" id="cScan" type="button"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3M8 12h8"/></svg>Scannen</button>
         <select id="cSort" aria-label="Sortierung" style="width:auto"><option value="no">Neueste zuerst</option><option value="score">Lebenszahl</option><option value="cap">Kapazität</option><option value="ri">Innenwiderstand</option><option value="date">Zuletzt geprüft</option></select>
       </div>
       <div class="fchips" id="cFilter" role="group" aria-label="Filter"></div>
@@ -595,6 +599,7 @@ tr:last-child td{border-bottom:0}
         <li>Jeder Kapazitätstest legt eine Zelle mit fester Nummer an, z. B. <b>CD-0042</b>. Die Nummer bleibt der Zelle für immer, auch nach weiteren Tests.</li>
         <li>Unter <b>Bestand</b> lässt sich nach Nummer, Name, Lagerort, Notiz oder Pack suchen. Eine Zahl wie „42“ findet direkt CD-0042, Enter öffnet sie.</li>
         <li><b>Etikett drucken</b> erzeugt ein Bild mit Nummer, QR-Code, Kapazität, Innenwiderstand, Note und Datum in 203 dpi, passend für Supvan E16, Niimbot und ähnliche Drucker. In der App des Druckers als Bild einfügen.</li>
+        <li><b>Scannen:</b> Unter Bestand oder im Startdialog auf „Scannen“ tippen und das Etikett fotografieren, dann öffnet bzw. wählt CellDoc die Zelle. Mit einem QR-Scanner-Modul am Gerät reicht es, die Zelle davor zu halten. Bei der Mini kommt sie in den Schacht, in den sie danach gesteckt wird, und OK startet den Test.</li>
         <li>Der QR-Code öffnet die Zelle direkt in CellDoc, wenn das Handy im selben WLAN ist. Beim nächsten Test „Aus dem Bestand“ wählen, dann wird automatisch mit dem ersten Test verglichen.</li>
         <li>Note: <b>A</b> ab Lebenszahl 85, <b>B</b> ab 70, <b>C</b> ab 50, darunter <b>D</b>.</li>
       </ul>
@@ -729,6 +734,7 @@ tr:last-child td{border-bottom:0}
   </div>
 </nav>
 
+<script src="vendor/jsqr.min.js"></script>
 <script>
 "use strict";
 // ======================================================================
@@ -900,7 +906,10 @@ function renderLive() {
   if (isAct || ph === "done" || ph === "error") {
     const bits = [job.cellId && job.cellId !== job.name ? job.cellId : "", job.name, job.preset ? (INFO?.presets.find(p => p.id === job.preset) || {}).name : chemName(job.chem), job.cells > 1 ? job.cells + "S" : "", isMini() ? "" : "Anschluss " + job.port].filter(Boolean);
     sub = bits.map(esc).join(" · ");
-  } else if (port.v > .3) sub = isMini() ? "Zelle erkannt · bereit für einen Test" : `Anschluss ${pIdx ? "B" : "A"} · bereit für einen Test`;
+  } else if (port.v > .3) {
+    const as = isMini() ? RAW.slots[SEL]?.assigned : RAW?.assigned;
+    sub = as?.no ? `<span class="cid sm">${esc(as.id)}</span> gescannt · bereit für einen Test` : isMini() ? "Zelle erkannt · bereit für einen Test" : `Anschluss ${pIdx ? "B" : "A"} · bereit für einen Test`;
+  } else if (!isMini() && RAW?.assigned?.no) sub = `<span class="cid sm">${esc(RAW.assigned.id)}</span> gescannt · jetzt einsetzen`;
   $("vSub").innerHTML = sub;
   socTarget = (s.soc != null && s.soc >= 0 && port.v > .3) ? s.soc : -1;
   let socL = socTarget >= 0 ? `Ladezustand <b style="color:var(--fg)">${nf(socTarget)} %</b>` : "";
@@ -967,7 +976,7 @@ function renderLive() {
     const pl = sl => (PHASE[sl.phase] || PHASE.idle)[0].replace("Test · ", "");
     const html = RAW.slots.map((sl, k) => {
       const p = sl.ports[0], c = (PHASE[sl.phase] || PHASE.idle)[1];
-      return `<div class="slot-tile${k === SEL ? " on" : ""}" data-slot="${k}" role="button" tabindex="0" aria-pressed="${k === SEL}"><span>Schacht ${k + 1}</span><b>${p.ok ? (p.v > .5 ? nf(p.v, 3) + " V" : "leer") : "Messung fehlt"}</b><span><i class="sdot" style="background:var(${c})"></i>${esc(pl(sl))}${sl.soc >= 0 && p.v > .5 ? " · " + nf(sl.soc) + " %" : ""}</span>${sl.job?.cellId && sl.phase !== "idle" ? `<span class="num" style="font-family:var(--mono)">${esc(sl.job.cellId)}</span>` : ""}</div>`;
+      return `<div class="slot-tile${k === SEL ? " on" : ""}" data-slot="${k}" role="button" tabindex="0" aria-pressed="${k === SEL}"><span>Schacht ${k + 1}</span><b>${p.ok ? (p.v > .5 ? nf(p.v, 3) + " V" : "leer") : "Messung fehlt"}</b><span><i class="sdot" style="background:var(${c})"></i>${esc(pl(sl))}${sl.soc >= 0 && p.v > .5 ? " · " + nf(sl.soc) + " %" : ""}</span>${sl.job?.cellId && sl.phase !== "idle" ? `<span class="num" style="font-family:var(--mono)">${esc(sl.job.cellId)}</span>` : sl.assigned?.no && sl.phase === "idle" ? `<span class="num" style="font-family:var(--mono)">${esc(sl.assigned.id)} gescannt</span>` : ""}</div>`;
     }).join("");
     if ($("ports").dataset.k !== html) {
       $("ports").innerHTML = html; $("ports").dataset.k = html;
@@ -1073,6 +1082,7 @@ async function refresh() {
     renderLive();
     renderLiveChart(false);
     renderLastResult();
+    checkDeviceScan();
   } catch (e) {
     $("vSub").textContent = "Keine Verbindung zu CellDoc …";
   }
@@ -1113,7 +1123,7 @@ function openStart(preCell) {
     </div>
     <div class="field"><span class="lbl">Zelle</span>
       <div class="seg" role="group" aria-label="Zelle" id="stCellMode"><button type="button" data-c="new" aria-pressed="${!cellSel}">Neue Zelle</button><button type="button" data-c="old" aria-pressed="${!!cellSel}">Aus dem Bestand</button></div>
-      <div id="stCellPick" hidden><input type="search" id="stCellQ" placeholder="Nummer, Name oder Ort" aria-label="Zelle suchen" autocomplete="off" style="margin-top:8px"><div class="pick" id="stCellRes"></div></div>
+      <div id="stCellPick" hidden><div class="toolbar" style="margin-top:8px"><input type="search" id="stCellQ" class="grow" placeholder="Nummer, Name oder Ort" aria-label="Zelle suchen" autocomplete="off"><button class="btn" id="stScan" type="button"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3M8 12h8"/></svg>Scannen</button></div><div class="pick" id="stCellRes"></div></div>
       <span class="hint" id="stCellHint"></span>
     </div>
     <div class="form">
@@ -1146,6 +1156,17 @@ function openStart(preCell) {
     cellUi(); q("#stCellQ").focus();
   }));
   q("#stCellQ").addEventListener("input", () => cellUi());
+  const pickNo = async no => {
+    try { await loadCellsData(true); } catch (e) {}
+    const c = CELLS.find(x => x.no === no);
+    if (!c) return toast(`Zelle ${cellPrefix()}-${String(no).padStart(4, "0")} ist nicht im Bestand`);
+    setSeg("stCellMode", "c", "old"); pickCell(c);
+  };
+  q("#stScan").addEventListener("click", () => scanQr(t => { const no = refFromCode(t); no ? pickNo(no) : toast("Kein CellDoc-Etikett: " + t.slice(0, 40)); }));
+  // Scanner am Gerät: gescannte Zelle direkt übernehmen
+  scanTarget = no => { if (document.body.contains(el)) { pickNo(no); return true; } scanTarget = null; return false; };
+  const scanned = isMini() ? RAW.slots[SEL]?.assigned : RAW?.assigned;
+  if (!cellSel && scanned?.no) setTimeout(() => pickNo(scanned.no), 0);
   function pickCell(c) {
     cellSel = c;
     q("#stName").value = c.name && c.name !== c.id ? c.name : "";
@@ -1348,6 +1369,7 @@ async function loadDiag() {
     ? [...(d.ina || []).map((ok, k) => [`Strommesser Schacht ${k + 1} (INA226 0x${(0x40 + k).toString(16)})`, okc(ok)]), ["Last-Sollwerte (MCP4728)", okc(d.dac)], ["Display (SH1106)", d.oled ? okc(true) : `<span class="note">nicht angeschlossen</span>`]]
     : [["Strommesser A (INA226 0x40)", okc(d.inaA)], ["Strommesser B (INA226 0x41)", okc(d.inaB)], ["Last-Sollwert (MCP4725)", okc(d.dac)], ["Balancer (2× ADS1115)", okc(d.balancer)],
        ["Balancer-Abgriffe", d.taps.map(v => nf(v, 2)).join(" · ") + " V"]];
+  rows.push(["QR-Scanner (IO19/IO18)", S?.scanner ? okc(true) : `<span class="note">nicht angeschlossen</span>`]);
   $("diag").innerHTML = [...rows, ["Freier Speicher (RAM)", nf(d.heap / 1024) + " kB"],
     ["Ergebnisspeicher", st.storageTotal ? `${nf(st.storageUsed / 1024)} von ${nf(st.storageTotal / 1024)} kB` : "–"], ["Chip", esc(d.chip)], ["Firmware", "v" + esc(S?.version || "")]]
     .map(([a, b]) => `<div class="row"><span class="note" style="font-size:14px">${a}</span><span>${b}</span></div>`).join("");
@@ -1607,6 +1629,100 @@ async function openCell(no) {
   q("#ceDel").addEventListener("click", () => confirmInline(q("#ceAct"), `${c.id} aus dem Bestand löschen? Die Testergebnisse bleiben erhalten. Die Nummer wird nicht neu vergeben.`, async () => {
     await api("/api/cell/delete", {no: c.no}); close(); await loadCellsData(true); renderCells(); toast("Gelöscht");
   }));
+}
+
+
+// ======================================================================
+// QR-Code scannen: Handykamera (live nur über HTTPS, sonst per Foto) und Scanner am Gerät
+// ======================================================================
+let scanTarget = null, lastScanSeq = null;
+function refFromCode(text) {
+  const t = String(text || "").trim();
+  let m = t.match(/#z(\d+)/); if (m) return +m[1];
+  m = t.match(/^[A-Za-z0-9]{1,6}-(\d{1,6})$/); if (m) return +m[1];
+  m = t.match(/^#?(\d{1,6})$/); if (m) return +m[1];
+  return 0;
+}
+function decodeCanvas(cv) {
+  const d = cv.getContext("2d", {willReadFrequently: true}).getImageData(0, 0, cv.width, cv.height);
+  const r = jsQR(d.data, cv.width, cv.height, {inversionAttempts: "attemptBoth"});
+  return r ? r.data : null;
+}
+async function decodeImageFile(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    for (const max of [1200, 800, 1800, 500]) {
+      const sc = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(img.naturalWidth * sc); cv.height = Math.round(img.naturalHeight * sc);
+      cv.getContext("2d", {willReadFrequently: true}).drawImage(img, 0, 0, cv.width, cv.height);
+      const r = decodeCanvas(cv);
+      if (r) return r;
+    }
+    return null;
+  } finally { URL.revokeObjectURL(url); }
+}
+function scanPhoto(onCode) {
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "image/*"; inp.setAttribute("capture", "environment");
+  inp.addEventListener("change", async () => {
+    const f = inp.files[0]; if (!f) return;
+    const t = await decodeImageFile(f).catch(() => null);
+    t ? onCode(t) : toast("Kein QR-Code erkannt. Etikett näher und scharf fotografieren.");
+  });
+  inp.click();
+}
+async function scanLive(onCode) {
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: "environment"}, audio: false}); } catch (e) { return scanPhoto(onCode); }
+  const {el, close} = openSheet(`<div class="sheet-head"><h3>QR-Code scannen</h3><button class="btn small" data-close type="button">Abbrechen</button></div>
+    <div class="scanbox"><video playsinline muted></video><i></i></div><p class="note">Etikett in den Rahmen halten.</p>
+    <div class="actions"><button class="btn" id="scPhoto" type="button">Stattdessen Foto aufnehmen</button></div>`);
+  const v = el.querySelector("video"); v.srcObject = stream; v.play().catch(() => {});
+  let done = false;
+  const stop = () => { done = true; stream.getTracks().forEach(t => t.stop()); };
+  const obs = new MutationObserver(() => { if (!document.body.contains(el)) { stop(); obs.disconnect(); } });
+  obs.observe(document.body, {childList: true});
+  el.querySelector("#scPhoto").addEventListener("click", () => { close(); scanPhoto(onCode); });
+  const cv = document.createElement("canvas");
+  const loop = () => {
+    if (done) return;
+    if (v.videoWidth) {
+      const sc = Math.min(1, 720 / Math.max(v.videoWidth, v.videoHeight));
+      cv.width = v.videoWidth * sc | 0; cv.height = v.videoHeight * sc | 0;
+      cv.getContext("2d", {willReadFrequently: true}).drawImage(v, 0, 0, cv.width, cv.height);
+      const t = decodeCanvas(cv);
+      if (t) { close(); stop(); onCode(t); return; }
+    }
+    setTimeout(loop, 180);
+  };
+  loop();
+}
+function scanQr(onCode) {
+  if (typeof jsQR !== "function") return toast("QR-Leser fehlt in dieser Firmware");
+  (window.isSecureContext && navigator.mediaDevices?.getUserMedia ? scanLive : scanPhoto)(onCode);
+}
+async function openScannedCell(text) {
+  const no = refFromCode(text);
+  if (!no) return toast("Kein CellDoc-Etikett: " + String(text).slice(0, 40));
+  try { await loadCellsData(true); } catch (e) {}
+  if (!CELLS.some(c => c.no === no)) return toast(`Zelle ${cellPrefix()}-${String(no).padStart(4, "0")} ist nicht im Bestand`);
+  showView("cells"); openCell(no);
+}
+$("cScan").addEventListener("click", () => scanQr(openScannedCell));
+// Scanner am Gerät meldet einen neuen Code über /api/state
+function checkDeviceScan() {
+  const sc = RAW?.scan;
+  if (!sc) return;
+  if (lastScanSeq === null) { lastScanSeq = sc.seq; return; }  // alter Scan beim Laden der Seite
+  if (sc.seq === lastScanSeq) return;
+  lastScanSeq = sc.seq;
+  if (!sc.ok) return toast("Unbekannter Code: " + sc.id);
+  if (scanTarget && scanTarget(sc.no)) return;
+  if (!$("v-cells").hidden && !document.querySelector(".sheet-bg")) return openCell(sc.no);
+  const pend = isMini() && RAW.pending?.no === sc.no;
+  toast(`${sc.id} gescannt${pend ? " · kommt in den nächsten Schacht, in den eine Zelle gesteckt wird" : ""}`);
 }
 
 // ======================================================================

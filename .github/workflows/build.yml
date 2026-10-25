@@ -150,6 +150,7 @@ jobs:
         run: |
           mkdir -p site/flash
           cp web/index.html site/index.html
+          cp -r web/vendor site/vendor
           cp web/flash/index.html site/flash/index.html
           VER="dev-$(git rev-parse --short HEAD) · $(date -u +%Y-%m-%d)"
           for id in celldoc celldoc-mini1 celldoc-mini2 celldoc-mini4; do

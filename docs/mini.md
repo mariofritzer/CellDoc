@@ -56,6 +56,7 @@ Zum Vergrößern anklicken. Jeder Plan enthält Stückliste und Hinweise. Erzeug
 | Netzteil 5 V | 2 A | 3 A | 6 A |
 | Kühlkörper | ca. 60 × 40 mm | ca. 100 × 60 mm + Lüfter | ca. 100 × 60 mm + Lüfter |
 | OLED SH1106 1,3" I²C + 3 Taster (optional) | ✓ | ✓ | ✓ |
+| QR-Scanner GM861S, 3,3 V (optional) | ✓ | ✓ | ✓ |
 | Summer, Widerstände, Kondensatoren | laut Schaltplan | | |
 
 ## Pinbelegung
@@ -69,6 +70,7 @@ Zum Vergrößern anklicken. Jeder Plan enthält Stückliste und Hinweise. Erzeug
 | 25 | Lüfter (PWM) |
 | 17 | Summer |
 | 34 / 35 / 39 | Taster ◀ / OK / ▶ (externe Pull-ups 10 kΩ) |
+| 19 / 18 | QR-Scanner TX / RX (optional) |
 | 0 | BOOT-Taste = Not-Aus |
 
 ## Bedienung
@@ -84,6 +86,23 @@ Zum Vergrößern anklicken. Jeder Plan enthält Stückliste und Hinweise. Erzeug
 | OK in der Detailansicht eines freien Schachts | Standardtest: unbekannte 18650, 0,5 A, danach Lagerspannung |
 | OK lang (1,2 s) | laufenden Vorgang im gewählten Schacht stoppen |
 | BOOT | Not-Aus für alle Schächte |
+
+## QR-Scanner (optional)
+
+Ein fertiges Scanner-Modul liest die Etiketten direkt am Gerät. Es dekodiert den QR-Code selbst und schickt nur den Text über die serielle Schnittstelle (9600 Baud) an den ESP32.
+
+| Scanner | ESP32 |
+|---|---|
+| VCC | 3V3 |
+| GND | GND |
+| TX | IO19 |
+| RX | IO18 |
+
+- Empfehlung: **GM861S** (3,3 V Versorgung und Pegel, ca. 15–20 €). Ein **GM65** geht auch, braucht aber 5 V Versorgung. Dann den TX des Scanners über einen Pegelwandler an IO19 legen.
+- Den Scanner einmal auf **Induktionsmodus** (Sensing Mode) stellen. Dazu den passenden Einstell-Code aus seinem Handbuch scannen. Dann liest er automatisch, sobald ein Etikett davor gehalten wird.
+- Die Firmware erkennt den Scanner von selbst. Unter Einstellungen → Diagnose steht dann „QR-Scanner: ok“.
+
+**Ablauf:** Zelle mit dem Etikett vor den Scanner halten, es piept kurz. Ein langer Ton bedeutet, dass der Code unbekannt ist. Steckt gerade genau eine Zelle in einem freien Schacht, wird sie diesem Schacht zugeordnet, sonst dem nächsten Schacht, in den innerhalb von 2 Minuten eine Zelle gesteckt wird. Das Display zeigt die Nummer, **OK** startet den Test mit dieser Zelle, und im Startdialog der Weboberfläche ist sie vorausgewählt.
 
 ## Firmware
 

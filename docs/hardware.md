@@ -136,9 +136,27 @@ Jeder Abgriff des JST-XH-Steckers bekommt einen Teiler 100 kΩ / 10 kΩ (0,1 %).
 | 25 | Lüfter PWM |
 | 39 | Lüfter Drehzahl |
 | 17 | Summer |
+| 19 / 18 | QR-Scanner TX / RX (optional) |
 | 0 | BOOT-Taste = Not-Aus |
 
 Relaismodule mit Jumper auf **High Level Trigger**, dann bleiben die Relais beim Booten aus.
+
+## QR-Scanner (optional)
+
+Ein fertiges Scanner-Modul liest die Etiketten direkt am Gerät. Es dekodiert den QR-Code selbst und schickt nur den Text über die serielle Schnittstelle (9600 Baud) an den ESP32.
+
+| Scanner | ESP32 |
+|---|---|
+| VCC | 3V3 |
+| GND | GND |
+| TX | IO19 |
+| RX | IO18 |
+
+- Empfehlung: **GM861S** (3,3 V Versorgung und Pegel, ca. 15–20 €). Ein **GM65** geht auch, braucht aber 5 V Versorgung. Dann den TX des Scanners über einen Pegelwandler an IO19 legen.
+- Den Scanner einmal auf **Induktionsmodus** (Sensing Mode) stellen. Dazu den passenden Einstell-Code aus seinem Handbuch scannen. Dann liest er automatisch, sobald ein Etikett davor gehalten wird.
+- Die Firmware erkennt den Scanner von selbst. Unter Einstellungen → Diagnose steht dann „QR-Scanner: ok“.
+
+**Ablauf:** Zelle mit dem Etikett vor den Scanner halten, es piept kurz. Ein langer Ton bedeutet, dass der Code unbekannt ist. Die gescannte Zelle ist danach 10 Minuten lang im Startdialog vorausgewählt. Ist die Seite „Bestand“ offen, öffnet sich die Zelle dort.
 
 ## Einkaufsliste
 
@@ -165,6 +183,7 @@ Relaismodule mit Jumper auf **High Level Trigger**, dann bleiben die Relais beim
 | 1 | XT60-Buchse, JST-XH 2S–6S oder Balancer-Adapter | Anschluss B |
 | – | Widerstände 12× 100 kΩ + 12× 10 kΩ (0,1 %), 7,5 kΩ, 1 kΩ, 10 kΩ, 4,7 kΩ; 10 nF, 100 nF | |
 | – | Lochraster, Silikonkabel 1,5 mm² und 0,25 mm² | Aufbau |
+| (1) | QR-Scanner GM861S, 3,3 V (optional) | U15 |
 
 ## Aufbau und erste Inbetriebnahme
 

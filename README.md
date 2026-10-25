@@ -50,6 +50,7 @@ Jeder Test legt die Zelle mit einer festen Nummer an. Die Nummer kommt mit einem
 <img src="docs/img/etikett-beispiel.png" alt="Etikett 40 × 14 mm mit QR-Code, Nummer CD-0005, Kapazität, Innenwiderstand, Note und Datum">
 
 - **Etiketten:** 12–15 mm breit, 30–50 mm lang, 203 dpi, reines Schwarz-Weiß. Für den **Supvan E16**: Bild speichern und in der Katasymbol-App als Bild einfügen. Für viele Zellen auf einmal gibt es eine CSV-Liste für den Tabellenimport der App.
+- **QR-Code scannen:** in der Weboberfläche über die Handykamera (Foto, über HTTPS auch live) oder mit einem optionalen Scanner-Modul (GM861S) direkt am Gerät. Die Zelle öffnet sich oder wird für den nächsten Test ausgewählt. Bei der Mini landet sie im Schacht, in den sie gesteckt wird.
 - **Suche:** „42“ findet CD-0042, Wörter finden Name, Lagerort, Notiz oder Pack. Filter für Note A–B, „Prüfen“, verbaut und ausgemustert.
 - **Selbstentladung:** Nach einem Test mit „Danach voll laden“ merkt sich CellDoc nach einer Stunde die Spannung. Nach 7–14 Tagen nachmessen, unter 3 mV pro Tag ist gut.
 - **Pack zusammenstellen:** Serie und Parallel eingeben, CellDoc sucht passende Zellen, verteilt sie so, dass jede Parallelgruppe gleich viel Kapazität hat, und markiert sie auf Wunsch als verbaut.
@@ -84,7 +85,7 @@ Jeder Test legt die Zelle mit einer festen Nummer an. Die Nummer kommt mit einem
 
 ESP32 DevKit, 2× INA226 (Strom/Spannung), MCP4725 + LM358 + 2× IRFP250N (Konstantstromlast), TP5000 (Lader 4,2/3,6 V), 2× ADS1115 (Balancer), 3× DS18B20, zwei Relais, CPU-Kühler mit 4-Pin-Lüfter, 12-V-Netzteil.
 
-Schaltung, Pinbelegung und Einkaufsliste: **[docs/hardware.md](docs/hardware.md)**
+Schaltung, Pinbelegung, optionaler QR-Scanner und Einkaufsliste: **[docs/hardware.md](docs/hardware.md)**
 
 ## CellDoc Mini
 
@@ -163,6 +164,6 @@ Lithium-Akkus können bei Fehlern brennen. Tests mit hohen Strömen und LiPo-Pac
 
 ## Lizenz
 
-[MIT](LICENSE) © 2026 Mario Fritzer
+[MIT](LICENSE) © 2026 Mario Fritzer. Der eingebaute QR-Leser ist [jsQR](https://github.com/cozmo/jsQR) (Apache-2.0).
 
 Die Idee geht auf das *ESP32 Smart Battery Dashboard* von LifeTronix zurück. Hardwarekonzept, Firmware und Oberfläche von CellDoc sind eigenständig neu entwickelt.

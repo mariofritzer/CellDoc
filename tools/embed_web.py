@@ -31,7 +31,7 @@ def inline_scripts(html):
     import re
 
     def rep(m):
-        path = os.path.join(ROOT, "web", m.group(1))
+        path = os.path.join(ROOT, "web", m.group(1).decode())
         with open(path, "rb") as f:
             return b"<script>" + f.read() + b"</script>"
 
