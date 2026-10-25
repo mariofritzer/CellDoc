@@ -1,0 +1,1298 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#eef1f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0d10" media="(prefers-color-scheme: dark)">
+<title>CellDoc</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='9' y='5' width='14' height='25' rx='3' fill='%230f9d76'/%3E%3Crect x='13' y='2' width='6' height='4' rx='1' fill='%230f9d76'/%3E%3C/svg%3E">
+<style>
+/* CellDoc – iOS-artige Karten, untere Tab-Leiste, eine Spalte am Handy */
+:root{
+  --bg:#eef1f4; --card:#ffffff; --fg:#14181d; --muted:#6b7480; --line:#dfe3e8; --fill:#f3f5f8; --bar:rgba(248,249,251,.86);
+  --charge:#0f9d76; --discharge:#e07b16; --rest:#5a6bd8; --danger:#d63b3b; --warn:#c98f00; --on-accent:#ffffff;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;
+  --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0b0d10; --card:#171a1f; --fg:#eef1f5; --muted:#8d96a3; --line:#2a2f37; --fill:#20242a; --bar:rgba(23,26,31,.86);
+  --charge:#2fc496; --discharge:#f39a3d; --rest:#8592f0; --danger:#f06161; --warn:#f2bd2f; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font:15px/1.45 var(--font);-webkit-font-smoothing:antialiased;
+  padding:max(14px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) calc(84px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+button,input,select{font:inherit;color:inherit}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0;line-height:1.1}
+.sub{color:var(--muted);font-size:13px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--card);border:1px solid var(--line);display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--charge)}
+.dot.off{background:var(--danger)}
+.grid{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:860px){.grid{grid-template-columns:1.2fr 1fr}}
+.card{background:var(--card);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.card>h2,.sec-h{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.num{font-variant-numeric:tabular-nums}
+.pill{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;color:var(--on-accent);background:var(--muted);text-transform:none;letter-spacing:0;white-space:nowrap}
+.hero{display:flex;align-items:center;gap:20px}
+.hero-txt{display:flex;flex-direction:column;gap:6px;min-width:0}
+.cell{width:96px;height:176px;flex:none;display:block}
+.big{font-size:54px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.big small{font-size:22px;font-weight:600;color:var(--muted);margin-left:2px}
+.kv{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border-radius:12px;overflow:hidden}
+@media(min-width:520px){.kv{grid-template-columns:repeat(4,1fr)}}
+.kv>div{background:var(--fill);padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kv span{font-size:12px;color:var(--muted)}
+.kv b{font-size:19px;font-weight:650;white-space:nowrap}
+.steps{display:flex;gap:6px}
+.step{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+.bar{height:6px;border-radius:3px;background:var(--fill);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--muted);transition:width .4s}
+.step.done .bar i{background:var(--charge);width:100%}
+.step.now .bar i{background:var(--discharge)}
+.step span{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.step.now span{color:var(--fg);font-weight:600}
+.temps{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.temp{background:var(--fill);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.temp b{font-size:22px}
+.temp small{font-size:12px;color:var(--muted)}
+.gauge{height:6px;border-radius:3px;position:relative;background:var(--line)}
+.gauge i{position:absolute;top:-4px;width:3px;height:14px;border-radius:2px;background:var(--fg)}
+.banner{border-radius:14px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.banner.err{background:color-mix(in srgb,var(--danger) 14%,var(--card));color:var(--fg)}
+.banner.ok{background:color-mix(in srgb,var(--charge) 14%,var(--card))}
+.banner.info{background:var(--fill)}
+.banner b{display:block}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .l{display:flex;flex-direction:column;min-width:0}
+.row .l small{color:var(--muted);font-size:12px}
+.row.tap{cursor:pointer}
+.row.tap:hover{background:var(--fill);margin:0 -10px;padding:11px 10px;border-radius:10px}
+.tag{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--fill);white-space:nowrap;text-align:right}
+.tag small{display:block;font-size:10px;font-weight:600;color:var(--muted)}
+.res{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.res .row span{color:var(--muted);font-size:13px}
+.res .row b{white-space:nowrap}
+.res .row:nth-child(2){border-top:0}
+@media(max-width:420px){.res{grid-template-columns:1fr}.res .row:nth-child(2){border-top:1px solid var(--line)}}
+.note{font-size:12px;color:var(--muted)}
+.btn{border:0;border-radius:12px;padding:11px 16px;font-weight:600;font-size:15px;cursor:pointer;background:var(--fill);color:var(--fg)}
+.btn.primary{background:var(--charge);color:var(--on-accent)}
+.btn.danger{background:var(--danger);color:var(--on-accent)}
+.btn.small{padding:7px 12px;font-size:13px;border-radius:10px}
+.btn:disabled{opacity:.45;cursor:default}
+.btn:focus-visible,.tabs button:focus-visible,.seg button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--rest);outline-offset:2px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--fill);border-radius:11px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;font-weight:600;font-size:13px;padding:8px 4px;border-radius:9px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.chart{width:100%;height:auto;display:block}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.balcells{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:8px}
+.balcell{background:var(--fill);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:4px;font-size:12px}
+.balcell b{font-size:16px}
+.balcell.low b{color:var(--danger)}
+.soh{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.ring{width:132px;height:132px;flex:none}
+.soh-txt{display:flex;flex-direction:column;gap:10px;flex:1;min-width:190px}
+.part{display:flex;flex-direction:column;gap:4px}
+.part div{display:flex;justify-content:space-between;gap:8px;font-size:13px}
+.part .bar{height:5px}
+.part .bar i{background:var(--charge)}
+/* Tabs */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--bar);backdrop-filter:saturate(1.6) blur(16px);-webkit-backdrop-filter:saturate(1.6) blur(16px);
+  border-top:1px solid var(--line);display:flex;justify-content:center;padding:6px max(8px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+.tabs .in{display:grid;grid-template-columns:repeat(4,1fr);width:100%;max-width:560px}
+.tabs button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--muted);padding:4px;cursor:pointer;border-radius:10px}
+.tabs button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabs button[aria-selected="true"]{color:var(--charge)}
+/* Formulare */
+.field{display:flex;flex-direction:column;gap:5px}
+.field label,.lbl{font-size:13px;font-weight:600}
+.field .hint{font-size:12px;color:var(--muted)}
+input[type=text],input[type=number],input[type=password],select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--fill);font-size:15px;min-width:0}
+input:focus,select:focus{outline:2px solid var(--rest);outline-offset:0}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form .full{grid-column:1/-1}
+@media(max-width:480px){.form{grid-template-columns:1fr}}
+.switch{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:6px 0}
+.switch input{appearance:none;-webkit-appearance:none;width:51px;height:31px;border-radius:16px;background:var(--line);position:relative;cursor:pointer;flex:none;transition:background .2s}
+.switch input::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.25);transition:transform .2s}
+.switch input:checked{background:var(--charge)}
+.switch input:checked::after{transform:translateX(20px)}
+.switch input:focus-visible{outline:2px solid var(--rest);outline-offset:2px}
+/* Sheet */
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;
+  padding:10px max(16px,env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));display:flex;flex-direction:column;gap:14px}
+@media(min-width:700px){.sheet-bg{align-items:center}.sheet{border-radius:20px;padding-bottom:20px}}
+.sheet .grab{width:38px;height:5px;border-radius:3px;background:var(--line);margin:0 auto}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sheet-head h3{margin:0;font-size:20px}
+/* Handbuch */
+.manual{display:flex;flex-direction:column;gap:16px}
+.manual h3{font-size:20px;margin:0;letter-spacing:-.01em}
+.manual h4{font-size:15px;margin:6px 0 0}
+.manual p,.manual li{max-width:72ch}
+.manual p{margin:0}
+.manual ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.toc{display:flex;flex-wrap:wrap;gap:6px}
+.toc a{font-size:13px;color:var(--fg);text-decoration:none;background:var(--card);border:1px solid var(--line);padding:5px 11px;border-radius:999px}
+details.chem{background:var(--fill);border-radius:14px;padding:0 14px}
+details.chem summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 0;font-weight:650}
+details.chem summary::-webkit-details-marker{display:none}
+details.chem summary::after{content:"›";font-size:20px;color:var(--muted);transform:rotate(90deg);transition:transform .2s}
+details.chem[open] summary::after{transform:rotate(-90deg)}
+details.chem .body{padding:0 0 14px;display:flex;flex-direction:column;gap:10px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.facts div{background:var(--card);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column}
+.facts span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.facts b{font-size:15px}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:6px 10px 6px 0;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 10px 7px 0;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.callout{border-left:4px solid var(--warn);background:var(--fill);border-radius:10px;padding:10px 12px;font-size:14px}
+.callout.danger{border-color:var(--danger)}
+.empty{color:var(--muted);text-align:center;padding:24px 8px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:40;max-width:90vw}
+.demo{font-size:12px;font-weight:700;color:var(--warn)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>CellDoc</h1>
+      <div class="sub">Diagnose für Akkuzellen <span class="demo" id="demoTag" hidden>· Demo mit Beispielwerten</span></div>
+    </div>
+    <div class="chips num" id="hdrChips"></div>
+  </header>
+
+  <!-- ===================== LIVE ===================== -->
+  <main id="v-live" class="view">
+    <div class="grid">
+      <section class="card" aria-labelledby="live-h">
+        <h2 id="live-h">Live <span class="pill" id="modePill">Bereit</span></h2>
+        <div id="banner"></div>
+        <div class="hero">
+          <canvas class="cell" id="cell" width="96" height="176" role="img" aria-label="Ladezustand"></canvas>
+          <div class="hero-txt">
+            <div class="big num" id="vBig">–<small>V</small></div>
+            <div class="sub num" id="vSub">Kein Vorgang aktiv</div>
+            <div class="sub num" id="socLine"></div>
+          </div>
+        </div>
+        <div class="kv num">
+          <div><span>Strom</span><b id="kI">–</b></div>
+          <div><span>Leistung</span><b id="kP">–</b></div>
+          <div><span id="kQl">Ladung</span><b id="kQ">–</b></div>
+          <div><span>Energie</span><b id="kE">–</b></div>
+        </div>
+        <div class="steps" id="steps" hidden></div>
+        <div class="temps num" id="temps"></div>
+        <div class="banner info num" id="throttle" hidden></div>
+        <div class="actions" id="liveActions"></div>
+      </section>
+
+      <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+        <section class="card" aria-labelledby="ports-h">
+          <h2 id="ports-h">Anschlüsse</h2>
+          <div class="kv num" style="grid-template-columns:1fr 1fr" id="ports"></div>
+          <div id="balWrap" hidden>
+            <div class="lbl" style="margin-bottom:8px">Balancer · Einzelzellen</div>
+            <div class="balcells num" id="bal"></div>
+          </div>
+          <div class="note num" id="fanLine"></div>
+        </section>
+        <section class="card" id="lastCard" hidden aria-labelledby="last-h">
+          <h2 id="last-h">Letztes Ergebnis <span class="sub" id="lastName" style="text-transform:none;letter-spacing:0"></span></h2>
+          <div id="lastBody"></div>
+        </section>
+      </div>
+    </div>
+    <section class="card" style="margin-top:16px" aria-labelledby="c-h">
+      <h2 id="c-h">Verlauf <span class="sub" id="curveHint" style="text-transform:none;letter-spacing:0"></span></h2>
+      <div class="legend" id="curveLegend"></div>
+      <svg class="chart" id="liveChart" viewBox="0 0 720 260" role="img" aria-label="Spannungsverlauf"></svg>
+    </section>
+  </main>
+
+  <!-- ===================== ERGEBNISSE ===================== -->
+  <main id="v-results" class="view" hidden>
+    <section class="card">
+      <h2>Geprüfte Akkus <span class="sub" id="resCount" style="text-transform:none;letter-spacing:0"></span></h2>
+      <div id="resList"><div class="empty">Lädt …</div></div>
+    </section>
+  </main>
+
+  <!-- ===================== HANDBUCH ===================== -->
+  <main id="v-manual" class="view manual" hidden>
+    <section class="card">
+      <h3>Handbuch</h3>
+      <p class="sub" style="font-size:14px">Alles Wichtige zu Akkutypen, Bauformen, Steckern, Messwerten und Sicherheit, dazu die Bedienung von CellDoc. Funktioniert auch ohne Internet.</p>
+      <nav class="toc" aria-label="Kapitel">
+        <a href="#m-typen">Akkutypen</a><a href="#m-vergleich">Vergleich</a><a href="#m-bauformen">Bauformen</a><a href="#m-bezeichnung">Typbezeichnung</a>
+        <a href="#m-packs">Packs &amp; Stecker</a><a href="#m-werte">Messwerte</a><a href="#m-leben">Lebenszahl</a><a href="#m-sicher">Sicherheit</a>
+        <a href="#m-lagern">Lagern &amp; Entsorgen</a><a href="#m-bedienung">Bedienung</a>
+      </nav>
+    </section>
+
+    <section class="card" id="m-typen">
+      <h3>Akkutypen</h3>
+      <p>Spannungen gelten pro Zelle. Bei Packs mit der Zellzahl malnehmen, ein 3S-LiPo hat also 3 × 4,2 V = 12,6 V voll.</p>
+
+      <details class="chem" open>
+        <summary>Li-Ion (NMC, NCA, LCO)</summary>
+        <div class="body">
+          <div class="facts num">
+            <div><span>Nenn</span><b>3,6–3,7 V</b></div><div><span>Ladeschluss</span><b>4,20 V</b></div>
+            <div><span>Entladeschluss</span><b>2,5–3,0 V</b></div><div><span>Lagern</span><b>3,7–3,8 V</b></div>
+            <div><span>Zyklen</span><b>300–1000</b></div><div><span>Laden bei</span><b>0–45 °C</b></div>
+          </div>
+          <p>Der Standard in Rundzellen wie 18650 und 21700: Laptops, Akkuwerkzeug, E-Bikes, Taschenlampen, Powerbanks. Hohe Energiedichte, geladen wird nach dem CC/CV-Verfahren: erst konstanter Strom, ab 4,2 V konstante Spannung, bis der Strom auf etwa ein Zehntel abgefallen ist.</p>
+          <ul>
+            <li><b>NMC</b> (Nickel-Mangan-Kobalt): Allrounder, in den meisten Markenzellen (Samsung, LG, Molicel).</li>
+            <li><b>NCA</b> (Nickel-Kobalt-Aluminium): sehr hohe Kapazität, z. B. Panasonic NCR18650B.</li>
+            <li><b>LCO</b> (Lithium-Kobaltoxid): ältere Laptop- und Handyzellen, wenig belastbar.</li>
+            <li><b>Hochstrom vs. Kapazität:</b> Zellen sind entweder auf Strom (z. B. 30Q, VTC6, P28A, 20–30 A) oder auf Kapazität (z. B. MJ1, 35E, 10 A) optimiert. Beides gleichzeitig gibt es nicht.</li>
+          </ul>
+          <p class="note">Viele Datenblätter nennen 2,5 V als Entladeschluss. CellDoc testet bis 3,0 V, das schont die Zelle, misst aber 3–5 % weniger Kapazität als das Datenblatt.</p>
+        </div>
+      </details>
+
+      <details class="chem">
+        <summary>LiPo (Lithium-Polymer)</summary>
+        <div class="body">
+          <div class="facts num">
+            <div><span>Nenn</span><b>3,7 V</b></div><div><span>Ladeschluss</span><b>4,20 V</b></div>
+            <div><span>Entladeschluss</span><b>3,0–3,3 V</b></div><div><span>Lagern</span><b>3,80–3,85 V</b></div>
+            <div><span>Zyklen</span><b>150–500</b></div><div><span>Laden bei</span><b>0–45 °C</b></div>
+          </div>
+          <p>Chemisch ein Li-Ion-Akku, aber in einer weichen Folienhülle (Pouch). Typisch für Modellbau, Drohnen, Handys und Smartwatches. Sehr hohe Ströme möglich, die aufgedruckten C-Raten sind aber oft geschönt.</p>
+          <ul>
+            <li><b>Aufgebläht?</b> Dann hat sich Gas gebildet. Der Akku ist am Ende und gehört entsorgt. Nicht anstechen, nicht pressen, nicht mehr laden.</li>
+            <li>Nie voll gelagert: Ein voller LiPo altert in Wochen spürbar. Nach dem Fliegen auf Lagerspannung bringen.</li>
+            <li>Im Modellbau gilt 3,3 V unter Last als Landespannung, 3,0 V als absolute Untergrenze.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="chem">
+        <summary>Li-HV (Hochvolt-LiPo)</summary>
+        <div class="body">
+          <div class="facts num">
+            <div><span>Nenn</span><b>3,8 V</b></div><div><span>Ladeschluss</span><b>4,35 V</b></div>
+            <div><span>Entladeschluss</span><b>3,2–3,3 V</b></div><div><span>Lagern</span><b>3,85 V</b></div>
+          </div>
+          <p>LiPo-Variante, die auf 4,35 V (manche 4,45 V) geladen werden darf und dadurch rund 10 % mehr Energie speichert. Erkennbar an „HV“ oder „LiHV“ auf dem Etikett. Altert schneller, wenn sie oft voll steht.</p>
+          <p class="note">CellDoc lädt Li-HV nur auf 4,2 V. Die gemessene Kapazität fällt dadurch um etwa 10 % niedriger aus. Für den Vergleich mehrerer Li-HV-Akkus untereinander ist das egal.</p>
+        </div>
+      </details>
+
+      <details class="chem">
+        <summary>LiFePO4 (LFP, Lithium-Eisenphosphat)</summary>
+        <div class="body">
+          <div class="facts num">
+            <div><span>Nenn</span><b>3,2 V</b></div><div><span>Ladeschluss</span><b>3,60–3,65 V</b></div>
+            <div><span>Entladeschluss</span><b>2,5–2,8 V</b></div><div><span>Lagern</span><b>3,3 V</b></div>
+            <div><span>Zyklen</span><b>2000–6000</b></div><div><span>Laden bei</span><b>0–45 °C</b></div>
+          </div>
+          <p>Sehr sicher (thermisch stabil, brennt kaum), extrem langlebig, aber geringere Energiedichte. Verbreitet in Heimspeichern, Wohnmobil- und Bootsbatterien, Solarleuchten und als 26650/32700-Rundzelle.</p>
+          <ul>
+            <li><b>Nie mit einem Li-Ion-Lader laden.</b> 4,2 V überladen eine LFP-Zelle und schädigen sie.</li>
+            <li>Die Spannungskurve ist sehr flach: Zwischen 20 und 90 % ändert sich die Spannung kaum. Der Ladezustand lässt sich daher aus der Spannung nur grob schätzen.</li>
+            <li>12-V-LFP-Batterien bestehen aus 4 Zellen (4S, 14,6 V voll).</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="chem">
+        <summary>LTO (Lithium-Titanat)</summary>
+        <div class="body">
+          <div class="facts num">
+            <div><span>Nenn</span><b>2,3–2,4 V</b></div><div><span>Ladeschluss</span><b>2,80–2,85 V</b></div>
+            <div><span>Entladeschluss</span><b>1,5–1,8 V</b></div><div><span>Zyklen</span><b>10 000+</b></div>
+          </div>
+          <p>Nische mit besonderen Stärken: zehntausende Zyklen, extrem schnell ladbar, funktioniert auch bei starker Kälte. Dafür wenig Energie pro Gewicht. Oft als große zylindrische Zellen (z. B. 66160) für Startbatterien oder Speicher.</p>
+          <p class="note">CellDoc kann LTO entladen und messen, aber nicht laden.</p>
+        </div>
+      </details>
+
+      <details class="chem">
+        <summary>NiMH und NiCd</summary>
+        <div class="body">
+          <div class="facts num">
+            <div><span>Nenn</span><b>1,2 V</b></div><div><span>Voll</span><b>ca. 1,4–1,45 V</b></div>
+            <div><span>Entladeschluss</span><b>1,0 V</b></div><div><span>Zyklen</span><b>500–2000</b></div>
+          </div>
+          <p>Die klassischen AA/AAA-Akkus und Modellbau-Stickpacks (6 oder 7 Zellen = 7,2 bzw. 8,4 V). Geladen wird nicht nach CC/CV, sondern mit Konstantstrom und Abschaltung, wenn die Spannung am Ende leicht absinkt (−ΔV). Deshalb braucht NiMH ein eigenes Ladegerät.</p>
+          <ul>
+            <li><b>LSD-Zellen</b> (Low Self Discharge, z. B. Eneloop) halten ihre Ladung über Jahre. Normale NiMH verlieren dagegen etwa 20–30 % im Monat.</li>
+            <li><b>NiCd</b> ist der Vorgänger: robust, aber mit echtem Memory-Effekt und giftigem Cadmium. Heute weitgehend verboten, alte Akkus gehören in die Problemstoffsammlung.</li>
+            <li>In CellDoc für beide den Typ „NiMH / NiCd“ wählen. Laden ist mit CellDoc nicht möglich.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="chem">
+        <summary>Bleiakku (AGM, Gel, Nass)</summary>
+        <div class="body">
+          <div class="facts num">
+            <div><span>Nenn</span><b>2,0 V (12 V = 6 Zellen)</b></div><div><span>Laden</span><b>14,4–14,7 V</b></div>
+            <div><span>Erhaltung</span><b>13,5–13,8 V</b></div><div><span>Entladeschluss</span><b>10,5–10,8 V</b></div>
+          </div>
+          <p>Schwer, aber billig und robust: USV-Anlagen, Alarmanlagen, Kinderfahrzeuge, Autos. Anders als Lithium <b>voll</b> lagern, sonst sulfatiert die Batterie und verliert dauerhaft Kapazität.</p>
+          <ul>
+            <li>Die verfügbare Kapazität hängt stark vom Strom ab. Die Nennkapazität gilt meist für eine Entladung über 20 Stunden, also z. B. 0,35 A bei einem 7-Ah-Akku. Wer mit 2 A testet, misst deutlich weniger.</li>
+            <li>An CellDoc nur an Anschluss B testen, als „Blei“ mit 6 Zellen für einen 12-V-Akku.</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <section class="card" id="m-vergleich">
+      <h3>Vergleich auf einen Blick</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Typ</th><th>Nenn</th><th>Voll</th><th>Leer</th><th>Lagern</th><th>Zyklen</th><th>Sicherheit</th></tr></thead>
+        <tbody>
+          <tr><td>Li-Ion</td><td>3,6 V</td><td>4,20 V</td><td>3,0 V</td><td>3,8 V</td><td>300–1000</td><td>mittel</td></tr>
+          <tr><td>LiPo</td><td>3,7 V</td><td>4,20 V</td><td>3,2 V</td><td>3,85 V</td><td>150–500</td><td>gering</td></tr>
+          <tr><td>Li-HV</td><td>3,8 V</td><td>4,35 V</td><td>3,2 V</td><td>3,85 V</td><td>150–400</td><td>gering</td></tr>
+          <tr><td>LiFePO4</td><td>3,2 V</td><td>3,60 V</td><td>2,5 V</td><td>3,3 V</td><td>2000–6000</td><td>hoch</td></tr>
+          <tr><td>LTO</td><td>2,4 V</td><td>2,80 V</td><td>1,8 V</td><td>2,4 V</td><td>10 000+</td><td>sehr hoch</td></tr>
+          <tr><td>NiMH</td><td>1,2 V</td><td>≈1,45 V</td><td>1,0 V</td><td>beliebig</td><td>500–2000</td><td>hoch</td></tr>
+          <tr><td>Blei</td><td>2,0 V</td><td>2,40 V</td><td>1,8 V</td><td>voll</td><td>200–1000</td><td>hoch</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">Zyklenangaben bis 80 % Restkapazität, stark abhängig von Ladeschluss, Strom und Temperatur. Wer Li-Ion nur bis 4,1 V lädt, verdoppelt die Zyklenzahl ungefähr.</p>
+    </section>
+
+    <section class="card" id="m-bauformen">
+      <h3>Bauformen</h3>
+      <p>Die Zahl bei Rundzellen nennt Durchmesser und Länge: <b>18650</b> = 18 mm Durchmesser, 65,0 mm lang.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Format</th><th>Größe</th><th>Typische Kapazität</th><th>Hinweis</th></tr></thead>
+        <tbody>
+          <tr><td>10440</td><td>wie AAA</td><td>300–350 mAh</td><td>3,7 V! Nicht in Geräte für AAA</td></tr>
+          <tr><td>14500</td><td>wie AA</td><td>700–1000 mAh</td><td>3,7 V! Nicht in Geräte für AA</td></tr>
+          <tr><td>16340</td><td>wie CR123A</td><td>600–800 mAh</td><td>Taschenlampen</td></tr>
+          <tr><td>18650</td><td>18 × 65 mm</td><td>2000–3600 mAh</td><td>Der Klassiker</td></tr>
+          <tr><td>21700</td><td>21 × 70 mm</td><td>4000–5000 mAh</td><td>Neuer Standard in E-Bikes und Werkzeug</td></tr>
+          <tr><td>26650</td><td>26 × 65 mm</td><td>3000–5000 mAh</td><td>Oft LiFePO4</td></tr>
+          <tr><td>32700</td><td>32 × 70 mm</td><td>6000 mAh</td><td>Fast immer LiFePO4</td></tr>
+          <tr><td>Pouch</td><td>flach</td><td>beliebig</td><td>LiPo, Handys, Modellbau</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout"><b>Fälschungen erkennen:</b> Eine 18650 mit mehr als ca. 3600 mAh gibt es nicht. Aufdrucke wie „9900 mAh“ sind immer gelogen. Echte 18650 wiegen 44–50 g, Fälschungen oft nur 20–35 g. Billige Markenzellen aus unbekannten Shops sind häufig umgewickelte Altzellen. CellDoc deckt das zuverlässig auf.</div>
+      <p><b>Geschützte Zellen</b> haben eine kleine Schutzplatine am Minuspol und sind dadurch 2–4 mm länger (z. B. 67–70 mm). Sie passen nicht in jeden Halter, sind aber für Taschenlampen ohne eigene Schutzschaltung sinnvoll.</p>
+    </section>
+
+    <section class="card" id="m-bezeichnung">
+      <h3>Typbezeichnung lesen</h3>
+      <p>Am Beispiel <b>INR18650-30Q</b>:</p>
+      <ul>
+        <li><b>I</b> = Lithium-Ionen</li>
+        <li><b>N</b> = Kathode auf Nickelbasis (NMC). Andere: <b>C</b> = Kobalt (LCO), <b>M</b> = Mangan, <b>F</b> = Eisenphosphat (LFP)</li>
+        <li><b>R</b> = rund (zylindrisch)</li>
+        <li><b>18650</b> = Bauform</li>
+        <li><b>30Q</b> = Modell, hier 3000 mAh, Serie Q</li>
+      </ul>
+      <p>Panasonic schreibt <b>NCR</b> für NCA-Zellen, Sony/Murata <b>US18650VTC6</b>. Bei Laptopzellen steht oft nur ein Herstellercode auf der Hülle, z. B. „ICR18650-26F“ (Samsung, LCO, 2600 mAh).</p>
+      <p class="note">Steht nichts Brauchbares drauf, in CellDoc den Typ „Unbekannt“ wählen. Die Lebenszahl wird dann als Bereich geschätzt.</p>
+    </section>
+
+    <section class="card" id="m-packs">
+      <h3>Packs und Stecker</h3>
+      <p><b>S</b> steht für Zellen in Serie (Spannung addiert sich), <b>P</b> für parallel (Kapazität addiert sich). Ein <b>3S2P</b>-Pack hat 3 × 2 = 6 Zellen, 11,1 V nominal und die doppelte Kapazität einer Zelle.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>LiPo/Li-Ion</th><th>Nenn</th><th>Voll</th><th>Leer (3,0 V)</th><th>Balancer-Pins</th></tr></thead>
+        <tbody>
+          <tr><td>1S</td><td>3,7 V</td><td>4,2 V</td><td>3,0 V</td><td>–</td></tr>
+          <tr><td>2S</td><td>7,4 V</td><td>8,4 V</td><td>6,0 V</td><td>3</td></tr>
+          <tr><td>3S</td><td>11,1 V</td><td>12,6 V</td><td>9,0 V</td><td>4</td></tr>
+          <tr><td>4S</td><td>14,8 V</td><td>16,8 V</td><td>12,0 V</td><td>5</td></tr>
+          <tr><td>5S</td><td>18,5 V</td><td>21,0 V</td><td>15,0 V</td><td>6</td></tr>
+          <tr><td>6S</td><td>22,2 V</td><td>25,2 V</td><td>18,0 V</td><td>7</td></tr>
+        </tbody>
+      </table></div>
+      <h4>Stecker</h4>
+      <ul>
+        <li><b>XT30 / XT60 / XT90</b>: gelbe Hochstromstecker, ca. 30 / 60 / 90 A. Die Zahl ist der Nennstrom.</li>
+        <li><b>T-Plug (Deans)</b>: älterer Hochstromstecker, wird zunehmend von XT60 abgelöst.</li>
+        <li><b>EC3 / EC5</b>: blaue Stecker, verbreitet bei RC-Autos.</li>
+        <li><b>JST-XH</b>: weißer Balancerstecker. Pinzahl = Zellzahl + 1. Darüber misst CellDoc jede Einzelzelle.</li>
+        <li><b>JST-PH / Molex</b>: kleine Stecker an 1S-Akkus für Mikrodrohnen.</li>
+      </ul>
+      <p><b>Zellen im Pack zusammenstellen:</b> Zellen sollten in Kapazität höchstens ±2–3 % und im Innenwiderstand höchstens ±10–15 % voneinander abweichen. Sonst wird die schwächste Zelle bei jedem Zyklus tiefer entladen und altert schneller. Genau dafür ist CellDoc gemacht.</p>
+    </section>
+
+    <section class="card" id="m-werte">
+      <h3>Messwerte verstehen</h3>
+      <h4>Kapazität (mAh) und Energie (Wh)</h4>
+      <p>mAh sagt, wie viel Ladung herauskommt, Wh wie viel Energie. Wh = mAh × mittlere Spannung ÷ 1000. Zum Vergleich unterschiedlicher Chemien ist Wh aussagekräftiger.</p>
+      <h4>C-Rate</h4>
+      <p>1C ist der Strom, der den Akku in einer Stunde leert: bei 3000 mAh also 3 A, 0,5C = 1,5 A. Datenblätter messen die Kapazität meist bei 0,2C. Für vergleichbare Ergebnisse 0,2–0,5C wählen. Höhere Ströme ergeben etwas weniger Kapazität.</p>
+      <h4>Innenwiderstand</h4>
+      <p>Zeigt, wie stark die Spannung unter Last einbricht. Er steigt mit dem Alter, bei Kälte und bei leerem Akku. CellDoc misst den <b>DC-Innenwiderstand</b> über einen Stromsprung von einer Sekunde. Handmessgeräte (z. B. YR1035) und Datenblätter geben den <b>AC-Wert bei 1 kHz</b> an, der etwa halb so groß ist. Beide sind richtig, sie messen nur Unterschiedliches.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>18650, DC bei 50 %</th><th>Bewertung</th></tr></thead>
+        <tbody>
+          <tr><td>unter 40 mΩ</td><td>neuwertig, auch für hohe Ströme</td></tr>
+          <tr><td>40–70 mΩ</td><td>gut, für normale Lasten</td></tr>
+          <tr><td>70–120 mΩ</td><td>gealtert, nur noch kleine Ströme</td></tr>
+          <tr><td>über 150 mΩ</td><td>verbraucht</td></tr>
+        </tbody>
+      </table></div>
+      <h4>Wirkungsgrad</h4>
+      <p><b>Coulomb-Wirkungsgrad</b>: entnommene ÷ geladene Ladung, bei gesunden Li-Ion-Zellen über 97 %. Deutlich weniger deutet auf Nebenreaktionen oder Selbstentladung hin. <b>Energie-Wirkungsgrad</b> berücksichtigt zusätzlich die Spannungsverluste und liegt typisch bei 85–95 %.</p>
+      <h4>Erwärmung</h4>
+      <p>Wie stark die Zelle während des Tests wärmer wird. Bei 0,5 A sind 2–8 K normal. Wird eine Zelle bei kleinem Strom auffällig warm, ist sie verdächtig.</p>
+      <h4>Selbstentladung</h4>
+      <p>CellDoc misst sie nicht automatisch. So geht es von Hand: Zelle voll laden, 1–2 Wochen liegen lassen, dann die Spannung messen. Fällt eine Li-Ion-Zelle mehr als ca. 0,05 V pro Woche, hat sie einen inneren Kurzschluss und sollte nicht mehr verwendet werden.</p>
+    </section>
+
+    <section class="card" id="m-leben">
+      <h3>Die Lebenszahl</h3>
+      <p>Fasst den Zustand in einer Zahl von 0 (ersetzen) bis 100 (wie neu) zusammen.</p>
+      <ul>
+        <li><b>Bekannter Zelltyp:</b> 70 % Kapazität, 30 % Innenwiderstand. Volle Nennkapazität ergibt 100 Punkte, 60 % ergibt 0 Punkte. Beim Innenwiderstand ergibt der Neuwert 100 Punkte, der 2,5-fache Neuwert 0 Punkte.</li>
+        <li><b>Unbekannter Typ:</b> 50/50 mit festen Grenzen pro Chemie. Das Ergebnis wird als Bereich angezeigt, z. B. „≈ 55–70 %“.</li>
+        <li><b>Gleicher Name, neuer Test:</b> CellDoc vergleicht automatisch mit dem ersten Test dieser Zelle und zeigt, wie viel Kapazität seitdem verloren ging.</li>
+      </ul>
+      <div class="tbl"><table>
+        <thead><tr><th>Lebenszahl</th><th>Urteil</th><th>Wofür noch</th></tr></thead>
+        <tbody>
+          <tr><td>90–100</td><td>Wie neu</td><td>alles, auch Hochstrom</td></tr>
+          <tr><td>75–89</td><td>Sehr gut</td><td>E-Bike-Packs, Werkzeug</td></tr>
+          <tr><td>55–74</td><td>Gut gebraucht</td><td>Powerbank, Taschenlampe, Solarspeicher</td></tr>
+          <tr><td>35–54</td><td>Schwach</td><td>Fernbedienung, Gartenleuchte</td></tr>
+          <tr><td>15–34</td><td>Nur für kleine Lasten</td><td>besser recyceln</td></tr>
+          <tr><td>0–14</td><td>Ersetzen</td><td>Sammelstelle</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="card" id="m-sicher">
+      <h3>Sicherheit</h3>
+      <div class="callout danger"><b>Lithium-Akkus können brennen.</b> Tests mit hohen Strömen und LiPo-Packs nur auf nicht brennbarer Unterlage (Fliese, Metallblech, LiPo-Bag), mit Abstand zu brennbarem Material und nicht unbeaufsichtigt.</div>
+      <ul>
+        <li><b>Beschädigte Hülle</b> (Riss im Schrumpfschlauch, fehlender Isolierring am Pluspol): Zelle neu einschrumpfen oder entsorgen. Der ganze Becher ist Minus, ein Kratzer am Pluspol kann einen Kurzschluss auslösen.</li>
+        <li><b>Tiefentladen</b> (Li-Ion unter ca. 2,0 V): Im Inneren können sich Kupferbrücken bilden. Solche Zellen nicht mehr laden. CellDoc verweigert den Test unterhalb des sicheren Bereichs.</li>
+        <li><b>Nie unter 0 °C laden.</b> Lithium lagert sich dann als Metall ab, die Zelle wird dauerhaft gefährlich.</li>
+        <li><b>Aufgebläht, heiß, Geruch, Zischen:</b> Sofort trennen, ins Freie oder in einen Metallbehälter mit Sand bringen, Abstand halten.</li>
+        <li><b>Im Brandfall:</b> Raum verlassen, Feuerwehr unter 122 bzw. 112 rufen. Kleine Zellen lassen sich mit viel Wasser kühlen, Atemschutz beachten, die Rauchgase sind giftig.</li>
+        <li>Packs nie ohne Balancer-Überwachung bis zum Ende entladen. Sonst fällt die schwächste Zelle unbemerkt zu tief.</li>
+      </ul>
+      <h4>Was CellDoc selbst überwacht</h4>
+      <p>Zell-, Pack- und Kühlkörpertemperatur mit Drosselung und Abschaltung, Über- und Unterspannung pro Zelle, Überstrom, Lüfterausfall, Ausfall der Messelektronik und die Not-Aus-Taste (BOOT). Bei jedem Fehler werden Last und Lader sofort getrennt und der Summer gibt Alarm.</p>
+    </section>
+
+    <section class="card" id="m-lagern">
+      <h3>Lagern und Entsorgen</h3>
+      <h4>Lagern</h4>
+      <ul>
+        <li>Lithium bei 40–60 % (Li-Ion 3,7–3,8 V, LiFePO4 3,3 V) und kühl lagern, ideal 10–20 °C. Voll und warm, z. B. im Auto im Sommer, altern sie am schnellsten.</li>
+        <li>Blei immer voll lagern und alle 3–6 Monate nachladen.</li>
+        <li>Alle 6 Monate die Spannung kontrollieren und Zellen mit starker Selbstentladung aussortieren.</li>
+        <li>Lose Zellen in Boxen oder mit Polkappen, nie lose mit Münzen oder Schlüsseln.</li>
+      </ul>
+      <p>Mit CellDoc lassen sich Zellen gezielt einlagern: Beim Kapazitätstest „danach auf Lagerspannung“ wählen.</p>
+      <h4>Entsorgen</h4>
+      <ul>
+        <li>Nie in den Restmüll: Akkus verursachen Brände in Müllwagen und Sortieranlagen.</li>
+        <li>Pole mit Klebeband abkleben, dann in die Sammelbox im Handel oder ins Altstoffsammelzentrum. Händler, die Batterien verkaufen, müssen sie kostenlos zurücknehmen.</li>
+        <li>Aufgeblähte oder beschädigte Akkus getrennt abgeben und darauf hinweisen.</li>
+      </ul>
+    </section>
+
+    <section class="card" id="m-bedienung">
+      <h3>Bedienung von CellDoc</h3>
+      <h4>Erster Start</h4>
+      <ul>
+        <li>Ohne WLAN-Daten öffnet CellDoc den Hotspot <b>CellDoc-XXXX</b> (Passwort <b>celldoc1</b>). Verbinden, die Seite öffnet sich automatisch, sonst <b>192.168.4.1</b> aufrufen.</li>
+        <li>Unter Einstellungen → WLAN das Heimnetz wählen. Danach ist CellDoc unter <b>celldoc.local</b> oder seiner IP erreichbar.</li>
+        <li>Unter Einstellungen → Temperaturfühler prüfen, dass jeder Fühler die richtige Rolle hat: einen erwärmen und schauen, welcher Wert steigt.</li>
+        <li>Einmal kalibrieren: Spannung und Strom mit dem Multimeter vergleichen und den Istwert eintragen.</li>
+      </ul>
+      <h4>Kapazitätstest</h4>
+      <ul>
+        <li>Zelle an Anschluss A einsetzen und Fühler T1 mit Kaptonband an die Zelle kleben. Packs an Anschluss B mit XT60 und Balancerstecker, Fühler T2 auflegen.</li>
+        <li>Auf <b>Live → Starten</b> tippen, Zelltyp wählen (oder „Unbekannt“), Strom einstellen. Vorgeschlagen werden 0,2–0,5C.</li>
+        <li>Ablauf: voll laden → ruhen → entladen mit Innenwiderstands-Messungen → erholen → wieder laden. Packs werden nicht geladen und müssen voll angeschlossen werden.</li>
+        <li>Dauer einer 3000-mAh-Zelle bei 0,5 A: etwa 13–15 Stunden für den ganzen Ablauf.</li>
+      </ul>
+      <h4>Laden und Entladen von Hand</h4>
+      <p>Im Startdialog „Laden“ oder „Entladen“ wählen. Entladen läuft mit Konstantstrom bis zur eingestellten Schlussspannung. Dabei gelten dieselben Sicherheitsgrenzen wie im Test.</p>
+      <h4>Firmware aktualisieren</h4>
+      <p>Neue Versionen gibt es auf GitHub unter Releases. Die Datei <b>celldoc-firmware.bin</b> unter Einstellungen → Firmware-Update hochladen. Einstellungen und Ergebnisse bleiben erhalten.</p>
+    </section>
+  </main>
+
+  <!-- ===================== EINSTELLUNGEN ===================== -->
+  <main id="v-settings" class="view" hidden>
+    <div class="grid">
+      <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+        <section class="card">
+          <h2>WLAN</h2>
+          <div class="note" id="wifiInfo"></div>
+          <div class="form">
+            <div class="field full"><label for="wSsid">Netzwerk</label>
+              <div style="display:flex;gap:8px"><input type="text" id="wSsid" autocomplete="off"><button class="btn small" id="wScan" type="button">Suchen</button></div>
+              <select id="wList" hidden aria-label="Gefundene Netzwerke"></select></div>
+            <div class="field full"><label for="wPass">Passwort</label><input type="password" id="wPass" autocomplete="new-password"></div>
+          </div>
+          <div class="actions"><button class="btn primary" id="wSave" type="button">Speichern und neu starten</button></div>
+        </section>
+
+        <section class="card">
+          <h2>Temperaturgrenzen</h2>
+          <p class="note">Ab „Drosseln“ wird der Strom schrittweise bis auf 30 % reduziert, bei „Stopp“ schaltet CellDoc ab.</p>
+          <div class="form num">
+            <div class="field"><label for="sCw">Laden: drosseln ab °C</label><input type="number" id="sCw" step="1"></div>
+            <div class="field"><label for="sCs">Laden: Stopp ab °C</label><input type="number" id="sCs" step="1"></div>
+            <div class="field"><label for="sDw">Entladen: drosseln ab °C</label><input type="number" id="sDw" step="1"></div>
+            <div class="field"><label for="sDs">Entladen: Stopp ab °C</label><input type="number" id="sDs" step="1"></div>
+            <div class="field"><label for="sKw">Kühlkörper: drosseln ab °C</label><input type="number" id="sKw" step="1"></div>
+            <div class="field"><label for="sKs">Kühlkörper: Stopp ab °C (max. 90)</label><input type="number" id="sKs" step="1"></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Allgemein</h2>
+          <div class="field"><label for="sRest">Ruhezeit vor dem Entladen (Minuten)</label><input type="number" id="sRest" min="0" max="240"></div>
+          <label class="switch"><span>Innenwiderstand in Ω statt mΩ</span><input type="checkbox" id="sOhm"></label>
+          <label class="switch"><span>Summer</span><input type="checkbox" id="sBuzz"></label>
+          <div class="actions"><button class="btn primary" id="sSave" type="button">Einstellungen speichern</button></div>
+        </section>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+        <section class="card">
+          <h2>Temperaturfühler <button class="btn small" id="tRescan" type="button">Neu suchen</button></h2>
+          <p class="note">Fühler erwärmen (z. B. mit den Fingern), um zu sehen, welcher welcher ist.</p>
+          <div id="sensorList" class="num"></div>
+          <div class="actions"><button class="btn primary" id="tSave" type="button">Zuordnung speichern</button></div>
+        </section>
+
+        <section class="card">
+          <h2>Kalibrierung</h2>
+          <p class="note">Mit dem Multimeter am Akku messen und den Istwert eintragen. Für den Strom eine Entladung von Hand mit mindestens 0,5 A laufen lassen.</p>
+          <div class="form num">
+            <div class="field"><label for="kWhat">Was</label>
+              <select id="kWhat"><option value="voltage">Spannung</option><option value="current">Strom</option><option value="zero">Strom-Nullpunkt (ohne Last)</option><option value="balancer">Balancer-Abgriff</option><option value="reset">Alles zurücksetzen</option></select></div>
+            <div class="field"><label for="kPort">Anschluss</label><select id="kPort"><option>A</option><option>B</option></select></div>
+            <div class="field" id="kTapF" hidden><label for="kTap">Abgriff (1 = erste Zelle)</label><input type="number" id="kTap" min="1" max="6" value="1"></div>
+            <div class="field" id="kValF"><label for="kVal">Istwert (V bzw. A)</label><input type="number" id="kVal" step="0.001"></div>
+          </div>
+          <div class="note num" id="kShown"></div>
+          <div class="actions"><button class="btn" id="kGo" type="button">Abgleichen</button></div>
+        </section>
+
+        <section class="card">
+          <h2>Diagnose</h2>
+          <div id="diag" class="num"></div>
+        </section>
+
+        <section class="card">
+          <h2>Firmware-Update</h2>
+          <p class="note">Datei <b>celldoc-firmware.bin</b> aus den GitHub-Releases wählen. Während eines Tests ist kein Update möglich.</p>
+          <input type="file" id="fwFile" accept=".bin" aria-label="Firmware-Datei">
+          <div class="bar" id="fwBar" hidden><i></i></div>
+          <div class="actions"><button class="btn primary" id="fwGo" type="button" disabled>Hochladen</button><button class="btn" id="rst" type="button">Neu starten</button></div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<nav class="tabs" role="tablist" aria-label="Bereiche">
+  <div class="in">
+    <button role="tab" data-v="live" aria-selected="true"><svg viewBox="0 0 24 24"><rect x="7" y="4" width="10" height="17" rx="2"/><path d="M10 2h4M9.5 14l2-3.5h1l-2 3.5h2l-2 3.5"/></svg>Live</button>
+    <button role="tab" data-v="results" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Ergebnisse</button>
+    <button role="tab" data-v="manual" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21a2 2 0 0 1 2-2h13v2H6"/><path d="M9 8h6M9 11h4"/></svg>Handbuch</button>
+    <button role="tab" data-v="settings" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Einstellungen</button>
+  </div>
+</nav>
+
+<script>
+"use strict";
+// ======================================================================
+// Grundlagen
+// ======================================================================
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nf = (v, d = 0) => (v == null || isNaN(v)) ? "–" : Number(v).toLocaleString("de-AT", {minimumFractionDigits: d, maximumFractionDigits: d});
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const dur = s => { s = Math.max(0, Math.round(s || 0)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? `${h} h ${m} min` : `${m} min ${s % 60} s`; };
+const dateStr = t => t ? new Date(t * 1000).toLocaleString("de-AT", {day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit"}) : "ohne Datum";
+
+let S = null, INFO = null, SETTINGS = null, curveCache = [], lastCurveAt = 0;
+const params = new URLSearchParams(location.search);
+let DEMO = params.has("demo") || location.protocol === "file:";
+
+function toast(msg) {
+  const t = document.createElement("div");
+  t.className = "toast"; t.textContent = msg; t.setAttribute("role", "status");
+  document.body.appendChild(t); setTimeout(() => t.remove(), 3200);
+}
+
+async function api(path, body) {
+  if (DEMO) return demoApi(path, body);
+  const opt = body === undefined ? {} : {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)};
+  const r = await fetch(path, opt);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || `Fehler ${r.status}`);
+  return j;
+}
+
+const riFmt = m => (m == null || !(m > 0)) ? "–" : (S && S.riInOhm) ? nf(m / 1000, 3) + " Ω" : nf(m, m < 10 ? 1 : 0) + " mΩ";
+const chemName = id => (INFO?.chemistries.find(c => c.id === id) || {}).name || id;
+
+// ======================================================================
+// Tabs
+// ======================================================================
+const tabs = [...document.querySelectorAll(".tabs button")];
+function showView(v) {
+  tabs.forEach(b => b.setAttribute("aria-selected", b.dataset.v === v));
+  document.querySelectorAll(".view").forEach(m => m.hidden = m.id !== "v-" + v);
+  if (v === "results") loadResults();
+  if (v === "settings") loadSettings();
+  try { localStorage.setItem("celldoc-tab", v); } catch (e) {}
+  window.scrollTo(0, 0);
+}
+tabs.forEach(b => b.addEventListener("click", () => showView(b.dataset.v)));
+
+// ======================================================================
+// Akkuzelle mit Wasserstand
+// ======================================================================
+const cellCv = $("cell"), cx = cellCv.getContext("2d");
+const CW = 96, CH = 176, dpr = Math.max(1, window.devicePixelRatio || 1);
+cellCv.width = CW * dpr; cellCv.height = CH * dpr; cx.scale(dpr, dpr);
+const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let socTarget = -1, socShown = 0, cellColor = "--muted";
+function rr(x, y, w, h, r) { cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r); cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath(); }
+function drawCell(now) {
+  const has = socTarget >= 0, tgt = has ? socTarget / 100 : 0;
+  socShown += (tgt - socShown) * 0.06;
+  const line = css("--line"), fill = css("--fill"), fg = css("--fg");
+  const col = css(has && socShown < 0.2 && cellColor !== "--charge" ? "--danger" : cellColor);
+  cx.clearRect(0, 0, CW, CH);
+  rr(32, 2, 32, 12, 4); cx.fillStyle = line; cx.fill();
+  const bx = 6, by = 12, bw = 84, bh = 160;
+  rr(bx, by, bw, bh, 16); cx.fillStyle = fill; cx.fill(); cx.lineWidth = 3; cx.strokeStyle = line; cx.stroke();
+  const ix = bx + 5, iy = by + 5, iw = bw - 10, ih = bh - 10;
+  const lvl = iy + ih * (1 - socShown), ph = still ? 0 : now / 700, amp = (socShown > .98 || socShown < .02) ? 1 : 4;
+  const wavePath = (off, a) => { cx.beginPath(); cx.moveTo(ix, iy + ih); for (let x = 0; x <= iw; x += 2) cx.lineTo(ix + x, lvl + Math.sin(x / iw * Math.PI * 2 + ph + off) * a); cx.lineTo(ix + iw, iy + ih); cx.closePath(); };
+  cx.save(); rr(ix, iy, iw, ih, 11); cx.clip();
+  if (has) {
+    cx.globalAlpha = .35; wavePath(2.2, amp * .8); cx.fillStyle = col; cx.fill();
+    cx.globalAlpha = 1; wavePath(0, amp); cx.fillStyle = col; cx.fill();
+  }
+  const txt = has ? Math.round(socShown * 100) + " %" : "–";
+  cx.font = '700 22px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif';
+  cx.textAlign = "center"; cx.textBaseline = "middle";
+  cx.fillStyle = fg; cx.fillText(txt, bx + bw / 2, by + bh / 2);
+  if (has) { wavePath(0, amp); cx.clip(); cx.fillStyle = "#fff"; cx.fillText(txt, bx + bw / 2, by + bh / 2); }
+  cx.restore();
+  if (!still) requestAnimationFrame(drawCell);
+}
+requestAnimationFrame(drawCell);
+if (still) setInterval(() => drawCell(0), 1000);
+
+// ======================================================================
+// Diagramm (SVG)
+// ======================================================================
+function niceTicks(min, max, n) {
+  const span = max - min || 1, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= n) || mag * 10;
+  const out = []; for (let v = Math.ceil(min / step) * step; v <= max + 1e-9; v += step) out.push(+v.toFixed(6));
+  return {ticks: out, step};
+}
+function drawChart(svg, series, o) {
+  const W = 720, H = o.h || 260, L = 50, R = 14, T = 14, B = 34;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const all = series.flatMap(s => s.pts);
+  if (!all.length) { svg.innerHTML = `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" font-size="14" fill="var(--muted)">${esc(o.empty || "Noch keine Daten")}</text>`; return; }
+  let xMin = o.xMin ?? Math.min(...all.map(p => p[0])), xMax = o.xMax ?? Math.max(...all.map(p => p[0]));
+  let yMin = o.yMin ?? Math.min(...all.map(p => p[1])), yMax = o.yMax ?? Math.max(...all.map(p => p[1]));
+  if (xMax - xMin < 1e-6) xMax = xMin + 1;
+  if (yMax - yMin < 1e-6) { yMax += .05; yMin -= .05; }
+  const pad = (yMax - yMin) * .08; yMin -= pad; yMax += pad;
+  const X = x => L + (x - xMin) / (xMax - xMin) * (W - L - R), Y = y => T + (yMax - y) / (yMax - yMin) * (H - T - B);
+  let s = "";
+  const yt = niceTicks(yMin, yMax, 5), xt = niceTicks(xMin, xMax, 6);
+  for (const v of yt.ticks) s += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${o.yFmt ? o.yFmt(v) : nf(v, yt.step < 1 ? (yt.step < .1 ? 2 : 1) : 0)}</text>`;
+  for (const v of xt.ticks) { const x = X(v), a = x > W - R - 40 ? "end" : x < L + 20 ? "start" : "middle"; s += `<text x="${a === "end" ? W - R : x}" y="${H - 10}" text-anchor="${a}" font-size="11" fill="var(--muted)">${o.xFmt ? o.xFmt(v) : nf(v)}</text>`; }
+  if (o.hline != null && o.hline > yMin && o.hline < yMax) s += `<line x1="${L}" x2="${W - R}" y1="${Y(o.hline)}" y2="${Y(o.hline)}" stroke="var(--danger)" stroke-dasharray="2 4"/><text x="${W - R}" y="${Y(o.hline) - 6}" text-anchor="end" font-size="11" fill="var(--danger)">${esc(o.hlineLabel || "")}</text>`;
+  for (const se of series) {
+    if (!se.pts.length) continue;
+    const d = se.pts.map((p, k) => (k ? "L" : "M") + X(p[0]).toFixed(1) + "," + Y(p[1]).toFixed(1)).join("");
+    if (se.area) s += `<path d="${d}L${X(se.pts.at(-1)[0]).toFixed(1)},${H - B}L${X(se.pts[0][0]).toFixed(1)},${H - B}Z" fill="${se.color}" opacity=".08"/>`;
+    s += `<path d="${d}" fill="none" stroke="${se.color}" stroke-width="${se.w || 2.5}" stroke-linejoin="round" ${se.dash ? `stroke-dasharray="${se.dash}"` : ""}/>`;
+    if (se.dot) { const p = se.pts.at(-1); s += `<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="5" fill="${se.color}" stroke="var(--card)" stroke-width="2"/>`; }
+  }
+  svg.innerHTML = s;
+}
+
+// ======================================================================
+// Live
+// ======================================================================
+const PHASE = {
+  idle: ["Bereit", "--muted"], precharge: ["Test · Laden", "--charge"], rest: ["Test · Ruhen", "--rest"],
+  discharge: ["Test · Entladen", "--discharge"], restafter: ["Test · Erholen", "--rest"], recharge: ["Test · Wieder laden", "--charge"],
+  done: ["Fertig", "--charge"], error: ["Gestoppt", "--danger"], charge: ["Laden", "--charge"], manualdischarge: ["Entladen", "--discharge"],
+};
+const TEST_STEPS = [["precharge", "Laden"], ["rest", "Ruhen"], ["discharge", "Entladen"], ["restafter", "Erholen"], ["recharge", "Laden"]];
+const active = p => !["idle", "done", "error"].includes(p);
+
+function tempBox(label, t, warn, stop) {
+  const pos = t == null ? 0 : clamp(t / (stop + 15) * 100, 0, 98);
+  const gw = warn / (stop + 15) * 100, gs = stop / (stop + 15) * 100;
+  return `<div class="temp"><small>${label}</small><b>${t == null ? "–" : nf(t, 1) + " °C"}</b>
+    <div class="gauge" style="background:linear-gradient(90deg,var(--charge) 0 ${gw}%,var(--warn) ${gw}% ${gs}%,var(--danger) ${gs}%)">${t == null ? "" : `<i style="left:${pos}%"></i>`}</div>
+    <small>Drosseln ab ${nf(warn)} °C · Stopp ${nf(stop)} °C</small></div>`;
+}
+
+function renderLive() {
+  const s = S; if (!s) return;
+  const ph = s.phase, job = s.job || {}, isAct = active(ph);
+  const pIdx = (job.port === "B" || (!isAct && s.ports[0].v < .5 && s.ports[1].v > .5)) ? 1 : 0;
+  const port = s.ports[pIdx];
+  const [label, color] = PHASE[ph] || PHASE.idle;
+  const pill = $("modePill"); pill.textContent = label; pill.style.background = `var(${color})`;
+  cellColor = ph === "error" ? "--danger" : (color === "--muted" || color === "--rest") ? (port.i < -0.01 ? "--discharge" : "--charge") : color;
+
+  // Banner
+  let bn = "";
+  if (ph === "error") bn = `<div class="banner err" role="alert"><div><b>${esc(s.error || "Gestoppt")}</b>Last und Lader sind getrennt.</div></div>`;
+  else if (ph === "done") bn = `<div class="banner ok"><div><b>${job.name ? esc(job.name) + " ist fertig" : "Fertig"}</b>${s.lastResult ? "Das Ergebnis steht rechts und unter Ergebnisse." : ""}</div></div>`;
+  else if (s.saturated) bn = `<div class="banner info"><div><b>Strom wird nicht erreicht</b>Die Akkuspannung ist für diesen Strom zu niedrig. Der Test läuft mit dem maximal möglichen Strom weiter.</div></div>`;
+  $("banner").innerHTML = bn;
+
+  $("vBig").innerHTML = port.v > 0.3 ? `${nf(port.v, 3)}<small>V</small>` : `–<small>V</small>`;
+  let sub = "Kein Akku erkannt";
+  if (isAct || ph === "done" || ph === "error") {
+    const bits = [job.name, job.preset ? (INFO?.presets.find(p => p.id === job.preset) || {}).name : chemName(job.chem), job.cells > 1 ? job.cells + "S" : "", "Anschluss " + job.port].filter(Boolean);
+    sub = bits.map(esc).join(" · ");
+  } else if (port.v > .3) sub = `Anschluss ${pIdx ? "B" : "A"} · bereit für einen Test`;
+  $("vSub").innerHTML = sub;
+  socTarget = (s.soc != null && s.soc >= 0 && port.v > .3) ? s.soc : -1;
+  let socL = socTarget >= 0 ? `Ladezustand <b style="color:var(--fg)">${nf(socTarget)} %</b>` : "";
+  if (socTarget >= 0) socL += (ph === "discharge" && job.preCharge && job.nomCapMah) ? " · aus gezählter Ladung" : ph === "recharge" ? " · aus gezählter Ladung" : " · aus der Spannung geschätzt";
+  if (s.eta) socL += ` · noch ca. ${dur(s.eta)}`;
+  $("socLine").innerHTML = socL;
+
+  $("kI").textContent = nf(port.i, 3) + " A";
+  $("kP").textContent = nf(Math.abs(port.p), 2) + " W";
+  const dis = ["discharge", "manualdischarge"].includes(ph);
+  $("kQl").textContent = isAct ? (dis ? "Entnommen" : "Geladen") : "Ladung";
+  $("kQ").textContent = isAct ? nf(s.mah) + " mAh" : "–";
+  $("kE").textContent = isAct ? nf(s.wh, 2) + " Wh" : "–";
+
+  // Ablauf
+  const st = $("steps");
+  const isTest = TEST_STEPS.some(x => x[0] === ph) || (ph === "done" && job.after !== undefined && s.lastResult);
+  if (isTest && active(ph)) {
+    let steps = TEST_STEPS.filter(([id]) => !(id === "precharge" && !job.preCharge) && !(id === "recharge" && job.after === "none"));
+    const cur = steps.findIndex(x => x[0] === ph);
+    let frac = 0;
+    if (s.phaseTotal) frac = s.phaseElapsed / s.phaseTotal;
+    else if (ph === "discharge" && job.nomCapMah) frac = s.mah / job.nomCapMah;
+    else if (ph === "recharge" && s.capMah) frac = s.mah / (job.after === "storage" ? s.capMah * .5 : s.capMah);
+    st.innerHTML = steps.map(([id, n], k) => `<div class="step ${k < cur ? "done" : k === cur ? "now" : ""}"><div class="bar"><i style="${k === cur ? `width:${clamp(frac * 100, 3, 100)}%;background:var(${PHASE[id][1]})` : ""}"></i></div><span>${n}</span></div>`).join("");
+    st.hidden = false;
+  } else st.hidden = true;
+
+  // Temperaturen
+  const L = s.limits || {}, t = s.temps || {};
+  const chg = ["precharge", "recharge", "charge"].includes(ph);
+  let th = "";
+  if (pIdx === 0 || t.cell != null) th += tempBox("Zelle (A)", t.cell, chg ? L.chargeWarn : L.dischargeWarn, chg ? L.chargeStop : L.dischargeStop);
+  if (pIdx === 1 || t.pack != null) th += tempBox("Pack (B)", t.pack, L.dischargeWarn, L.dischargeStop);
+  th += tempBox("Kühlkörper", t.sink, L.sinkWarn, L.sinkStop);
+  $("temps").innerHTML = th;
+
+  const thr = $("throttle");
+  if (isAct && (s.throttle < .99 || s.riPulse)) {
+    thr.hidden = false;
+    thr.innerHTML = s.riPulse ? `<div><b>Innenwiderstand wird gemessen</b>Kurzer Stromsprung für eine Sekunde.</div>` :
+      `<div><b>Gedrosselt auf ${nf(s.throttle * 100)} %</b>Es wird warm. Der Strom wird reduziert, bis die Temperatur sinkt.</div>`;
+  } else thr.hidden = true;
+
+  // Aktionen
+  let ac = "";
+  if (isAct) ac = `<button class="btn danger" id="aStop" type="button">Stoppen</button>`;
+  else {
+    if (ph === "done" || ph === "error") ac += `<button class="btn" id="aAck" type="button">Quittieren</button>`;
+    ac += `<button class="btn primary" id="aStart" type="button">Starten …</button>`;
+  }
+  const acEl = $("liveActions");
+  if (acEl.dataset.k !== ac) {
+    acEl.innerHTML = ac; acEl.dataset.k = ac;
+    $("aStop")?.addEventListener("click", stopJob);
+    $("aAck")?.addEventListener("click", async () => { await api("/api/ack", {}); refresh(); });
+    $("aStart")?.addEventListener("click", openStart);
+  }
+
+  // Anschlüsse
+  $("ports").innerHTML = s.ports.map((p, k) => `<div><span>Anschluss ${k ? "B · Pack" : "A · Zelle"}${s.loadPort === (k ? "B" : "A") && s.loadTarget > 0 ? " · Last" : ""}</span><b>${p.ok ? (p.v > .3 ? nf(p.v, 3) + " V" : "leer") : "Messung fehlt"}</b><span>${p.ok && Math.abs(p.i) > .002 ? nf(p.i, 3) + " A" : "&nbsp;"}</span></div>`).join("");
+  const bc = s.bal?.cells || [];
+  $("balWrap").hidden = !bc.length;
+  if (bc.length) {
+    const mn = Math.min(...bc);
+    $("bal").innerHTML = bc.map((v, k) => `<div class="balcell ${v === mn && bc.length > 1 && Math.max(...bc) - mn > .03 ? "low" : ""}"><span>Zelle ${k + 1}</span><b>${nf(v, 3)} V</b></div>`).join("") +
+      `<div class="balcell"><span>Differenz</span><b>${nf((Math.max(...bc) - mn) * 1000)} mV</b></div>`;
+  }
+  $("fanLine").textContent = `Lüfter ${s.fan?.duty ?? 0} % · ${nf(s.fan?.rpm ?? 0)} U/min · Lader ${s.charger?.mode === "off" ? "aus" : s.charger?.mode + " V"}${s.charger?.charging ? " · lädt" : ""}${s.charger?.full ? " · voll" : ""}`;
+
+  // Kopfzeile
+  const w = s.wifi || {};
+  $("hdrChips").innerHTML = `<span class="chip"><span class="dot ${w.ap ? "off" : ""}"></span>${w.ap ? "Hotspot " + esc(w.ssid) : "WLAN " + nf(w.rssi) + " dBm"}</span><span class="chip">${esc(w.ip || "")}</span><span class="chip">v${esc(s.version)}</span>`;
+}
+
+// Entladekurven immer vom Entladeschluss bis zur Ladeschlussspannung zeigen
+function disAxes(chemId, cutoff, cells, cap) {
+  const c = INFO?.chemistries.find(x => x.id === chemId);
+  const o = {};
+  if (c) { o.yMin = (cutoff || c.cutoffV) * cells - .05 * cells; o.yMax = c.chargeV * cells; }
+  if (cap > 0) { o.xMin = 0; o.xMax = cap; }
+  return o;
+}
+
+async function renderLiveChart(force) {
+  const s = S; if (!s) return;
+  const ph = s.phase;
+  if (force || (active(ph) && Date.now() - lastCurveAt > 10000) || (!curveCache.length && active(ph))) {
+    lastCurveAt = Date.now();
+    try { curveCache = await api("/api/curve"); } catch (e) {}
+  }
+  const job = s.job || {}, cells = job.cells || 1;
+  const pts = curveCache;
+  const svg = $("liveChart");
+  const dis = ["discharge", "manualdischarge", "restafter"].includes(ph) || (ph === "done" && pts.some(p => p[2] < -0.05));
+  if (!pts.length) { drawChart(svg, [], {empty: "Der Verlauf erscheint, sobald ein Vorgang läuft"}); $("curveLegend").innerHTML = ""; $("curveHint").textContent = ""; return; }
+  // Entladeteil: Spannung über entnommener Ladung, sonst über der Zeit
+  const disPts = pts.filter(p => p[2] < -0.05);
+  if (dis && disPts.length > 2) {
+    const q0 = disPts[0][3];
+    drawChart(svg, [{pts: disPts.map(p => [Math.abs(p[3] - q0), p[1]]), color: "var(--discharge)", area: true, dot: active(ph)}],
+      {xFmt: v => nf(v) + " mAh", yFmt: v => nf(v, 2) + " V", hline: (job.cutoffV || 0) * cells, hlineLabel: "Entladeschluss " + nf((job.cutoffV || 0) * cells, 2) + " V", ...disAxes(job.chem, job.cutoffV, cells, job.nomCapMah)});
+    $("curveHint").textContent = "Spannung über entnommener Ladung";
+    $("curveLegend").innerHTML = `<span><i style="background:var(--discharge)"></i>${esc(job.name || "Akku")}</span>`;
+  } else {
+    drawChart(svg, [{pts: pts.map(p => [p[0] / 60, p[1]]), color: "var(--charge)", area: true, dot: active(ph)}],
+      {xFmt: v => v >= 60 ? nf(v / 60, 1) + " h" : nf(v) + " min", yFmt: v => nf(v, 2) + " V"});
+    $("curveHint").textContent = "Spannung über der Zeit";
+    $("curveLegend").innerHTML = `<span><i style="background:var(--charge)"></i>${esc(job.name || "Akku")}</span>`;
+  }
+}
+
+let lastShownResult = -1;
+async function renderLastResult() {
+  const id = S?.lastResult;
+  if (!id || id === lastShownResult) return;
+  lastShownResult = id;
+  try {
+    const r = await api("/api/result?id=" + id);
+    $("lastCard").hidden = false;
+    $("lastName").textContent = r.name || "";
+    $("lastBody").innerHTML = resultSummary(r, true);
+    $("lastBody").querySelector("[data-open]")?.addEventListener("click", () => openResult(id));
+  } catch (e) {}
+}
+
+async function stopJob() {
+  if (!confirmInline($("liveActions"), "Wirklich stoppen? Der laufende Test geht verloren.", async () => { await api("/api/stop", {}); refresh(); })) return;
+}
+
+// Bestätigung direkt in der Seite (Dialoge sind im Browser oft gesperrt)
+function confirmInline(host, text, onYes) {
+  const box = document.createElement("div");
+  box.className = "banner err"; box.style.width = "100%";
+  box.innerHTML = `<div style="flex:1"><b>${esc(text)}</b><div class="actions" style="margin-top:8px"><button class="btn danger small" type="button">Ja</button><button class="btn small" type="button">Nein</button></div></div>`;
+  host.prepend(box);
+  const [y, n] = box.querySelectorAll("button");
+  y.addEventListener("click", async () => { box.remove(); try { await onYes(); } catch (e) { toast(e.message); } });
+  n.addEventListener("click", () => box.remove());
+  return false;
+}
+
+async function refresh() {
+  try {
+    S = await api("/api/state");
+    renderLive();
+    renderLiveChart(false);
+    renderLastResult();
+  } catch (e) {
+    $("vSub").textContent = "Keine Verbindung zu CellDoc …";
+  }
+}
+
+// ======================================================================
+// Start-Dialog
+// ======================================================================
+function openSheet(html) {
+  const bg = document.createElement("div");
+  bg.className = "sheet-bg";
+  bg.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div>`;
+  document.body.appendChild(bg);
+  document.body.style.overflow = "hidden";
+  const close = () => { bg.remove(); document.body.style.overflow = ""; };
+  bg.addEventListener("click", e => { if (e.target === bg) close(); });
+  bg.querySelector("[data-close]")?.addEventListener("click", close);
+  const onKey = e => { if (e.key === "Escape") { close(); document.removeEventListener("keydown", onKey); } };
+  document.addEventListener("keydown", onKey);
+  return {el: bg.querySelector(".sheet"), close};
+}
+
+function openStart() {
+  if (!INFO) return;
+  const pB = S.ports[1].v > .5 && S.ports[0].v < .5;
+  const presetOpts = INFO.presets.map(p => `<option value="${p.id}">${esc(p.name)} · ${nf(p.capMah)} mAh</option>`).join("");
+  const chemOpts = INFO.chemistries.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  const {el, close} = openSheet(`
+    <div class="sheet-head"><h3>Starten</h3><button class="btn small" data-close type="button">Abbrechen</button></div>
+    <div class="seg" role="group" aria-label="Betriebsart" id="stMode">
+      <button type="button" data-m="test" aria-pressed="true">Kapazitätstest</button><button type="button" data-m="charge" aria-pressed="false">Laden</button><button type="button" data-m="discharge" aria-pressed="false">Entladen</button>
+    </div>
+    <div class="seg" role="group" aria-label="Anschluss" id="stPort">
+      <button type="button" data-p="A" aria-pressed="${!pB}">A · Einzelzelle</button><button type="button" data-p="B" aria-pressed="${pB}">B · Pack</button>
+    </div>
+    <div class="form">
+      <div class="field full"><label for="stType">Zelltyp</label>
+        <select id="stType"><optgroup label="Bekannte Zellen">${presetOpts}</optgroup><optgroup label="Sonstige"><option value="custom">Eigene Angaben</option><option value="unknown">Unbekannt</option></optgroup></select></div>
+      <div class="field" id="fChem"><label for="stChem">Chemie</label><select id="stChem">${chemOpts}</select></div>
+      <div class="field" id="fCells"><label for="stCells">Zellen in Serie</label><input type="number" id="stCells" min="1" max="6" value="1"><span class="hint" id="cellsHint"></span></div>
+      <div class="field" id="fCap"><label for="stCap">Nennkapazität (mAh)</label><input type="number" id="stCap" min="0" step="50" placeholder="optional"></div>
+      <div class="field" id="fRi"><label for="stRi">Innenwiderstand neu (mΩ, DC)</label><input type="number" id="stRi" min="0" step="1" placeholder="optional"></div>
+      <div class="field full"><label for="stName">Name</label><input type="text" id="stName" maxlength="40" placeholder="Zelle #${INFO.nextCellNo}"><span class="hint">Gleicher Name wie bei einem früheren Test vergleicht automatisch mit dem ersten Ergebnis.</span></div>
+      <div class="field" id="fCur"><label for="stCur">Entladestrom (A)</label><input type="number" id="stCur" min="0.05" step="0.05" value="0.5"><span class="hint" id="curHint"></span></div>
+      <div class="field" id="fCut"><label for="stCut">Entladeschluss (V pro Zelle)</label><input type="number" id="stCut" step="0.05"></div>
+      <div class="field full" id="fPre"><label class="switch"><span>Vorher voll laden</span><input type="checkbox" id="stPre" checked></label></div>
+      <div class="field" id="fRest"><label for="stRest">Ruhezeit (min)</label><input type="number" id="stRest" min="0" max="240" value="${SETTINGS?.restMin ?? 30}"></div>
+      <div class="field" id="fAfter"><label for="stAfter">Danach</label><select id="stAfter"><option value="full">Voll laden</option><option value="storage">Auf Lagerspannung (≈ 50 %)</option><option value="none">Nicht laden</option></select></div>
+    </div>
+    <div class="banner info" id="stInfo"></div>
+    <div class="banner err" id="stErr" hidden role="alert"></div>
+    <div class="actions"><button class="btn primary" id="stGo" type="button" style="flex:1">Starten</button></div>`);
+  const q = s => el.querySelector(s);
+  let mode = "test", port = pB ? "B" : "A";
+  const setSeg = (id, attr, val) => el.querySelectorAll(`#${id} button`).forEach(b => b.setAttribute("aria-pressed", b.dataset[attr] === val));
+  el.querySelectorAll("#stMode button").forEach(b => b.addEventListener("click", () => { mode = b.dataset.m; setSeg("stMode", "m", mode); upd(); }));
+  el.querySelectorAll("#stPort button").forEach(b => b.addEventListener("click", () => { port = b.dataset.p; setSeg("stPort", "p", port); if (port === "B" && q("#stType").value !== "custom" && q("#stType").value !== "unknown") q("#stType").value = "custom"; if (port === "B" && S.bal?.cells?.length > 1) q("#stCells").value = S.bal.cells.length; upd(true); }));
+  let lastChem = null;
+  function upd(chemChanged) {
+    const type = q("#stType").value, preset = INFO.presets.find(p => p.id === type);
+    if (preset) q("#stChem").value = preset.chem;
+    const chem = INFO.chemistries.find(c => c.id === q("#stChem").value);
+    if (port === "A") q("#stCells").value = 1;
+    const cells = +q("#stCells").value || 1;
+    q("#fChem").hidden = !!preset;
+    q("#fCells").hidden = port === "A";
+    q("#fCap").hidden = !!preset; q("#fRi").hidden = !!preset || type === "unknown";
+    if (type === "unknown") { q("#stCap").value = ""; q("#stRi").value = ""; }
+    q("#fCur").hidden = mode === "charge";
+    q("#fCut").hidden = mode === "charge";
+    const canCharge = port === "A" && chem.chargeable;
+    q("#fPre").hidden = mode !== "test" || !canCharge;
+    q("#fRest").hidden = mode !== "test";
+    q("#fAfter").hidden = mode !== "test" || !canCharge;
+    if (chem.id !== lastChem || chemChanged) { q("#stCut").value = chem.cutoffV.toFixed(2); lastChem = chem.id; }
+    const cap = preset ? preset.capMah : (+q("#stCap").value || 0);
+    q("#curHint").textContent = cap ? `0,2C = ${nf(cap * .2 / 1000, 2)} A · 0,5C = ${nf(cap * .5 / 1000, 2)} A` : "Für 18650 ohne Angabe: 0,5 A";
+    const bc = S.bal?.cells?.length || 0;
+    q("#cellsHint").textContent = port === "B" ? (bc ? `Balancer erkennt ${bc} Zellen` : chem.lithium === false ? "" : "Kein Balancer erkannt") : "";
+    const v = S.ports[port === "A" ? 0 : 1].v;
+    let info = `${esc(chem.name)}: ${nf(chem.nominalV * cells, 1)} V nominal, voll ${nf(chem.chargeV * cells, 2)} V. Angeschlossen: ${v > .3 ? nf(v, 2) + " V" : "nichts erkannt"}.`;
+    if (mode === "charge" && !canCharge) info = port === "B" ? "Packs bitte mit einem Modellbau-Ladegerät mit Balancer laden." : `${esc(chem.name)} kann CellDoc nicht laden.`;
+    if (mode === "test" && !canCharge) info += " Der Akku muss voll angeschlossen werden, CellDoc lädt ihn nicht.";
+    if (mode === "test") {
+      const cur = +q("#stCur").value || .5, c = cap || 2600;
+      const hrs = (q("#stPre").checked && canCharge ? c / 1000 + .5 : 0) + (+q("#stRest").value || 0) / 60 + c / 1000 / cur + .17 + (q("#stAfter").value !== "none" && canCharge ? c / 1000 * (q("#stAfter").value === "storage" ? .5 : 1) + .3 : 0);
+      info += ` Dauer ca. ${nf(hrs, 0)}–${nf(hrs * 1.2 + .5, 0)} h.`;
+    }
+    q("#stInfo").innerHTML = info;
+    q("#stGo").disabled = mode === "charge" && !canCharge;
+  }
+  ["#stType", "#stChem", "#stCells", "#stCap", "#stCur", "#stPre", "#stRest", "#stAfter"].forEach(s => q(s).addEventListener("input", () => upd(s === "#stChem")));
+  q("#stType").value = INFO.presets[0].id; upd(true);
+  q("#stGo").addEventListener("click", async () => {
+    const type = q("#stType").value;
+    const body = {
+      mode, port, chem: q("#stChem").value, cells: +q("#stCells").value || 1,
+      preset: INFO.presets.some(p => p.id === type) ? type : "",
+      nomCapMah: +q("#stCap").value || 0, riNew: +q("#stRi").value || 0, name: q("#stName").value.trim(),
+      currentA: +q("#stCur").value || .5, cutoffV: +q("#stCut").value || 0,
+      preCharge: q("#stPre").checked && !q("#fPre").hidden, restMin: +q("#stRest").value || 0,
+      after: q("#fAfter").hidden ? "none" : q("#stAfter").value,
+    };
+    try { await api("/api/start", body); close(); curveCache = []; refresh(); toast("Gestartet"); }
+    catch (e) { const er = q("#stErr"); er.hidden = false; er.textContent = e.message; }
+  });
+}
+
+// ======================================================================
+// Ergebnisse
+// ======================================================================
+function sohTag(r) {
+  const s = r.soh || {}, col = s.score >= 55 ? "--charge" : s.score >= 35 ? "--warn" : "--danger";
+  return s.estimated ? `<span class="tag" style="color:var(${col})">≈ ${s.low}–${s.high} %<small>geschätzt</small></span>` : `<span class="tag" style="color:var(${col})">${s.score} %</span>`;
+}
+function ringSvg(r) {
+  const s = r.soh || {}, col = s.score >= 55 ? "--charge" : s.score >= 35 ? "--warn" : "--danger", C = 2 * Math.PI * 56;
+  const lab = s.estimated ? `${s.low}–${s.high}` : `${s.score}`;
+  return `<svg class="ring" viewBox="0 0 132 132" role="img" aria-label="Lebenszahl ${lab} Prozent">
+    <circle cx="66" cy="66" r="56" fill="none" stroke="var(--fill)" stroke-width="12"/>
+    <circle cx="66" cy="66" r="56" fill="none" stroke="var(${col})" stroke-width="12" stroke-linecap="round" stroke-dasharray="${(C * s.score / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 66 66)"/>
+    <text x="66" y="69" text-anchor="middle" font-size="${s.estimated ? 26 : 34}" font-weight="700" fill="var(--fg)" font-family="var(--font)">${lab}</text>
+    <text x="66" y="89" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="var(--font)">${s.estimated ? "geschätzt %" : "Lebenszahl %"}</text></svg>`;
+}
+function resultSummary(r, compact) {
+  const s = r.soh || {};
+  const capLine = s.refCapMah ? `Kapazität ${nf(r.capMah)} / ${nf(s.refCapMah)} mAh (${nf(s.capRatio)} %)${r.nomCapMah ? "" : " · Vergleichswert geschätzt"}` : `Kapazität ${nf(r.capMah)} mAh`;
+  const riRef = r.riNew ? ` / neu ${riFmt(r.riNew)}` : "";
+  let h = `<div class="soh">${ringSvg(r)}<div class="soh-txt num">
+      <div><b>${esc(s.verdict || "")}.</b> <span class="note">${esc(r.presetName || chemName(r.chem))}${r.cells > 1 ? " · " + r.cells + "S" : ""}</span></div>
+      ${s.capScore >= 0 ? `<div class="part"><div><span>${capLine}</span><b>${s.capScore}</b></div><div class="bar"><i style="width:${s.capScore}%"></i></div></div>` : ""}
+      ${s.riScore >= 0 ? `<div class="part"><div><span>Innenwiderstand ${riFmt(r.ri50 || r.ri100)}${riRef}</span><b>${s.riScore}</b></div><div class="bar"><i style="width:${s.riScore}%"></i></div></div>` : ""}
+      ${r.baselineCapMah ? `<div class="note">Seit dem ersten Test: ${nf((r.capMah / r.baselineCapMah - 1) * 100, 1)} % Kapazität (${nf(r.baselineCapMah)} → ${nf(r.capMah)} mAh)</div>` : ""}
+      ${r.throttled ? `<div class="note">Während des Tests wurde wegen Wärme gedrosselt.</div>` : ""}
+    </div></div>`;
+  const rows = [
+    ["Kapazität", nf(r.capMah) + " mAh"], ["Energie", nf(r.energyWh, 2) + " Wh"], ["Ø Spannung", nf(r.avgV, 3) + " V"],
+    ["Ri bei 100 %", riFmt(r.ri100)], ["Ri bei 50 %", riFmt(r.ri50)], ["Entladestrom", nf(r.currentA, 2) + " A"],
+    r.rechargeSec ? ["Ladezeit danach", dur(r.rechargeSec)] : null, r.coulombEff ? ["Coulomb-Wirkungsgrad", nf(r.coulombEff, 1) + " %"] : null,
+    r.energyEff ? ["Energie-Wirkungsgrad", nf(r.energyEff, 1) + " %"] : null, ["Max. Temperatur", r.tempMax ? nf(r.tempMax, 1) + " °C" : "–"],
+    ["Erwärmung", r.tempRise ? "+" + nf(r.tempRise, 1) + " K" : "–"], ["Ruhespannung voll", r.startOcv ? nf(r.startOcv, 3) + " V" : "–"],
+    ["Erholt nach Entladung", r.restOcv ? nf(r.restOcv, 3) + " V" : "–"], ["Dauer gesamt", dur(r.durationSec)],
+  ].filter(Boolean);
+  h += `<div class="res num">${(compact ? rows.slice(0, 8) : rows).map(([a, b]) => `<div class="row"><span>${a}</span><b>${b}</b></div>`).join("")}</div>`;
+  if (compact) h += `<div class="actions"><button class="btn small" data-open type="button">Alle Details</button></div>`;
+  return h;
+}
+
+async function loadResults() {
+  try {
+    const list = await api("/api/results");
+    $("resCount").textContent = list.length ? list.length + (list.length === 1 ? " Ergebnis" : " Ergebnisse") : "";
+    $("resList").innerHTML = list.length ? list.map(r => `<div class="row tap" data-id="${r.id}" tabindex="0" role="button"><div class="l"><b>${esc(r.name)}${r.presetName ? " · " + esc(r.presetName.replace(/^(Samsung|LG|Sony\/Murata|Panasonic|Molicel) /, "")) : r.cells > 1 ? " · " + r.cells + "S " + esc(chemName(r.chem)) : ""}</b>
+      <small class="num">${dateStr(r.time)} · ${nf(r.capMah)} mAh · ${riFmt(r.ri50 || r.ri100)}${r.throttled ? " · gedrosselt" : ""}</small></div>${sohTag(r)}</div>`).join("")
+      : `<div class="empty">Noch keine Tests. Starte unter Live einen Kapazitätstest.</div>`;
+    $("resList").querySelectorAll("[data-id]").forEach(e => {
+      e.addEventListener("click", () => openResult(+e.dataset.id));
+      e.addEventListener("keydown", ev => { if (ev.key === "Enter") openResult(+e.dataset.id); });
+    });
+  } catch (e) { $("resList").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+
+async function openResult(id) {
+  let r, curve = [];
+  try { r = await api("/api/result?id=" + id); curve = await api("/api/result?id=" + id + "&curve=1"); } catch (e) { return toast(e.message); }
+  const cells = r.cells || 1;
+  const {el, close} = openSheet(`
+    <div class="sheet-head"><h3>${esc(r.name)}</h3><button class="btn small" data-close type="button">Schließen</button></div>
+    <div class="note num">${dateStr(r.time)} · Anschluss ${esc(r.port)} · ${esc(chemName(r.chem))}${cells > 1 ? " · " + cells + "S" : ""}</div>
+    <section class="card">${resultSummary(r, false)}</section>
+    <section class="card"><h2>Entladekurve</h2><svg class="chart" id="rC" viewBox="0 0 720 260" role="img" aria-label="Entladekurve"></svg></section>
+    ${r.riCurve?.length > 1 ? `<section class="card"><h2>Innenwiderstand über der Entladung</h2><svg class="chart" id="rRi" viewBox="0 0 720 200" role="img" aria-label="Innenwiderstand"></svg></section>` : ""}
+    ${r.cellRi?.length ? `<section class="card"><h2>Innenwiderstand je Zelle</h2><div class="balcells num">${r.cellRi.map((v, k) => `<div class="balcell ${v === Math.max(...r.cellRi) && r.cellRi.length > 1 ? "low" : ""}"><span>Zelle ${k + 1}</span><b>${riFmt(v)}</b></div>`).join("")}</div><p class="note">Die Zelle mit dem höchsten Wert begrenzt das Pack.</p></section>` : ""}
+    <div class="actions" id="rAct"><button class="btn danger" id="rDel" type="button">Ergebnis löschen</button></div>`);
+  const dis = curve.filter(p => p[2] < -0.05);
+  if (dis.length > 1) {
+    const q0 = dis[0][3];
+    drawChart(el.querySelector("#rC"), [{pts: dis.map(p => [Math.abs(p[3] - q0), p[1]]), color: "var(--discharge)", area: true}],
+      {xFmt: v => nf(v) + " mAh", yFmt: v => nf(v, 2) + " V", hline: (r.cutoffV || 0) * cells, hlineLabel: "Entladeschluss", ...disAxes(r.chem, r.cutoffV, cells, Math.max(r.nomCapMah || 0, r.capMah))});
+  } else drawChart(el.querySelector("#rC"), [], {empty: "Keine Kurve gespeichert"});
+  if (r.riCurve?.length > 1) drawChart(el.querySelector("#rRi"), [{pts: r.riCurve.map(p => [p[0], S?.riInOhm ? p[1] / 1000 : p[1]]), color: "var(--rest)"}],
+    {h: 200, xFmt: v => nf(v) + " mAh", yFmt: v => S?.riInOhm ? nf(v, 3) + " Ω" : nf(v) + " mΩ"});
+  el.querySelector("#rDel").addEventListener("click", () => confirmInline(el.querySelector("#rAct"), "Ergebnis endgültig löschen?", async () => {
+    await api("/api/result/delete?id=" + id, {}); close(); loadResults(); toast("Gelöscht");
+  }));
+}
+
+// ======================================================================
+// Einstellungen
+// ======================================================================
+async function loadSettings() {
+  try {
+    SETTINGS = await api("/api/settings");
+    const st = SETTINGS;
+    $("sCw").value = st.chargeWarnC; $("sCs").value = st.chargeStopC; $("sDw").value = st.dischargeWarnC; $("sDs").value = st.dischargeStopC;
+    $("sKw").value = st.sinkWarnC; $("sKs").value = st.sinkStopC; $("sRest").value = st.restMin; $("sOhm").checked = st.riInOhm; $("sBuzz").checked = st.buzzer;
+    const w = S?.wifi || {};
+    $("wifiInfo").textContent = w.ap ? `Hotspot aktiv: ${w.ssid} · ${w.ip}` : `Verbunden mit ${w.ssid || st.wifiSsid} · ${w.ip}`;
+    if (!$("wSsid").value) $("wSsid").value = st.wifiSsid || "";
+    await loadDiag();
+  } catch (e) { toast(e.message); }
+}
+async function loadDiag() {
+  const d = await api("/api/diag");
+  const role = {cell: "Zelle (A)", pack: "Pack (B)", sink: "Kühlkörper", "": "nicht verwendet"};
+  $("sensorList").innerHTML = d.sensors.length ? d.sensors.map(s => `<div class="row"><div class="l"><b>${s.t > -100 ? nf(s.t, 1) + " °C" : "Fehler"}</b><small style="font-family:var(--mono)">${esc(s.addr)}</small></div>
+    <select data-addr="${esc(s.addr)}" style="width:auto" aria-label="Rolle">${Object.entries(role).map(([k, v]) => `<option value="${k}" ${s.role === k ? "selected" : ""}>${v}</option>`).join("")}</select></div>`).join("") : `<div class="empty">Keine DS18B20 gefunden</div>`;
+  const okc = b => b ? `<b style="color:var(--charge)">ok</b>` : `<b style="color:var(--danger)">fehlt</b>`;
+  const st = SETTINGS || {};
+  $("diag").innerHTML = [["Strommesser A (INA226 0x40)", okc(d.inaA)], ["Strommesser B (INA226 0x41)", okc(d.inaB)], ["Last-Sollwert (MCP4725)", okc(d.dac)], ["Balancer (2× ADS1115)", okc(d.balancer)],
+    ["Balancer-Abgriffe", d.taps.map(v => nf(v, 2)).join(" · ") + " V"], ["Freier Speicher (RAM)", nf(d.heap / 1024) + " kB"],
+    ["Ergebnisspeicher", st.storageTotal ? `${nf(st.storageUsed / 1024)} von ${nf(st.storageTotal / 1024)} kB` : "–"], ["Chip", esc(d.chip)], ["Firmware", "v" + esc(S?.version || "")]]
+    .map(([a, b]) => `<div class="row"><span class="note" style="font-size:14px">${a}</span><span>${b}</span></div>`).join("");
+}
+$("sSave").addEventListener("click", async () => {
+  try {
+    await api("/api/settings", {chargeWarnC: +$("sCw").value, chargeStopC: +$("sCs").value, dischargeWarnC: +$("sDw").value, dischargeStopC: +$("sDs").value,
+      sinkWarnC: +$("sKw").value, sinkStopC: +$("sKs").value, restMin: +$("sRest").value, riInOhm: $("sOhm").checked, buzzer: $("sBuzz").checked});
+    toast("Gespeichert"); loadSettings();
+  } catch (e) { toast(e.message); }
+});
+$("tSave").addEventListener("click", async () => {
+  const b = {cell: "", pack: "", sink: ""};
+  document.querySelectorAll("#sensorList select").forEach(s => { if (s.value) b[s.value] = s.dataset.addr; });
+  try { await api("/api/sensors", b); toast("Zuordnung gespeichert"); loadDiag(); } catch (e) { toast(e.message); }
+});
+$("tRescan").addEventListener("click", async () => { await api("/api/sensors/rescan", {}); setTimeout(loadDiag, 1500); });
+$("wScan").addEventListener("click", async () => {
+  $("wScan").disabled = true; $("wScan").textContent = "Sucht …";
+  try {
+    const l = await api("/api/wifi/scan");
+    const sel = $("wList"); sel.hidden = false;
+    sel.innerHTML = `<option value="">${l.length} Netzwerke gefunden</option>` + l.map(n => `<option value="${esc(n.ssid)}">${esc(n.ssid)} · ${n.rssi} dBm${n.open ? " · offen" : ""}</option>`).join("");
+  } catch (e) { toast(e.message); }
+  $("wScan").disabled = false; $("wScan").textContent = "Suchen";
+});
+$("wList").addEventListener("change", e => { if (e.target.value) $("wSsid").value = e.target.value; });
+$("wSave").addEventListener("click", async () => {
+  try { await api("/api/wifi", {ssid: $("wSsid").value.trim(), pass: $("wPass").value}); toast("Gespeichert. CellDoc startet neu und verbindet sich mit dem WLAN."); } catch (e) { toast(e.message); }
+});
+const kUpd = () => {
+  const w = $("kWhat").value;
+  $("kTapF").hidden = w !== "balancer"; $("kValF").hidden = w === "zero" || w === "reset";
+  $("kPort").parentElement.hidden = w === "balancer" || w === "reset";
+  const p = S?.ports[$("kPort").value === "B" ? 1 : 0];
+  $("kShown").textContent = w === "voltage" && p ? `Angezeigt: ${nf(p.v, 3)} V` : w === "current" && p ? `Angezeigt: ${nf(Math.abs(p.i), 3)} A` : "";
+};
+["kWhat", "kPort"].forEach(id => $(id).addEventListener("input", kUpd));
+$("kGo").addEventListener("click", async () => {
+  try { await api("/api/calibrate", {what: $("kWhat").value, port: $("kPort").value, tap: (+$("kTap").value || 1) - 1, actual: +$("kVal").value}); toast("Abgeglichen"); } catch (e) { toast(e.message); }
+});
+$("fwFile").addEventListener("change", () => $("fwGo").disabled = !$("fwFile").files.length);
+$("fwGo").addEventListener("click", () => {
+  const f = $("fwFile").files[0]; if (!f) return;
+  if (DEMO) return toast("Im Demo-Modus nicht möglich");
+  const fd = new FormData(); fd.append("firmware", f, f.name);
+  const x = new XMLHttpRequest(); const bar = $("fwBar"); bar.hidden = false;
+  x.upload.onprogress = e => bar.firstElementChild.style.width = (e.loaded / e.total * 100) + "%";
+  x.onload = () => { let j = {}; try { j = JSON.parse(x.responseText); } catch (e) {} toast(x.status === 200 ? "Update erfolgreich, CellDoc startet neu" : (j.error || "Update fehlgeschlagen")); if (x.status === 200) setTimeout(() => location.reload(), 8000); };
+  x.onerror = () => toast("Verbindung abgebrochen");
+  x.open("POST", "/update"); x.send(fd);
+});
+$("rst").addEventListener("click", () => confirmInline($("rst").parentElement, "CellDoc neu starten? Ein laufender Test wird abgebrochen.", async () => { await api("/api/restart", {}); toast("Startet neu …"); }));
+
+// ======================================================================
+// Demo-Modus (ohne Gerät, z. B. für GitHub)
+// ======================================================================
+const DEMO_INFO = {
+  chemistries: [
+    {id: "liion", name: "Li-Ion (NMC/NCA)", nominalV: 3.6, chargeV: 4.2, cutoffV: 3.0, storageV: 3.8, chargeable: true, lithium: true},
+    {id: "lipo", name: "LiPo", nominalV: 3.7, chargeV: 4.2, cutoffV: 3.2, storageV: 3.85, chargeable: true, lithium: true},
+    {id: "lihv", name: "Li-HV", nominalV: 3.8, chargeV: 4.35, cutoffV: 3.2, storageV: 3.85, chargeable: true, lithium: true},
+    {id: "lfp", name: "LiFePO4", nominalV: 3.2, chargeV: 3.6, cutoffV: 2.5, storageV: 3.3, chargeable: true, lithium: true},
+    {id: "lto", name: "LTO", nominalV: 2.4, chargeV: 2.8, cutoffV: 1.8, storageV: 2.4, chargeable: false, lithium: true},
+    {id: "nimh", name: "NiMH / NiCd", nominalV: 1.2, chargeV: 1.45, cutoffV: 1.0, storageV: 1.25, chargeable: false, lithium: false},
+    {id: "lead", name: "Blei (AGM/Gel/Nass)", nominalV: 2.0, chargeV: 2.4, cutoffV: 1.8, storageV: 2.15, chargeable: false, lithium: false}],
+  presets: [["s30q", "Samsung INR18650-30Q", 3000, 25], ["s25r", "Samsung INR18650-25R", 2500, 22], ["s35e", "Samsung INR18650-35E", 3450, 40], ["lgmj1", "LG INR18650-MJ1", 3500, 40],
+    ["lghg2", "LG INR18650-HG2", 3000, 25], ["vtc6", "Sony/Murata US18650VTC6", 3000, 20], ["ncrb", "Panasonic NCR18650B", 3350, 45], ["p28a", "Molicel INR18650-P28A", 2800, 15],
+    ["s40t", "Samsung INR21700-40T", 4000, 15], ["s50e", "Samsung INR21700-50E", 5000, 30], ["lfp26", "LiFePO4 26650 (3000 mAh)", 3000, 25]]
+    .map(([id, name, capMah, riNew]) => ({id, name, chem: id === "lfp26" ? "lfp" : "liion", capMah, riNew})),
+  limits: {maxPowerW: 30, maxCurrentA: 5, maxCurrentB: 8}, nextCellNo: 6,
+};
+const demoCurveV = x => { x = clamp(x, 0, 1); return 4.12 - .42 * x - .70 * Math.pow(x, 10) - .05 * (1 - Math.exp(-30 * x)); };
+function demoCurve(cap, cur, upTo) {
+  const pts = [], tEnd = (upTo ?? cap) / (cur * 1000) * 3600;
+  for (let t = 0; t <= tEnd; t += 60) { const q = cur * 1000 * t / 3600; pts.push([Math.round(t + 15000), +demoCurveV(q / cap).toFixed(3), -cur, -Math.round(q), +(27 + q / cap * 6).toFixed(1)]); }
+  return pts;
+}
+const DEMO_RESULTS = [
+  {id: 5, name: "Akku Taschenlampe", time: 1761390000, port: "A", chem: "liion", preset: "s30q", presetName: "Samsung INR18650-30Q", cells: 1, nomCapMah: 3000, riNew: 25, currentA: .5, cutoffV: 3, capMah: 2941, energyWh: 10.71, avgV: 3.642, ri100: 22.4, ri50: 24.1, riCurve: [[0, 22.4], [600, 23.0], [1200, 23.5], [1500, 24.1], [2100, 26.0], [2700, 31.2]], startOcv: 4.188, restOcv: 3.462, rechargeMah: 2988, rechargeWh: 11.62, rechargeSec: 11520, coulombEff: 98.4, energyEff: 92.2, after: "full", tempMax: 30.9, tempRise: 6.1, throttled: false, durationSec: 47100, soh: {score: 96, low: 96, high: 96, estimated: false, capScore: 95, riScore: 98, capRatio: 98, refCapMah: 3000, verdict: "Wie neu"}},
+  {id: 4, name: "Zelle #4", time: 1761290000, port: "A", chem: "liion", preset: "lgmj1", presetName: "LG INR18650-MJ1", cells: 1, nomCapMah: 3500, riNew: 35, currentA: .5, cutoffV: 3, capMah: 2838, energyWh: 10.12, avgV: 3.566, ri100: 34, ri50: 38, riCurve: [[0, 34], [700, 35.5], [1400, 38], [2100, 41], [2700, 48]], startOcv: 4.174, restOcv: 3.441, rechargeMah: 2893, rechargeWh: 11.07, rechargeSec: 11380, coulombEff: 98.1, energyEff: 91.4, after: "full", tempMax: 31.6, tempRise: 8.4, throttled: false, durationSec: 49800, baselineCapMah: 3110, soh: {score: 65, low: 65, high: 65, estimated: false, capScore: 53, riScore: 94, capRatio: 81.1, refCapMah: 3500, verdict: "Gut gebraucht"}},
+  {id: 3, name: "Drohnenakku 3S", time: 1761200000, port: "B", chem: "lipo", preset: "", presetName: "", cells: 3, nomCapMah: 2200, riNew: 0, currentA: 2, cutoffV: 3.2, capMah: 1954, energyWh: 21.53, avgV: 11.02, ri100: 41.5, ri50: 47.2, cellRi: [14.8, 15.3, 17.1], riCurve: [[0, 41.5], [500, 44], [1000, 47.2], [1500, 51]], startOcv: 12.58, restOcv: 10.9, after: "none", tempMax: 34.2, tempRise: 11.8, throttled: false, durationSec: 5400, soh: {score: 87, low: 77, high: 97, estimated: true, capScore: 72, riScore: 100, capRatio: 88.8, refCapMah: 2200, verdict: "Sehr gut"}},
+  {id: 2, name: "Laptop-Akku Zelle 2", time: 1761100000, port: "A", chem: "liion", preset: "", presetName: "", cells: 1, nomCapMah: 0, riNew: 0, currentA: .5, cutoffV: 3, capMah: 1612, energyWh: 5.71, avgV: 3.54, ri100: 98, ri50: 112, riCurve: [[0, 98], [500, 104], [800, 112], [1300, 131]], startOcv: 4.152, restOcv: 3.39, rechargeMah: 1690, rechargeWh: 6.4, rechargeSec: 8200, coulombEff: 95.4, energyEff: 89.2, after: "full", tempMax: 33.1, tempRise: 9.5, throttled: true, durationSec: 31000, soh: {score: 20, low: 13, high: 27, estimated: true, capScore: 5, riScore: 35, capRatio: 62, refCapMah: 2600, verdict: "Nur für kleine Lasten"}},
+  {id: 1, name: "Zelle #1", time: 1761000000, port: "A", chem: "liion", preset: "vtc6", presetName: "Sony/Murata US18650VTC6", cells: 1, nomCapMah: 3000, riNew: 20, currentA: 1, cutoffV: 3, capMah: 2655, energyWh: 9.42, avgV: 3.548, ri100: 29, ri50: 31, riCurve: [[0, 29], [900, 30], [1300, 31], [2000, 34]], startOcv: 4.181, restOcv: 3.47, rechargeMah: 2702, rechargeWh: 10.3, rechargeSec: 9900, coulombEff: 98.3, energyEff: 91.5, after: "full", tempMax: 36.4, tempRise: 13.2, throttled: false, durationSec: 31200, soh: {score: 58, low: 58, high: 58, estimated: false, capScore: 66, riScore: 63, capRatio: 88.5, refCapMah: 3000, verdict: "Gut gebraucht"}},
+];
+const demo = {t0: Date.now(), phase: "discharge", job: {port: "A", name: "Zelle #6", chem: "liion", preset: "s30q", cells: 1, currentA: .5, nomCapMah: 3000, cutoffV: 3, preCharge: true, restMin: 30, after: "full"}, startMah: 1240, results: DEMO_RESULTS.slice()};
+function demoState() {
+  const el = (Date.now() - demo.t0) / 1000, d = demo, j = d.job, act = active(d.phase);
+  const cap = 2930, mah = d.phase === "discharge" ? d.startMah + el * 1.5 : 0;
+  const v = d.phase === "discharge" ? demoCurveV(mah / cap) + (Math.random() - .5) * .002 : act ? 4.05 : 4.17;
+  const i = d.phase === "discharge" ? -(j.currentA + (Math.random() - .5) * .002) : ["charge", "precharge", "recharge"].includes(d.phase) ? .98 : 0;
+  const pB = j.port === "B";
+  return {
+    version: "1.0.0", uptime: 86400, wifi: {ap: false, ssid: "Heimnetz", ip: "192.168.1.47", rssi: -58}, time: Date.now() / 1000 | 0, riInOhm: false,
+    phase: d.phase, error: d.error || "", lastResult: d.results[0]?.id || 0, job: j, elapsed: 18000 + el, phaseElapsed: 9000 + el,
+    mah, wh: mah * 3.72 / 1000, capMah: 0, riLast: 24.1, riCount: 9, riPulse: false, throttle: 1, throttled: false, saturated: false,
+    eta: d.phase === "discharge" ? (j.nomCapMah - mah) / (j.currentA * 1000) * 3600 : 0, soc: act ? clamp(100 - mah / j.nomCapMah * 100, 0, 100) : 96,
+    ports: [{ok: true, v: pB ? 0 : v, i: pB ? 0 : i, p: pB ? 0 : v * i}, {ok: true, v: pB ? 11.6 : 0, i: pB ? i : 0, p: 0}],
+    loadPort: j.port, loadTarget: d.phase === "discharge" ? j.currentA : 0,
+    temps: {cell: 29.8 + mah / 900 + (Math.random() - .5) * .1, sink: d.phase === "discharge" ? 41.6 + (Math.random() - .5) * .4 : 27},
+    limits: {chargeWarn: 40, chargeStop: 45, dischargeWarn: 45, dischargeStop: 55, sinkWarn: 75, sinkStop: 90},
+    fan: {rpm: d.phase === "discharge" ? 1480 : 620, duty: d.phase === "discharge" ? 40 : 20}, charger: {mode: ["charge", "precharge", "recharge"].includes(d.phase) ? "4.2" : "off", charging: false, full: false},
+    bal: {ok: true, cells: pB ? [3.871, 3.866, 3.842] : []},
+  };
+}
+async function demoApi(path, body) {
+  await new Promise(r => setTimeout(r, 60));
+  const id = +(path.match(/id=(\d+)/) || [])[1];
+  if (path === "/api/state") return demoState();
+  if (path === "/api/info") return DEMO_INFO;
+  if (path === "/api/curve") {
+    if (demo.phase !== "discharge") return [];
+    const mah = demo.startMah + (Date.now() - demo.t0) / 1000 * 1.5;
+    const pre = []; for (let t = 0; t < 12000; t += 120) pre.push([t, +(3.6 + .6 * (1 - Math.exp(-t / 3000))).toFixed(3), t < 10800 ? .98 : 0, Math.round(t / 3.6 * .98 / 1000 * 1000) / 1000, 27]);
+    return pre.concat(demoCurve(2930, .5, mah));
+  }
+  if (path === "/api/results") return demo.results;
+  if (path.startsWith("/api/result?")) { const r = demo.results.find(x => x.id === id); if (!r) throw new Error("Ergebnis nicht gefunden"); return path.includes("curve=1") ? demoCurve(r.capMah / .985, r.currentA, r.capMah) : r; }
+  if (path.startsWith("/api/result/delete")) { demo.results = demo.results.filter(x => x.id !== id); return {ok: true}; }
+  if (path === "/api/settings" && body === undefined) return {wifiSsid: "Heimnetz", chargeWarnC: 40, chargeStopC: 45, dischargeWarnC: 45, dischargeStopC: 55, sinkWarnC: 75, sinkStopC: 90, restMin: 30, riInOhm: false, buzzer: true, storageUsed: 81920, storageTotal: 1441792};
+  if (path === "/api/diag") return {inaA: true, inaB: true, dac: true, balancer: true, taps: [0, 0, 0, 0, 0, 0], heap: 187000, chip: "ESP32-D0WD-V3",
+    sensors: [{addr: "28FF4A1B62160318", t: 30.1, role: "cell"}, {addr: "28FF91C3611604E2", t: 41.7, role: "sink"}, {addr: "28FF07D2701603A9", t: 22.4, role: "pack"}]};
+  if (path === "/api/wifi/scan") return [{ssid: "Heimnetz", rssi: -52, open: false}, {ssid: "Werkstatt", rssi: -71, open: false}];
+  if (path === "/api/start") { if (active(demo.phase)) throw new Error("Es läuft bereits ein Vorgang"); demo.phase = body.mode === "charge" ? "charge" : "discharge"; demo.job = {...demo.job, ...body, name: body.name || "Zelle #6"}; demo.t0 = Date.now(); demo.startMah = 0; return {ok: true}; }
+  if (path === "/api/stop") { demo.phase = "error"; demo.error = "Von Hand gestoppt"; return {ok: true}; }
+  if (path === "/api/ack") { demo.phase = "idle"; return {ok: true}; }
+  return {ok: true};
+}
+
+// ======================================================================
+// Start
+// ======================================================================
+(async function init() {
+  if (!DEMO) {
+    try { await fetch("/api/state", {cache: "no-store"}).then(r => { if (!r.ok) throw 0; }); } catch (e) { DEMO = true; }
+  }
+  $("demoTag").hidden = !DEMO;
+  try { INFO = await api("/api/info"); } catch (e) {}
+  try { SETTINGS = await api("/api/settings"); } catch (e) {}
+  let tab = params.get("tab");
+  if (!tab) try { tab = localStorage.getItem("celldoc-tab"); } catch (e) {}
+  if (location.hash.startsWith("#m-")) tab = "manual";
+  await refresh();
+  showView(["live", "results", "manual", "settings"].includes(tab) ? tab : "live");
+  renderLiveChart(true);
+  setInterval(() => { if (!document.hidden) refresh(); }, 1000);
+  if (params.has("result")) openResult(+params.get("result"));
+  if (params.has("start")) openStart();
+})();
+</script>
+</body>
+</html>

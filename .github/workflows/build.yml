@@ -1,0 +1,106 @@
+name: Firmware bauen
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Lebenszahl-Tests (PC)
+        run: g++ -std=c++17 -Wall -Werror -I src test/test_soh.cpp -o test_soh && ./test_soh
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            .pio/libdeps
+          key: pio-${{ hashFiles('platformio.ini') }}
+
+      - name: PlatformIO installieren
+        run: pip install platformio
+
+      - name: Version festlegen
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "CELLDOC_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          else
+            echo "CELLDOC_VERSION=dev-$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          fi
+
+      - name: Bauen
+        run: pio run -e esp32dev
+
+      - name: Dateien zusammenstellen
+        run: |
+          B=.pio/build/esp32dev
+          mkdir -p out
+          cp $B/firmware.bin out/celldoc-firmware.bin
+          BOOT_APP0=$(find ~/.platformio/packages/framework-arduinoespressif32 -name boot_app0.bin | head -1)
+          pio pkg exec -p tool-esptoolpy -- esptool.py --chip esp32 merge_bin -o out/celldoc-factory.bin \
+            0x1000 $B/bootloader.bin 0x8000 $B/partitions.bin 0xe000 "$BOOT_APP0" 0x10000 $B/firmware.bin
+          ls -la out
+          # OTA-Partition von min_spiffs.csv: 0x1E0000 Bytes
+          SIZE=$(stat -c%s out/celldoc-firmware.bin)
+          echo "Firmware: $SIZE von 1966080 Bytes"
+          test "$SIZE" -lt 1957888
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: celldoc-${{ env.CELLDOC_VERSION }}
+          path: out/*.bin
+
+      - name: Vorabversion „latest“ aktualisieren
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Neuester Stand (main)
+          prerelease: true
+          make_latest: false
+          body: |
+            Automatisch gebaut aus dem aktuellen Stand von `main` (${{ env.CELLDOC_VERSION }}).
+            - **celldoc-firmware.bin**: Update über die Weboberfläche (Einstellungen → Firmware-Update)
+            - **celldoc-factory.bin**: Erstinstallation per USB an Adresse 0x0
+          files: out/*.bin
+
+      - name: Release veröffentlichen
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/*.bin
+          generate_release_notes: true
+
+  # Weboberfläche im Demo-Modus auf GitHub Pages (Pages-Quelle „GitHub Actions“ muss aktiviert sein)
+  demo:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - run: mkdir -p site && cp web/index.html site/index.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - uses: actions/deploy-pages@v4
