@@ -35,10 +35,7 @@ struct JobConfig {
   After after = After::Full;
 };
 
-struct CurvePoint {
-  uint32_t t;   // s seit Start
-  float v, i, qmAh, temp;
-};
+#include "curve.h"
 
 struct RiSample {
   float qmAh;

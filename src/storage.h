@@ -4,7 +4,7 @@
 #pragma once
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include "tester.h"
+#include "curve.h"
 
 namespace storage {
 bool begin();

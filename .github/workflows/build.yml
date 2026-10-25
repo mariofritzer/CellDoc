@@ -11,15 +11,32 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lebenszahl-Tests (PC)
+        run: g++ -std=c++17 -Wall -Werror -I src test/test_soh.cpp -o test_soh && ./test_soh
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - env: esp32dev
+            name: celldoc
+          - env: mini1
+            name: celldoc-mini1
+          - env: mini2
+            name: celldoc-mini2
+          - env: mini4
+            name: celldoc-mini4
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Lebenszahl-Tests (PC)
-        run: g++ -std=c++17 -Wall -Werror -I src test/test_soh.cpp -o test_soh && ./test_soh
 
       - uses: actions/setup-python@v5
         with:
@@ -30,7 +47,7 @@ jobs:
           path: |
             ~/.platformio
             .pio/libdeps
-          key: pio-${{ hashFiles('platformio.ini') }}
+          key: pio-${{ matrix.env }}-${{ hashFiles('platformio.ini') }}
 
       - name: PlatformIO installieren
         run: pip install platformio
@@ -44,26 +61,43 @@ jobs:
           fi
 
       - name: Bauen
-        run: pio run -e esp32dev
+        run: |
+          set -o pipefail
+          pio run -e ${{ matrix.env }} 2>&1 | tee build.log
+
+      - name: Fehler als Hinweise ausgeben
+        if: failure()
+        run: |
+          grep -E "error:|Error |undefined reference" build.log | head -10 | while IFS= read -r l; do
+            echo "::error::${l:0:300}"
+          done
 
       - name: Dateien zusammenstellen
         run: |
-          B=.pio/build/esp32dev
+          B=.pio/build/${{ matrix.env }}
           mkdir -p out
-          cp $B/firmware.bin out/celldoc-firmware.bin
+          cp $B/firmware.bin out/${{ matrix.name }}-firmware.bin
           BOOT_APP0=$(find ~/.platformio/packages/framework-arduinoespressif32 -name boot_app0.bin | head -1)
-          pio pkg exec -p tool-esptoolpy -- esptool.py --chip esp32 merge_bin -o out/celldoc-factory.bin \
+          pio pkg exec -p tool-esptoolpy -- esptool.py --chip esp32 merge_bin -o out/${{ matrix.name }}-factory.bin \
             0x1000 $B/bootloader.bin 0x8000 $B/partitions.bin 0xe000 "$BOOT_APP0" 0x10000 $B/firmware.bin
-          ls -la out
-          # OTA-Partition von min_spiffs.csv: 0x1E0000 Bytes
-          SIZE=$(stat -c%s out/celldoc-firmware.bin)
-          echo "Firmware: $SIZE von 1966080 Bytes"
+          SIZE=$(stat -c%s out/${{ matrix.name }}-firmware.bin)
+          echo "::notice::${{ matrix.env }}: $SIZE von 1966080 Bytes"
           test "$SIZE" -lt 1957888
 
       - uses: actions/upload-artifact@v4
         with:
-          name: celldoc-${{ env.CELLDOC_VERSION }}
+          name: ${{ matrix.name }}
           path: out/*.bin
+
+  release:
+    needs: build
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
 
       - name: Vorabversion „latest“ aktualisieren
         if: github.ref == 'refs/heads/main'
@@ -74,9 +108,14 @@ jobs:
           prerelease: true
           make_latest: false
           body: |
-            Automatisch gebaut aus dem aktuellen Stand von `main` (${{ env.CELLDOC_VERSION }}).
-            - **celldoc-firmware.bin**: Update über die Weboberfläche (Einstellungen → Firmware-Update)
-            - **celldoc-factory.bin**: Erstinstallation per USB an Adresse 0x0
+            Automatisch gebaut aus dem aktuellen Stand von `main`.
+
+            | Gerät | Update über die Weboberfläche | Erstinstallation per USB (Adresse 0x0) |
+            |---|---|---|
+            | CellDoc | celldoc-firmware.bin | celldoc-factory.bin |
+            | CellDoc Mini 1 | celldoc-mini1-firmware.bin | celldoc-mini1-factory.bin |
+            | CellDoc Mini 2 | celldoc-mini2-firmware.bin | celldoc-mini2-factory.bin |
+            | CellDoc Mini 4 | celldoc-mini4-firmware.bin | celldoc-mini4-factory.bin |
           files: out/*.bin
 
       - name: Release veröffentlichen
@@ -86,7 +125,7 @@ jobs:
           files: out/*.bin
           generate_release_notes: true
 
-  # Weboberfläche im Demo-Modus auf GitHub Pages (Pages-Quelle „GitHub Actions“ muss aktiviert sein)
+  # Weboberfläche im Demo-Modus auf GitHub Pages
   demo:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest

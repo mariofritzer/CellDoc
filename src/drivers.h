@@ -87,6 +87,44 @@ class ADS1115 {
 };
 
 // ---------------------------------------------------------------------------
+// MCP4728: 4 × 12-Bit-DAC, Referenz VDD, Verstärkung 1, alle Kanäle per Fast-Write
+class MCP4728 {
+ public:
+  bool begin(uint8_t addr) {
+    addr_ = addr;
+    ok_ = i2c::present(addr);
+    if (!ok_) return false;
+    Wire.beginTransmission(addr_);
+    Wire.write(0x80);  // VREF: alle Kanäle VDD
+    Wire.endTransmission();
+    Wire.beginTransmission(addr_);
+    Wire.write(0xC0);  // Gain: alle ×1
+    Wire.endTransmission();
+    for (int k = 0; k < 4; k++) code_[k] = 0;
+    return flush();
+  }
+  void set(uint8_t ch, uint16_t code) {
+    if (code > 4095) code = 4095;
+    if (ch < 4) code_[ch] = code;
+  }
+  bool flush() {
+    Wire.beginTransmission(addr_);
+    for (int k = 0; k < 4; k++) {
+      Wire.write(uint8_t((code_[k] >> 8) & 0x0F));
+      Wire.write(uint8_t(code_[k] & 0xFF));
+    }
+    ok_ = Wire.endTransmission() == 0;
+    return ok_;
+  }
+  bool ok() const { return ok_; }
+
+ private:
+  uint8_t addr_ = 0;
+  uint16_t code_[4] = {};
+  bool ok_ = false;
+};
+
+// ---------------------------------------------------------------------------
 // MCP4725: 12-Bit-DAC, Fast-Write
 class MCP4725 {
  public:

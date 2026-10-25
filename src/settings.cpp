@@ -19,7 +19,11 @@ bool hexToAddr(const char* s, uint8_t* a) {
   return true;
 }
 
+#ifdef CELLDOC_MINI
+static const char* ROLE_KEYS[SENSOR_ROLES] = {"cell1", "cell2", "cell3", "cell4", "sink"};
+#else
 static const char* ROLE_KEYS[SENSOR_ROLES] = {"cell", "pack", "sink"};
+#endif
 
 void Settings::toJson(JsonObject o, bool withSecrets) const {
   o["wifiSsid"] = wifiSsid;
@@ -33,7 +37,7 @@ void Settings::toJson(JsonObject o, bool withSecrets) const {
   JsonArray vg = o["vGain"].to<JsonArray>();
   JsonArray ig = o["iGain"].to<JsonArray>();
   JsonArray io = o["iOffset"].to<JsonArray>();
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < 4; i++) {
     vg.add(vGain[i]);
     ig.add(iGain[i]);
     io.add(iOffset[i]);
@@ -60,7 +64,7 @@ void Settings::fromJson(JsonObjectConst o) {
   dischargeStopC = clampf(o["dischargeStopC"] | dischargeStopC, dischargeWarnC + 1, 70);
   sinkWarnC = clampf(o["sinkWarnC"] | sinkWarnC, 30, cfg::SINK_STOP_C - 1);
   sinkStopC = clampf(o["sinkStopC"] | sinkStopC, sinkWarnC + 1, cfg::SINK_STOP_C);
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < 4; i++) {
     vGain[i] = clampf(o["vGain"][i] | vGain[i], 0.9f, 1.1f);
     iGain[i] = clampf(o["iGain"][i] | iGain[i], 0.8f, 1.2f);
     iOffset[i] = clampf(o["iOffset"][i] | iOffset[i], -0.1f, 0.1f);
