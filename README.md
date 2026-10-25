@@ -36,10 +36,29 @@
 
 ## Hardware
 
+[![Schaltplan](docs/img/schaltplan.svg)](docs/img/schaltplan.svg)
+
+**3D-Ansicht des Aufbaus** (Anordnungsvorschlag):
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/aufbau-dark.jpg">
+  <img src="docs/img/aufbau-light.jpg" alt="3D-Ansicht des Aufbaus: Grundplatte mit Lochraster, ESP32, Messmodulen, Relais, Lader, CPU-Kühler mit MOSFETs, 18650-Halter und XT60">
+</picture>
+
+**Anschlussplan** mit allen Modulen und Kabelfarben:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/anschlussplan-dark.jpg">
+  <img src="docs/img/anschlussplan-light.jpg" alt="Anschlussplan in der Draufsicht mit Beschriftung aller Module und Legende der Kabelfarben">
+</picture>
+
+<details><summary>Blockschaltbild</summary>
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/blockschaltbild-dark.png">
   <img src="docs/img/blockschaltbild-light.png" alt="Blockschaltbild">
 </picture>
+</details>
 
 ESP32 DevKit, 2× INA226 (Strom/Spannung), MCP4725 + LM358 + 2× IRFP250N (Konstantstromlast), TP5000 (Lader 4,2/3,6 V), 2× ADS1115 (Balancer), 3× DS18B20, zwei Relais, CPU-Kühler mit 4-Pin-Lüfter, 12-V-Netzteil.
 

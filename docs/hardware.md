@@ -9,6 +9,42 @@ Schaltung, Pinbelegung und Einkaufsliste. Aufbau auf Lochraster oder eigener Pla
 | Laden | nur 1S an Anschluss A, 1 A, Li-Ion/LiPo (4,2 V) oder LiFePO4 (3,6 V) |
 | Versorgung | 12 V / 3 A |
 
+## Schaltplan
+
+[![Schaltplan](img/schaltplan.svg)](img/schaltplan.svg)
+
+Erzeugt mit `python3 tools/wiring_gen.py docs/img/schaltplan.svg`. Netzlabel mit gleichem Namen sind verbunden, dicke Linien führen Akku- und Laststrom.
+
+## Aufbau
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="img/aufbau-dark.jpg">
+  <img src="img/aufbau-light.jpg" alt="3D-Ansicht des Aufbaus">
+</picture>
+
+## Anschlussplan
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="img/anschlussplan-dark.jpg">
+  <img src="img/anschlussplan-light.jpg" alt="Anschlussplan in der Draufsicht">
+</picture>
+
+Die Bilder entstehen aus `tools/render/scene.py` (Blender) und `tools/render/compose.py`. Die Anordnung ist ein Vorschlag, die Kabelfarben gelten für die ganze Doku:
+
+| Farbe | Leitung |
+|---|---|
+| Rot | 12 V |
+| Rosa | 5 V |
+| Schwarz | Masse |
+| Orange (dick) | Akku- und Laststrom |
+| Grün (dick) | Ladestrom TP5000 → K1 |
+| Blau / Gelb | I²C SDA / SCL |
+| Türkis | 1-Wire zu den DS18B20 |
+| Lila | Steuersignale (Relais, Lader, Last, Lüfter) |
+| Grau | Balancer-Abgriffe |
+
+## Blockschaltbild
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="img/blockschaltbild-dark.png">
   <img src="img/blockschaltbild-light.png" alt="Blockschaltbild von CellDoc">
