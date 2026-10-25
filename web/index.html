@@ -203,6 +203,10 @@ tr:last-child td{border-bottom:0}
 .pick .row{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--fill)}
 .pick .row+.row{border-top:1px solid var(--line)}
 .cell-h{display:flex;align-items:center;gap:10px}
+.row.picked{background:color-mix(in srgb,var(--charge) 14%,var(--card));margin:0 -10px;padding:11px 10px;border-radius:10px}
+.plan{background:#fff;border-radius:12px;padding:10px;overflow-x:auto}
+.plan svg{display:block;max-width:100%;height:auto}
+@media print{body *{visibility:hidden}.printme,.printme *{visibility:visible}.printme{position:absolute;left:0;top:0;width:100%}.sheet-bg{background:none}}
 .scanbox{position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:4/3}
 .scanbox video{width:100%;height:100%;object-fit:cover;display:block}
 .scanbox i{position:absolute;inset:16% 22%;border:3px solid #fff;border-radius:14px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
@@ -272,6 +276,7 @@ tr:last-child td{border-bottom:0}
   <main id="v-results" class="view" hidden>
     <section class="card">
       <h2>Geprüfte Akkus <span class="sub" id="resCount" style="text-transform:none;letter-spacing:0"></span></h2>
+      <div class="toolbar" id="cmpBar"><button class="btn" id="cmpToggle" type="button">Kurven vergleichen</button><span class="note" id="cmpHint" hidden>Bis zu 8 Ergebnisse antippen</span><button class="btn primary" id="cmpGo" type="button" hidden>Vergleichen</button></div>
       <div id="resList"><div class="empty">Lädt …</div></div>
     </section>
   </main>
@@ -605,8 +610,16 @@ tr:last-child td{border-bottom:0}
       </ul>
       <h4>Selbstentladung</h4>
       <p>Zellen mit innerem Kurzschluss verlieren auch ohne Last Ladung. Nach einem Test mit „Danach voll laden“ merkt sich CellDoc nach einer Stunde Ruhe die Spannung. Die Zelle 7–14 Tage lagern, dann in der Zelle unter Bestand „Jetzt nachmessen“ wählen. Unter 3 mV pro Tag ist gut, ab 8 mV pro Tag gehört die Zelle nicht in ein Pack.</p>
+      <h4>Zyklentest</h4>
+      <p>Im Startdialog unter „Zyklen“ z. B. 3 eintragen: CellDoc lädt und entlädt die Zelle dreimal hintereinander und zeigt die Kapazität jedes Zyklus. Bleibt sie stabil, ist die Messung belastbar. Steigt sie von Zyklus zu Zyklus, war die Zelle lange gelagert. Für die Lebenszahl zählt der letzte Zyklus.</p>
+      <h4>Spannungscheck beim Einstecken</h4>
+      <p>Eine Stunde nach jedem Test merkt sich CellDoc die Ruhespannung der Zelle. Wird sie später wieder gescannt und eingesteckt, vergleicht CellDoc sofort: „−19 mV in 6 Tagen“. Viel Verlust in kurzer Zeit deutet auf hohe Selbstentladung hin. In der Zelle unter Bestand geht das auch mit „Jetzt prüfen“.</p>
+      <h4>Kurven vergleichen</h4>
+      <p>Unter Ergebnisse auf „Kurven vergleichen“ tippen, bis zu acht Tests auswählen. Die Entladekurven liegen dann übereinander, wahlweise über mAh oder über Prozent der Kapazität.</p>
       <h4>Pack zusammenstellen</h4>
-      <p>Unter Bestand → Pack zusammenstellen Serie und Parallel eingeben, z. B. 10S4P. CellDoc wählt Zellen mit möglichst gleicher Kapazität und ähnlichem Innenwiderstand und verteilt sie so, dass jede Parallelgruppe gleich viel Kapazität hat. Danach lassen sich die Zellen als verbaut markieren.</p>
+      <p>Unter Bestand → Pack zusammenstellen Serie und Parallel eingeben, z. B. 10S4P. CellDoc wählt Zellen mit möglichst gleicher Kapazität und ähnlichem Innenwiderstand und verteilt sie so, dass jede Parallelgruppe gleich viel Kapazität hat. Danach lassen sich die Zellen als verbaut markieren. Der <b>Bauplan</b> zeigt, welche Zelle wohin gehört, wie herum sie steht, wo die Nickelbänder oben und unten liegen und wo die Balancer-Abgriffe hinkommen. Er lässt sich drucken oder als Bild speichern.</p>
+      <h4>Mehrere Geräte</h4>
+      <p>Unter Einstellungen → Mehrere Geräte jedem CellDoc einen eigenen Namen geben (z. B. celldoc und celldoc-mini) und die anderen als Partner eintragen oder mit „Geräte suchen“ finden. Dann teilen sich alle Geräte im WLAN einen Bestand: Eine Zelle, die auf der Mini getestet wurde, steht auch auf dem großen CellDoc, und neue Nummern werden nie doppelt vergeben. Tests anderer Geräte stehen im Verlauf der Zelle mit dem Gerätenamen.</p>
       <h4>Home Assistant und Datensicherung</h4>
       <p>Unter Einstellungen → MQTT den Broker eintragen (z. B. Mosquitto in Home Assistant). CellDoc erscheint dann von selbst als Gerät mit Spannung, Strom, Status, Temperaturen und letztem Ergebnis, dazu eine Taste zum Stoppen. Unter Datensicherung lassen sich Bestand und Ergebnisse als Datei sichern und wieder einspielen, oder als CSV für Excel exportieren.</p>
       <h4>CellDoc Mini</h4>
@@ -699,6 +712,18 @@ tr:last-child td{border-bottom:0}
         <section class="card">
           <h2>Diagnose</h2>
           <div id="diag" class="num"></div>
+        </section>
+
+        <section class="card">
+          <h2>Mehrere Geräte <span class="sub" id="syState" style="text-transform:none;letter-spacing:0"></span></h2>
+          <p class="note">Mehrere CellDocs im selben WLAN teilen sich Zellenbestand und Nummern, z. B. ein großer CellDoc und eine Mini. Jedes Gerät hat eine vollständige Kopie, Änderungen gleichen sie alle paar Minuten und nach jeder Änderung ab. Neue Nummern stimmen sie vorher ab, damit keine doppelt vergeben wird.</p>
+          <div class="form">
+            <div class="field"><label for="syHost">Name dieses Geräts</label><input type="text" id="syHost" maxlength="24" autocomplete="off"><span class="hint" id="syHostHint"></span></div>
+            <div class="field"><label for="syPeers">Partnergeräte</label><input type="text" id="syPeers" placeholder="celldoc-mini, 192.168.1.48" autocomplete="off"><span class="hint">Namen oder IP-Adressen, mit Komma getrennt</span></div>
+          </div>
+          <div id="syList" class="num"></div>
+          <div id="syFound"></div>
+          <div class="actions"><button class="btn primary" id="sySave" type="button">Speichern</button><button class="btn" id="syFind" type="button">Geräte suchen</button><button class="btn" id="syNow" type="button">Jetzt abgleichen</button></div>
         </section>
 
         <section class="card">
@@ -888,7 +913,7 @@ function renderLive() {
   const port = s.ports[pIdx];
   const [label, color] = PHASE[ph] || PHASE.idle;
   $("live-h").firstChild.textContent = isMini() ? `Schacht ${SEL + 1} ` : "Live ";
-  const pill = $("modePill"); pill.textContent = label; pill.style.background = `var(${color})`;
+  const pill = $("modePill"); pill.textContent = label + (job.cycles > 1 && isAct ? ` · Zyklus ${s.cycle || 1}/${job.cycles}` : ""); pill.style.background = `var(${color})`;
   cellColor = ph === "error" ? "--danger" : (color === "--muted" || color === "--rest") ? (port.i < -0.01 ? "--discharge" : "--charge") : color;
 
   // Banner
@@ -908,7 +933,8 @@ function renderLive() {
     sub = bits.map(esc).join(" · ");
   } else if (port.v > .3) {
     const as = isMini() ? RAW.slots[SEL]?.assigned : RAW?.assigned;
-    sub = as?.no ? `<span class="cid sm">${esc(as.id)}</span> gescannt · bereit für einen Test` : isMini() ? "Zelle erkannt · bereit für einen Test" : `Anschluss ${pIdx ? "B" : "A"} · bereit für einen Test`;
+    const ck = as?.check;
+    sub = as?.no ? `<span class="cid sm">${esc(as.id)}</span> gescannt${ck?.dv != null ? ` · ${ck.dv > 0 ? "+" : ""}${nf(ck.dv)} mV seit ${nf(ck.days, 0)} Tagen` : ""} · bereit für einen Test` : isMini() ? "Zelle erkannt · bereit für einen Test" : `Anschluss ${pIdx ? "B" : "A"} · bereit für einen Test`;
   } else if (!isMini() && RAW?.assigned?.no) sub = `<span class="cid sm">${esc(RAW.assigned.id)}</span> gescannt · jetzt einsetzen`;
   $("vSub").innerHTML = sub;
   socTarget = (s.soc != null && s.soc >= 0 && port.v > .3) ? s.soc : -1;
@@ -976,7 +1002,7 @@ function renderLive() {
     const pl = sl => (PHASE[sl.phase] || PHASE.idle)[0].replace("Test · ", "");
     const html = RAW.slots.map((sl, k) => {
       const p = sl.ports[0], c = (PHASE[sl.phase] || PHASE.idle)[1];
-      return `<div class="slot-tile${k === SEL ? " on" : ""}" data-slot="${k}" role="button" tabindex="0" aria-pressed="${k === SEL}"><span>Schacht ${k + 1}</span><b>${p.ok ? (p.v > .5 ? nf(p.v, 3) + " V" : "leer") : "Messung fehlt"}</b><span><i class="sdot" style="background:var(${c})"></i>${esc(pl(sl))}${sl.soc >= 0 && p.v > .5 ? " · " + nf(sl.soc) + " %" : ""}</span>${sl.job?.cellId && sl.phase !== "idle" ? `<span class="num" style="font-family:var(--mono)">${esc(sl.job.cellId)}</span>` : sl.assigned?.no && sl.phase === "idle" ? `<span class="num" style="font-family:var(--mono)">${esc(sl.assigned.id)} gescannt</span>` : ""}</div>`;
+      return `<div class="slot-tile${k === SEL ? " on" : ""}" data-slot="${k}" role="button" tabindex="0" aria-pressed="${k === SEL}"><span>Schacht ${k + 1}</span><b>${p.ok ? (p.v > .5 ? nf(p.v, 3) + " V" : "leer") : "Messung fehlt"}</b><span><i class="sdot" style="background:var(${c})"></i>${esc(pl(sl))}${sl.soc >= 0 && p.v > .5 ? " · " + nf(sl.soc) + " %" : ""}</span>${sl.job?.cellId && sl.phase !== "idle" ? `<span class="num" style="font-family:var(--mono)">${esc(sl.job.cellId)}</span>` : sl.assigned?.no && sl.phase === "idle" ? `<span class="num" style="font-family:var(--mono)">${esc(sl.assigned.id)}${sl.assigned.check?.dv != null ? ` · ${sl.assigned.check.dv > 0 ? "+" : ""}${nf(sl.assigned.check.dv)} mV` : " gescannt"}</span>` : ""}</div>`;
     }).join("");
     if ($("ports").dataset.k !== html) {
       $("ports").innerHTML = html; $("ports").dataset.k = html;
@@ -1137,6 +1163,7 @@ function openStart(preCell) {
       <div class="field" id="fCur"><label for="stCur">Entladestrom (A)</label><input type="number" id="stCur" min="0.05" step="0.05" value="0.5"><span class="hint" id="curHint"></span></div>
       <div class="field" id="fCut"><label for="stCut">Entladeschluss (V pro Zelle)</label><input type="number" id="stCut" step="0.05"></div>
       <div class="field full" id="fPre"><label class="switch"><span>Vorher voll laden</span><input type="checkbox" id="stPre" checked></label></div>
+      <div class="field" id="fCyc"><label for="stCyc">Zyklen</label><input type="number" id="stCyc" min="1" max="10" value="1"><span class="hint">Mehrmals laden und entladen, zeigt ob die Kapazität stabil ist</span></div>
       <div class="field" id="fRest"><label for="stRest">Ruhezeit (min)</label><input type="number" id="stRest" min="0" max="240" value="${SETTINGS?.restMin ?? 30}"></div>
       <div class="field" id="fAfter"><label for="stAfter">Danach</label><select id="stAfter"><option value="full">Voll laden</option><option value="storage">Auf Lagerspannung (≈ 50 %)</option><option value="none">Nicht laden</option></select></div>
     </div>
@@ -1180,7 +1207,9 @@ function openStart(preCell) {
     q("#stCellPick").hidden = !old || !!cellSel;
     const hint = q("#stCellHint");
     if (old && cellSel) {
-      hint.innerHTML = `<span class="cid sm">${esc(cellSel.id)}</span> ${esc(cellSel.name !== cellSel.id ? cellSel.name : cellSel.presetName || "")}${cellSel.last?.cap ? ` · zuletzt ${nf(cellSel.last.cap)} mAh, Lebenszahl ${cellSel.last.score} %` : " · noch nicht geprüft"} · <a href="#" id="stCellChange">ändern</a>`;
+      const liveV = isMini() ? S.ports[0].v : S.ports[port === "A" ? 0 : 1].v, rv = cellSel.rest;
+      const vc = rv?.t && liveV > 2.5 ? ` · seit ${nf((Date.now() / 1000 - rv.t) / 86400, 0)} Tagen ${nf((liveV - rv.v) * 1000)} mV` : "";
+      hint.innerHTML = `<span class="cid sm">${esc(cellSel.id)}</span> ${esc(cellSel.name !== cellSel.id ? cellSel.name : cellSel.presetName || "")}${cellSel.last?.cap ? ` · zuletzt ${nf(cellSel.last.cap)} mAh, Lebenszahl ${cellSel.last.score} %` : " · noch nicht geprüft"}${vc} · <a href="#" id="stCellChange">ändern</a>`;
       q("#stCellChange").addEventListener("click", e => { e.preventDefault(); cellSel = null; cellUi(); q("#stCellQ").focus(); });
       q("#stNameHint").textContent = "Der Vergleich mit dem ersten Test dieser Zelle erfolgt automatisch.";
     } else {
@@ -1216,6 +1245,7 @@ function openStart(preCell) {
     const canCharge = port === "A" && chem.chargeable;
     q("#fPre").hidden = mode !== "test" || !canCharge;
     q("#fRest").hidden = mode !== "test";
+    q("#fCyc").hidden = mode !== "test" || !canCharge;
     q("#fAfter").hidden = mode !== "test" || !canCharge;
     if (chem.id !== lastChem || chemChanged) { q("#stCut").value = chem.cutoffV.toFixed(2); lastChem = chem.id; }
     const cap = preset ? preset.capMah : (+q("#stCap").value || 0);
@@ -1228,14 +1258,15 @@ function openStart(preCell) {
     if (mode === "test" && !canCharge) info += " Der Akku muss voll angeschlossen werden, CellDoc lädt ihn nicht.";
     if (mode === "test") {
       const cur = +q("#stCur").value || .5, c = cap || 2600;
-      const hrs = (q("#stPre").checked && canCharge ? c / 1000 + .5 : 0) + (+q("#stRest").value || 0) / 60 + c / 1000 / cur + .17 + (q("#stAfter").value !== "none" && canCharge ? c / 1000 * (q("#stAfter").value === "storage" ? .5 : 1) + .3 : 0);
+      const cyc = canCharge ? clamp(+q("#stCyc").value || 1, 1, 10) : 1;
+      const hrs = (q("#stPre").checked && canCharge ? c / 1000 + .5 : 0) + cyc * ((+q("#stRest").value || 0) / 60 + c / 1000 / cur + .17) + (cyc - 1) * (c / 1000 + .5) + (q("#stAfter").value !== "none" && canCharge ? c / 1000 * (q("#stAfter").value === "storage" ? .5 : 1) + .3 : 0);
       info += ` Dauer ca. ${nf(hrs, 0)}–${nf(hrs * 1.2 + .5, 0)} h.`;
     }
     q("#stInfo").innerHTML = info;
     q("#stGo").disabled = mode === "charge" && !canCharge;
     cellUi();
   }
-  ["#stType", "#stChem", "#stCells", "#stCap", "#stCur", "#stPre", "#stRest", "#stAfter"].forEach(s => q(s).addEventListener("input", () => upd(s === "#stChem")));
+  ["#stType", "#stChem", "#stCells", "#stCap", "#stCur", "#stPre", "#stRest", "#stAfter", "#stCyc"].forEach(s => q(s).addEventListener("input", () => upd(s === "#stChem")));
   q("#stType").value = INFO.presets[0]?.id || "unknown"; if (isMini()) { q("#stAfter").value = "storage"; q("#stCur").max = INFO.limits.maxCurrentA; }
   if (cellSel) pickCell(cellSel); else upd(true);
   q("#stGo").addEventListener("click", async () => {
@@ -1246,6 +1277,7 @@ function openStart(preCell) {
       nomCapMah: +q("#stCap").value || 0, riNew: +q("#stRi").value || 0, name: q("#stName").value.trim(),
       currentA: +q("#stCur").value || .5, cutoffV: +q("#stCut").value || 0,
       preCharge: q("#stPre").checked && !q("#fPre").hidden, restMin: +q("#stRest").value || 0,
+      cycles: q("#fCyc").hidden ? 1 : clamp(+q("#stCyc").value || 1, 1, 10),
       after: q("#fAfter").hidden ? "none" : q("#stAfter").value,
       cell: cellSel?.no || 0,
     };
@@ -1294,6 +1326,31 @@ function resultSummary(r, compact) {
   return h;
 }
 
+let CMP = null;  // ausgewählte Ergebnisse im Vergleichsmodus
+$("cmpToggle").addEventListener("click", () => { CMP = CMP ? null : new Set(); loadResults(); });
+$("cmpGo").addEventListener("click", () => openCompare([...CMP]));
+async function openCompare(ids) {
+  const items = [];
+  for (const id of ids) {
+    try { const r = await api("/api/result?id=" + id), c = await api("/api/result?id=" + id + "&curve=1"); const seg = disSegments(c); if (seg.length) items.push({r, pts: seg[seg.length - 1]}); } catch (e) {}
+  }
+  if (!items.length) return toast("Keine Kurven gefunden");
+  const {el} = openSheet(`
+    <div class="sheet-head"><h3>Kurven vergleichen</h3><button class="btn small" data-close type="button">Schließen</button></div>
+    <section class="card"><div class="seg" role="group" aria-label="Darstellung" id="cmpMode"><button type="button" data-m="abs" aria-pressed="true">mAh</button><button type="button" data-m="rel" aria-pressed="false">% der Kapazität</button></div>
+      <div class="legend">${items.map((it, k) => `<span><i style="background:${PALETTE[k % PALETTE.length]}"></i>${esc(it.r.cellId || it.r.name)}</span>`).join("")}</div>
+      <svg class="chart" id="cmpC" viewBox="0 0 720 300" role="img" aria-label="Entladekurven im Vergleich"></svg></section>
+    <section class="card"><div class="tbl"><table class="num"><thead><tr><th></th><th>Zelle</th><th>Kapazität</th><th>Ri 50 %</th><th>Ø Spannung</th><th>Lebenszahl</th><th>Strom</th></tr></thead><tbody>
+      ${items.map((it, k) => `<tr><td><i class="sdot" style="background:${PALETTE[k % PALETTE.length]}"></i></td><td>${esc(it.r.cellId || "")} ${esc(it.r.name !== it.r.cellId ? it.r.name : "")}</td><td>${nf(it.r.capMah)} mAh</td><td>${riFmt(it.r.ri50 || it.r.ri100)}</td><td>${nf(it.r.avgV, 3)} V</td><td>${it.r.soh?.score ?? "–"} %</td><td>${nf(it.r.currentA, 2)} A</td></tr>`).join("")}</tbody></table></div>
+      <p class="note">Verschiedene Entladeströme verschieben die Kurven: höherer Strom = tiefere Spannung.</p></section>`);
+  const draw = mode => {
+    const rel = mode === "rel";
+    drawChart(el.querySelector("#cmpC"), items.map((it, k) => ({pts: rel ? it.pts.map(([q, v]) => [q / (it.r.capMah || 1) * 100, v]) : it.pts, color: PALETTE[k % PALETTE.length]})),
+      {h: 300, xFmt: v => rel ? nf(v) + " %" : nf(v) + " mAh", yFmt: v => nf(v, 2) + " V"});
+  };
+  el.querySelectorAll("#cmpMode button").forEach(b => b.addEventListener("click", () => { el.querySelectorAll("#cmpMode button").forEach(x => x.setAttribute("aria-pressed", x === b)); draw(b.dataset.m); }));
+  draw("abs");
+}
 async function loadResults() {
   try {
     const list = await api("/api/results");
@@ -1301,11 +1358,45 @@ async function loadResults() {
     $("resList").innerHTML = list.length ? list.map(r => `<div class="row tap" data-id="${r.id}" tabindex="0" role="button"><div class="crow">${r.cellId ? `<span class="cid">${esc(r.cellId)}</span>` : ""}<div class="l"><b>${esc(r.name !== r.cellId ? r.name : "")}${r.presetName ? " · " + esc(r.presetName.replace(/^(Samsung|LG|Sony\/Murata|Panasonic|Molicel) /, "")) : r.cells > 1 ? " · " + r.cells + "S " + esc(chemName(r.chem)) : ""}</b>
       <small class="num">${dateStr(r.time)} · ${nf(r.capMah)} mAh · ${riFmt(r.ri50 || r.ri100)}${r.throttled ? " · gedrosselt" : ""}</small></div></div>${sohTag(r)}</div>`).join("")
       : `<div class="empty">Noch keine Tests. Starte unter Live einen Kapazitätstest.</div>`;
+    $("cmpToggle").textContent = CMP ? "Abbrechen" : "Kurven vergleichen";
+    $("cmpHint").hidden = !CMP; $("cmpGo").hidden = !CMP || CMP.size < 2;
+    if (CMP) $("cmpGo").textContent = `${CMP.size} vergleichen`;
     $("resList").querySelectorAll("[data-id]").forEach(e => {
-      e.addEventListener("click", () => openResult(+e.dataset.id));
-      e.addEventListener("keydown", ev => { if (ev.key === "Enter") openResult(+e.dataset.id); });
+      const id = +e.dataset.id;
+      if (CMP) { e.classList.toggle("picked", CMP.has(id)); e.setAttribute("aria-pressed", CMP.has(id)); }
+      const go = () => {
+        if (!CMP) return openResult(id);
+        if (CMP.has(id)) CMP.delete(id); else if (CMP.size < 8) CMP.add(id);
+        e.classList.toggle("picked", CMP.has(id)); e.setAttribute("aria-pressed", CMP.has(id));
+        $("cmpGo").hidden = CMP.size < 2; $("cmpGo").textContent = `${CMP.size} vergleichen`;
+      };
+      e.addEventListener("click", go);
+      e.addEventListener("keydown", ev => { if (ev.key === "Enter") go(); });
     });
   } catch (e) { $("resList").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+
+
+// Entladeabschnitte einer Kurve (bei Zyklentests mehrere), jeweils mAh ab Beginn des Abschnitts
+const PALETTE = ["var(--discharge)", "var(--rest)", "var(--charge)", "#c2185b", "#00897b", "#8d6e63", "#7e57c2", "#f9a825", "#0288d1", "#9e9d24"];
+function disSegments(curve) {
+  const segs = [];
+  let cur = null;
+  curve.forEach((p, k) => {
+    if (p[2] < -0.05) {
+      if (!cur) { cur = []; segs.push(cur); cur.q0 = p[3]; }
+      cur.push([Math.abs(p[3] - cur.q0), p[1]]);
+    } else cur = null;
+  });
+  return segs.filter(x => x.length > 1);
+}
+function cycleBars(cy) {
+  const mx = Math.max(...cy.map(c => c.cap)), mn = Math.min(...cy.map(c => c.cap)), lo = Math.max(0, mn - (mx - mn) * 2 - mx * .02);
+  const w = 720, h = 150, bw = Math.min(70, (w - 40) / cy.length - 10);
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Kapazität je Zyklus">${cy.map((c, k) => {
+    const x = 20 + k * ((w - 40) / cy.length) + ((w - 40) / cy.length - bw) / 2, bh = (c.cap - lo) / (mx - lo || 1) * (h - 44) + 6;
+    return `<rect x="${x}" y="${h - 22 - bh}" width="${bw}" height="${bh}" rx="5" fill="var(--discharge)" opacity="${.55 + .45 * (k + 1) / cy.length}"/><text x="${x + bw / 2}" y="${h - 28 - bh}" text-anchor="middle" font-size="12" fill="var(--fg)" font-family="var(--font)">${nf(c.cap)}</text><text x="${x + bw / 2}" y="${h - 6}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="var(--font)">${k + 1}</text>`;
+  }).join("")}</svg>`;
 }
 
 async function openResult(id) {
@@ -1316,17 +1407,21 @@ async function openResult(id) {
     <div class="sheet-head"><h3 class="cell-h">${r.cellId ? `<span class="cid big">${esc(r.cellId)}</span>` : ""}${r.name !== r.cellId ? esc(r.name) : ""}</h3><button class="btn small" data-close type="button">Schließen</button></div>
     <div class="note num">${dateStr(r.time)} · ${r.slot ? "Schacht " + r.slot : "Anschluss " + esc(r.port)} · ${esc(chemName(r.chem))}${cells > 1 ? " · " + cells + "S" : ""}</div>
     <section class="card">${resultSummary(r, false)}</section>
-    <section class="card"><h2>Entladekurve</h2><svg class="chart" id="rC" viewBox="0 0 720 260" role="img" aria-label="Entladekurve"></svg></section>
+    <section class="card"><h2>Entladekurve${r.cycles?.length > 1 ? "n je Zyklus" : ""}</h2><div class="legend" id="rCl"></div><svg class="chart" id="rC" viewBox="0 0 720 260" role="img" aria-label="Entladekurve"></svg></section>
+    ${r.cycles?.length > 1 ? `<section class="card"><h2>Zyklen</h2>${cycleBars(r.cycles)}<div class="tbl"><table class="num"><thead><tr><th>Zyklus</th><th>Geladen</th><th>Entnommen</th><th>Energie</th><th>Ri 50 %</th><th>Wirkungsgrad</th></tr></thead><tbody>
+      ${r.cycles.map((c, k) => `<tr><td>${k + 1}</td><td>${c.chg ? nf(c.chg) + " mAh" : "–"}</td><td>${nf(c.cap)} mAh</td><td>${nf(c.wh, 2)} Wh</td><td>${riFmt(c.ri)}</td><td>${c.chg ? nf(c.cap / c.chg * 100, 1) + " %" : "–"}</td></tr>`).join("")}</tbody></table></div>
+      <p class="note num">Streuung ${nf((Math.max(...r.cycles.map(c => c.cap)) - Math.min(...r.cycles.map(c => c.cap))) / Math.max(...r.cycles.map(c => c.cap)) * 100, 1)} %. Für die Lebenszahl zählt der letzte Zyklus.</p></section>` : ""}
     ${r.riCurve?.length > 1 ? `<section class="card"><h2>Innenwiderstand über der Entladung</h2><svg class="chart" id="rRi" viewBox="0 0 720 200" role="img" aria-label="Innenwiderstand"></svg></section>` : ""}
     ${r.cellRi?.length ? `<section class="card"><h2>Innenwiderstand je Zelle</h2><div class="balcells num">${r.cellRi.map((v, k) => `<div class="balcell ${v === Math.max(...r.cellRi) && r.cellRi.length > 1 ? "low" : ""}"><span>Zelle ${k + 1}</span><b>${riFmt(v)}</b></div>`).join("")}</div><p class="note">Die Zelle mit dem höchsten Wert begrenzt das Pack.</p></section>` : ""}
     <div class="actions" id="rAct">${r.cell ? `<button class="btn primary" id="rCell" type="button">Zur Zelle ${esc(r.cellId || "")}</button><button class="btn" id="rLbl" type="button">Etikett</button>` : ""}<button class="btn danger" id="rDel" type="button">Ergebnis löschen</button></div>`);
   el.querySelector("#rCell")?.addEventListener("click", () => { close(); showView("cells"); openCell(r.cell); });
   el.querySelector("#rLbl")?.addEventListener("click", async () => { try { openLabel([await api("/api/cell?no=" + r.cell)]); } catch (e) { toast(e.message); } });
-  const dis = curve.filter(p => p[2] < -0.05);
-  if (dis.length > 1) {
-    const q0 = dis[0][3];
-    drawChart(el.querySelector("#rC"), [{pts: dis.map(p => [Math.abs(p[3] - q0), p[1]]), color: "var(--discharge)", area: true}],
-      {xFmt: v => nf(v) + " mAh", yFmt: v => nf(v, 2) + " V", hline: (r.cutoffV || 0) * cells, hlineLabel: "Entladeschluss", ...disAxes(r.chem, r.cutoffV, cells, Math.max(r.nomCapMah || 0, r.capMah))});
+  const segs = disSegments(curve);
+  if (segs.length) {
+    const many = segs.length > 1;
+    drawChart(el.querySelector("#rC"), segs.map((pts, k) => ({pts, color: many ? PALETTE[k % PALETTE.length] : "var(--discharge)", area: !many})),
+      {xFmt: v => nf(v) + " mAh", yFmt: v => nf(v, 2) + " V", hline: (r.cutoffV || 0) * cells, hlineLabel: "Entladeschluss", ...disAxes(r.chem, r.cutoffV, cells, Math.max(r.nomCapMah || 0, r.capMah, ...(r.cycles || []).map(c => c.cap)))});
+    if (many) el.querySelector("#rCl").innerHTML = segs.map((_, k) => `<span><i style="background:${PALETTE[k % PALETTE.length]}"></i>Zyklus ${k + 1}</span>`).join("");
   } else drawChart(el.querySelector("#rC"), [], {empty: "Keine Kurve gespeichert"});
   if (r.riCurve?.length > 1) drawChart(el.querySelector("#rRi"), [{pts: r.riCurve.map(p => [p[0], S?.riInOhm ? p[1] / 1000 : p[1]]), color: "var(--rest)"}],
     {h: 200, xFmt: v => nf(v) + " mAh", yFmt: v => S?.riInOhm ? nf(v, 3) + " Ω" : nf(v) + " mΩ"});
@@ -1348,6 +1443,9 @@ async function loadSettings() {
     $("mqOn").checked = !!st.mqttOn; $("mqHost").value = st.mqttHost || ""; $("mqPort").value = st.mqttPort || 1883; $("mqUser").value = st.mqttUser || ""; $("mqBase").value = st.mqttBase || "celldoc";
     $("mqPass").placeholder = st.mqttPassSet ? "gespeichert, leer lassen = unverändert" : "";
     $("mqState").textContent = S?.mqtt ? "· " + S.mqtt : "";
+    $("syHost").value = st.hostname || ""; $("syPeers").value = st.peers || "";
+    $("syHostHint").textContent = `Erreichbar unter http://${st.hostname || "celldoc"}.local`;
+    loadSync();
     $("mqHint").textContent = `Messwerte unter ${st.mqttBase || "celldoc"}/celldoc_xxxxxx/state, Geräte erscheinen in Home Assistant unter Einstellungen → Geräte → MQTT.`;
     const w = S?.wifi || {};
     $("wifiInfo").textContent = w.ap ? `Hotspot aktiv: ${w.ssid} · ${w.ip}` : `Verbunden mit ${w.ssid || st.wifiSsid} · ${w.ip}`;
@@ -1582,6 +1680,7 @@ async function openCell(no) {
   }
   const {el, close} = openSheet(`
     <div class="sheet-head"><h3 class="cell-h"><span class="cid big">${esc(c.id)}</span></h3><button class="btn small" data-close type="button">Schließen</button></div>
+    ${c.conflict ? `<div class="banner err" role="alert"><div><b>Nummer doppelt vergeben</b>Auf ${esc(c.conflict)} gibt es eine andere Zelle mit derselben Nummer, weil die Geräte beim Anlegen keine Verbindung hatten. Eine der beiden Zellen neu anlegen und neu beschriften.</div></div>` : ""}
     <section class="card">
       <div class="cellsum">${gradeBadge(c, true)}<div class="l"><b>${esc(name || c.presetName || "Ohne Namen")}</b>
         <small class="num">${[c.presetName && name ? c.presetName : "", STATUS_TXT[c.status] + (c.pack ? " in " + c.pack : ""), c.loc ? "Ort: " + c.loc : "", c.created ? "angelegt " + dateStr(c.created).split(",")[0] : ""].filter(Boolean).map(esc).join(" · ")}</small></div></div>
@@ -1597,9 +1696,14 @@ async function openCell(no) {
       </div>
       <div class="actions"><button class="btn primary" id="ceSave" type="button">Speichern</button></div>
     </section>
+    <section class="card"><h2>Spannungscheck</h2>
+      ${c.check ? `<div class="banner ${(c.check.mvDay ?? 0) >= 8 ? "err" : "info"} num"><div><b>${c.check.dv > 0 ? "+" : ""}${nf(c.check.dv)} mV in ${nf(c.check.days, 1)} Tagen${c.check.mvDay != null ? ` · ${nf(c.check.mvDay, 1)} mV/Tag` : ""}</b>Geprüft am ${dateStr(c.check.t)}: ${nf(c.check.prevV, 3)} V → ${nf(c.check.v, 3)} V</div></div>` : ""}
+      <p class="note num">${c.rest ? `Letzte Ruhespannung ${nf(c.rest.v, 3)} V am ${dateStr(c.rest.t)} (${({test: "nach dem Test", check: "beim Prüfen", sd: "Selbstentladung"})[c.rest.src] || c.rest.src}). ` : "Noch keine Ruhespannung gespeichert. "}Steckt die Zelle wieder im Gerät, zeigt der Vergleich, wie viel Spannung sie in der Zwischenzeit verloren hat. Nach dem Scannen prüft CellDoc das automatisch.</p>
+      <div class="toolbar">${portSelect("vcPort")}<button class="btn" id="vcGo" type="button">Jetzt prüfen</button></div></section>
     <section class="card"><h2>Selbstentladung</h2><div id="sdBox">${sdHtml}</div></section>
-    <section class="card"><h2>Tests <span class="sub" style="text-transform:none;letter-spacing:0">${results.length || ""}</span></h2>
-      ${results.length ? results.map(r => `<div class="row tap" data-rid="${r.id}" tabindex="0" role="button"><div class="l"><b>${dateStr(r.time)}</b><small class="num">${nf(r.capMah)} mAh · ${riFmt(r.ri50 || r.ri100)} · ${nf(r.currentA, 2)} A</small></div>${sohTag(r)}</div>`).join("") : `<div class="note">Keine gespeicherten Tests.</div>`}
+    <section class="card"><h2>Tests <span class="sub" style="text-transform:none;letter-spacing:0">${(c.hist?.length || results.length) || ""}</span></h2>
+      ${c.hist?.length ? c.hist.slice().reverse().map(h => { const here = !h.dev || h.dev === S?.host; return `<div class="row tap" data-hid="${h.id}" data-dev="${esc(here ? "" : h.dev)}" tabindex="0" role="button"><div class="l"><b>${dateStr(h.t)}</b><small class="num">${nf(h.cap)} mAh · ${riFmt(h.ri)}${here ? "" : " · auf " + esc(h.dev)}</small></div><span class="tag" style="color:var(${gradeCol(gradeOf(h.score))})">${h.score} %</span></div>`; }).join("")
+        : results.length ? results.map(r => `<div class="row tap" data-hid="${r.id}" data-dev="" tabindex="0" role="button"><div class="l"><b>${dateStr(r.time)}</b><small class="num">${nf(r.capMah)} mAh · ${riFmt(r.ri50 || r.ri100)} · ${nf(r.currentA, 2)} A</small></div>${sohTag(r)}</div>`).join("") : `<div class="note">Keine gespeicherten Tests.</div>`}
     </section>
     <div class="actions" id="ceAct">
       <button class="btn primary" id="ceLabel" type="button">Etikett drucken</button>
@@ -1623,7 +1727,18 @@ async function openCell(no) {
       toast(b.dataset.sd === "measure" ? "Gemessen" : b.dataset.sd === "start" ? "Startspannung gespeichert" : "Abgebrochen");
     } catch (e) { toast(e.message); }
   }));
-  el.querySelectorAll("[data-rid]").forEach(e => e.addEventListener("click", () => { close(); openResult(+e.dataset.rid); }));
+  el.querySelectorAll("[data-hid]").forEach(e => e.addEventListener("click", () => {
+    if (e.dataset.dev) return window.open(`http://${e.dataset.dev}.local/?result=${e.dataset.hid}`, "_blank");
+    close(); openResult(+e.dataset.hid);
+  }));
+  q("#vcGo").addEventListener("click", async () => {
+    const p = q("#vcPort").value;
+    try {
+      const r = await api("/api/cell/check", {no: c.no, port: p, slot: +p || 1});
+      toast(r.dv != null ? `${r.dv > 0 ? "+" : ""}${nf(r.dv)} mV seit ${nf(r.days, 1)} Tagen` : `${nf(r.v, 3)} V gespeichert`);
+      close(); await loadCellsData(true); openCell(c.no);
+    } catch (e) { toast(e.message); }
+  });
   q("#ceLabel").addEventListener("click", () => openLabel([c]));
   q("#ceTest").addEventListener("click", () => { close(); showView("live"); openStart(c); });
   q("#ceDel").addEventListener("click", () => confirmInline(q("#ceAct"), `${c.id} aus dem Bestand löschen? Die Testergebnisse bleiben erhalten. Die Nummer wird nicht neu vergeben.`, async () => {
@@ -1926,7 +2041,8 @@ async function openPack() {
         </tbody></table></div>
       </section>
       <div class="form"><div class="field full"><label for="pkName">Name des Packs</label><input type="text" id="pkName" maxlength="40" value="${esc(`Pack ${S_}S${P_}P`)}"></div></div>
-      <div class="actions" id="pkAct"><button class="btn primary" id="pkUse" type="button">Als verbaut markieren</button><button class="btn" id="pkCsv" type="button">Liste (CSV)</button><button class="btn" id="pkLbl" type="button">Etiketten</button></div>`;
+      <div class="actions" id="pkAct"><button class="btn primary" id="pkUse" type="button">Als verbaut markieren</button><button class="btn" id="pkPlan" type="button">Bauplan</button><button class="btn" id="pkCsv" type="button">Liste (CSV)</button><button class="btn" id="pkLbl" type="button">Etiketten</button></div>`;
+    q("#pkPlan").addEventListener("click", () => openPackPlan(res.groups, S_, P_, q("#pkName").value.trim(), vNom));
     q("#pkCsv").addEventListener("click", () => csvDownload(`celldoc-pack-${S_}s${P_}p.csv`, [["Gruppe", "ID", "Name", "Kapazität mAh", "Innenwiderstand mΩ", "Lebenszahl %", "Lagerort"],
       ...res.groups.flatMap((g, k) => g.cells.map(c => [k + 1, c.id, c.name, num(c.last.cap), num(c.last.ri, 1), c.last.score, c.loc || ""]))]));
     q("#pkLbl").addEventListener("click", () => openLabel(res.chosen.slice().sort((a, b) => a.no - b.no)));
@@ -1937,6 +2053,73 @@ async function openPack() {
   };
   el.querySelectorAll("#pkS,#pkP,#pkMin,#pkChem,#pkQ,#pkSd,#pkSdReq").forEach(i => i.addEventListener("input", calc));
   calc();
+}
+
+
+// ======================================================================
+// Bauplan fürs Pack: Zellen je Reihe (Parallelgruppe), Nickelbänder oben/unten, Balancer-Abgriffe
+// ======================================================================
+function packPlanSvg(groups, S_, P_) {
+  const pitch = 46, r = 19, padL = 54, padT = 46, gap = 70;
+  const vw = Math.max(padL + P_ * pitch + 40, 190), W = vw * 2 + gap, H = padT + S_ * pitch + 40;
+  const cx = (v, c) => v * (vw + gap) + padL + c * pitch + pitch / 2, cy = k => padT + k * pitch + pitch / 2;
+  let o = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="Helvetica, Arial, sans-serif">`;
+  o += `<rect width="${W}" height="${H}" fill="#fff"/>`;
+  const strip = (v, a, b, tap) => {
+    const x = v * (vw + gap) + padL + 2, y = cy(a) - r - 4, w = P_ * pitch - 4, h = cy(b) - cy(a) + 2 * r + 8;
+    o += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="#b8bec6" fill-opacity=".55" stroke="#7d848c" stroke-width="1.5"/>`;
+    if (tap) {
+      const tx = v * (vw + gap) + padL + P_ * pitch + 6, ty = (cy(a) + cy(b)) / 2;
+      o += `<line x1="${tx - 4}" y1="${ty}" x2="${tx + 8}" y2="${ty}" stroke="#d81b60" stroke-width="2"/><text x="${tx + 11}" y="${ty + 4}" font-size="12" font-weight="700" fill="#d81b60">${tap}</text>`;
+    }
+  };
+  for (let v = 0; v < 2; v++) {
+    const top = v === 0, ox = v * (vw + gap);
+    o += `<text x="${ox + padL}" y="22" font-size="15" font-weight="700" fill="#111">${top ? "Oberseite" : "Unterseite"}</text>`;
+    o += `<text x="${ox + padL}" y="38" font-size="11" fill="#666">${top ? "Blick von oben" : "durch das Pack gesehen"}</text>`;
+    // Nickelbänder
+    if (top) {
+      for (let k = 0; k + 1 < S_; k += 2) strip(v, k, k + 1, "B" + (k + 1));
+      if (S_ % 2 === 1) strip(v, S_ - 1, S_ - 1, "B+");
+    } else {
+      strip(v, 0, 0, "B−");
+      for (let k = 1; k + 1 < S_; k += 2) strip(v, k, k + 1, "B" + (k + 1));
+      if (S_ % 2 === 0) strip(v, S_ - 1, S_ - 1, "B+");
+    }
+    groups.forEach((g, k) => {
+      const plusUp = k % 2 === 0, plus = top ? plusUp : !plusUp;
+      o += `<text x="${ox + padL - 10}" y="${cy(k) + 4}" font-size="12" font-weight="700" fill="#444" text-anchor="end">${k + 1}S</text>`;
+      g.cells.forEach((c, j) => {
+        const x = cx(v, j), y = cy(k);
+        o += `<circle cx="${x}" cy="${y}" r="${r}" fill="${plus ? "#fdecea" : "#fff"}" stroke="${plus ? "#c62828" : "#222"}" stroke-width="${plus ? 2.5 : 1.5}"/>`;
+        o += `<text x="${x}" y="${y - 3}" font-size="10" font-weight="700" text-anchor="middle" fill="#111">${String(c.no).padStart(4, "0")}</text>`;
+        o += `<text x="${x}" y="${y + 12}" font-size="12" font-weight="800" text-anchor="middle" fill="${plus ? "#c62828" : "#1565c0"}">${plus ? "+" : "−"}</text>`;
+      });
+    });
+  }
+  return o + "</svg>";
+}
+function openPackPlan(groups, S_, P_, name, vNom) {
+  const svg = packPlanSvg(groups, S_, P_);
+  const taps = [...Array(S_ + 1)].map((_, k) => k === 0 ? "B− = B0" : k === S_ ? `B+ = B${S_}` : "B" + k).join(" · ");
+  const {el} = openSheet(`
+    <div class="sheet-head"><h3>Bauplan ${esc(name || "")}</h3><button class="btn small" data-close type="button">Schließen</button></div>
+    <div class="printme">
+      <h3 style="margin:0 0 6px">${esc(name || "Pack")} · ${S_}S${P_}P · ${nf(vNom * S_, 1)} V nominal · ${nf(Math.min(...groups.map(g => g.sum)))} mAh</h3>
+      <div class="plan">${svg}</div>
+      <div class="note" style="margin-top:8px">Jede Reihe ist eine Parallelgruppe (${P_} Zellen, alle gleich herum). Die Reihen stehen abwechselnd: Reihe 1 mit Plus nach oben, Reihe 2 mit Minus nach oben usw. Graue Flächen sind Nickelbänder. Oben verbinden sie 1S–2S, 3S–4S …, unten 2S–3S, 4S–5S … So entsteht die Serienschaltung.</div>
+      <div class="note"><b>Balancer-Abgriffe</b> (rot): ${taps}. B− und B+ bekommen die dicken Anschlusskabel.</div>
+      <div class="tbl" style="margin-top:8px"><table class="num"><thead><tr><th>Reihe</th><th>Zellen</th><th>Summe</th><th>Ø Ri</th></tr></thead><tbody>
+        ${groups.map((g, k) => `<tr><td>${k + 1}S</td><td>${g.cells.map(c => esc(c.id)).join(", ")}</td><td>${nf(g.sum)} mAh</td><td>${riFmt(g.ri)}</td></tr>`).join("")}</tbody></table></div>
+    </div>
+    <div class="callout danger">Nur mit passendem BMS bauen. Vor dem Verbinden alle Zellen auf gleiche Spannung bringen (höchstens 0,05 V Unterschied). Nickelband punktschweißen, nicht direkt an die Zellen löten.</div>
+    <div class="actions"><button class="btn primary" id="ppPrint" type="button">Drucken</button><button class="btn" id="ppSvg" type="button">Als Bild (SVG)</button></div>`);
+  el.querySelector("#ppPrint").addEventListener("click", () => window.print());
+  el.querySelector("#ppSvg").addEventListener("click", () => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([svg], {type: "image/svg+xml"}));
+    a.download = `bauplan-${S_}s${P_}p.svg`; document.body.appendChild(a); a.click(); a.remove();
+  });
 }
 
 // ======================================================================
@@ -2107,6 +2290,38 @@ function qrEncode(text, ecl) {
   return best;
 }
 
+
+async function loadSync() {
+  try {
+    const st = await api("/api/sync/status");
+    $("syState").textContent = st.peers?.length ? `· ${st.peers.filter(p => p.ok).length} von ${st.peers.length} verbunden` : "";
+    $("syList").innerHTML = (st.peers || []).map(p => `<div class="row"><div class="l"><b>${esc(p.host)}</b><small>${p.ok ? `abgeglichen vor ${dur(p.ago)}${p.merged ? `, ${p.merged} Zellen übernommen` : ""}` : esc(p.err || "noch nicht abgeglichen")}</small></div><span class="tag" style="color:var(${p.ok ? "--charge" : "--danger"})">${p.ok ? "verbunden" : "getrennt"}</span></div>`).join("");
+    if (!st.time) $("syList").insertAdjacentHTML("beforeend", `<div class="note">Der Abgleich braucht die Uhrzeit aus dem Internet und läuft nur im Heim-WLAN.</div>`);
+  } catch (e) {}
+}
+$("sySave").addEventListener("click", async () => {
+  const host = $("syHost").value.trim().toLowerCase(), changed = host && host !== SETTINGS?.hostname;
+  try {
+    await api("/api/settings", {hostname: host, peers: $("syPeers").value.trim()});
+    toast("Gespeichert"); await loadSettings();
+    if (changed) confirmInline($("sySave").parentElement, `Neuer Name gilt nach einem Neustart (http://${host}.local). Jetzt neu starten?`, async () => { await api("/api/restart", {}); toast("Startet neu …"); });
+  } catch (e) { toast(e.message); }
+});
+$("syNow").addEventListener("click", async () => { try { await api("/api/sync/now", {}); toast("Abgleich läuft"); setTimeout(loadSync, 4000); } catch (e) { toast(e.message); } });
+$("syFind").addEventListener("click", async () => {
+  $("syFind").disabled = true; $("syFind").textContent = "Sucht …";
+  try {
+    const l = await api("/api/sync/discover"), have = $("syPeers").value.split(",").map(x => x.trim()).filter(Boolean);
+    $("syFound").innerHTML = l.length ? `<div class="lbl" style="margin:6px 0">Gefunden</div><div class="actions">${l.map(d => `<button class="btn small" type="button" data-host="${esc(d.host)}" ${have.includes(d.host) ? "disabled" : ""}>${esc(d.host)} · ${esc(d.ip)}${have.includes(d.host) ? " ✓" : " hinzufügen"}</button>`).join("")}</div>` : `<div class="note">Keine anderen CellDocs im WLAN gefunden.</div>`;
+    $("syFound").querySelectorAll("[data-host]").forEach(b => b.addEventListener("click", () => {
+      const list = $("syPeers").value.split(",").map(x => x.trim()).filter(Boolean);
+      if (!list.includes(b.dataset.host)) list.push(b.dataset.host);
+      $("syPeers").value = list.join(", "); b.disabled = true; b.textContent = b.dataset.host + " ✓";
+    }));
+  } catch (e) { toast(e.message); }
+  $("syFind").disabled = false; $("syFind").textContent = "Geräte suchen";
+});
+
 // ======================================================================
 // Demo-Modus (ohne Gerät, z. B. für GitHub)
 // ======================================================================
@@ -2134,7 +2349,7 @@ function demoCurve(cap, cur, upTo) {
 const DEMO_OFF = Math.max(0, Math.floor(Date.now() / 1000) - 3 * 3600 - 1761390000);  // Demo-Daten wirken immer aktuell
 const DEMO_RESULTS = [
   {id: 5, cell: 5, cellId: "CD-0005", name: "Akku Taschenlampe", time: 1761390000, port: "A", chem: "liion", preset: "s30q", presetName: "Samsung INR18650-30Q", cells: 1, nomCapMah: 3000, riNew: 25, currentA: .5, cutoffV: 3, capMah: 2941, energyWh: 10.71, avgV: 3.642, ri100: 22.4, ri50: 24.1, riCurve: [[0, 22.4], [600, 23.0], [1200, 23.5], [1500, 24.1], [2100, 26.0], [2700, 31.2]], startOcv: 4.188, restOcv: 3.462, rechargeMah: 2988, rechargeWh: 11.62, rechargeSec: 11520, coulombEff: 98.4, energyEff: 92.2, after: "full", tempMax: 30.9, tempRise: 6.1, throttled: false, durationSec: 47100, soh: {score: 96, low: 96, high: 96, estimated: false, capScore: 95, riScore: 98, capRatio: 98, refCapMah: 3000, verdict: "Wie neu"}},
-  {id: 4, cell: 4, cellId: "CD-0004", name: "Akkuschrauber 1", time: 1761290000, port: "A", chem: "liion", preset: "lgmj1", presetName: "LG INR18650-MJ1", cells: 1, nomCapMah: 3500, riNew: 35, currentA: .5, cutoffV: 3, capMah: 2838, energyWh: 10.12, avgV: 3.566, ri100: 34, ri50: 38, riCurve: [[0, 34], [700, 35.5], [1400, 38], [2100, 41], [2700, 48]], startOcv: 4.174, restOcv: 3.441, rechargeMah: 2893, rechargeWh: 11.07, rechargeSec: 11380, coulombEff: 98.1, energyEff: 91.4, after: "full", tempMax: 31.6, tempRise: 8.4, throttled: false, durationSec: 49800, baselineCapMah: 3110, soh: {score: 65, low: 65, high: 65, estimated: false, capScore: 53, riScore: 94, capRatio: 81.1, refCapMah: 3500, verdict: "Gut gebraucht"}},
+  {id: 4, cell: 4, cellId: "CD-0004", name: "Akkuschrauber 1", cycles: [{cap: 2861, wh: 10.21, ri: 37.4, chg: 2790}, {cap: 2847, wh: 10.16, ri: 37.7, chg: 2893}, {cap: 2838, wh: 10.12, ri: 38, chg: 2881}], time: 1761290000, port: "A", chem: "liion", preset: "lgmj1", presetName: "LG INR18650-MJ1", cells: 1, nomCapMah: 3500, riNew: 35, currentA: .5, cutoffV: 3, capMah: 2838, energyWh: 10.12, avgV: 3.566, ri100: 34, ri50: 38, riCurve: [[0, 34], [700, 35.5], [1400, 38], [2100, 41], [2700, 48]], startOcv: 4.174, restOcv: 3.441, rechargeMah: 2893, rechargeWh: 11.07, rechargeSec: 11380, coulombEff: 98.1, energyEff: 91.4, after: "full", tempMax: 31.6, tempRise: 8.4, throttled: false, durationSec: 49800, baselineCapMah: 3110, soh: {score: 65, low: 65, high: 65, estimated: false, capScore: 53, riScore: 94, capRatio: 81.1, refCapMah: 3500, verdict: "Gut gebraucht"}},
   {id: 3, cell: 3, cellId: "CD-0003", name: "Drohnenakku 3S", time: 1761200000, port: "B", chem: "lipo", preset: "", presetName: "", cells: 3, nomCapMah: 2200, riNew: 0, currentA: 2, cutoffV: 3.2, capMah: 1954, energyWh: 21.53, avgV: 11.02, ri100: 41.5, ri50: 47.2, cellRi: [14.8, 15.3, 17.1], riCurve: [[0, 41.5], [500, 44], [1000, 47.2], [1500, 51]], startOcv: 12.58, restOcv: 10.9, after: "none", tempMax: 34.2, tempRise: 11.8, throttled: false, durationSec: 5400, soh: {score: 87, low: 77, high: 97, estimated: true, capScore: 72, riScore: 100, capRatio: 88.8, refCapMah: 2200, verdict: "Sehr gut"}},
   {id: 2, cell: 2, cellId: "CD-0002", name: "Laptop-Akku Zelle 2", time: 1761100000, port: "A", chem: "liion", preset: "", presetName: "", cells: 1, nomCapMah: 0, riNew: 0, currentA: .5, cutoffV: 3, capMah: 1612, energyWh: 5.71, avgV: 3.54, ri100: 98, ri50: 112, riCurve: [[0, 98], [500, 104], [800, 112], [1300, 131]], startOcv: 4.152, restOcv: 3.39, rechargeMah: 1690, rechargeWh: 6.4, rechargeSec: 8200, coulombEff: 95.4, energyEff: 89.2, after: "full", tempMax: 33.1, tempRise: 9.5, throttled: true, durationSec: 31000, soh: {score: 20, low: 13, high: 27, estimated: true, capScore: 5, riScore: 35, capRatio: 62, refCapMah: 2600, verdict: "Nur für kleine Lasten"}},
   {id: 1, cell: 1, cellId: "CD-0001", name: "Zelle 1", time: 1761000000, port: "A", chem: "liion", preset: "vtc6", presetName: "Sony/Murata US18650VTC6", cells: 1, nomCapMah: 3000, riNew: 20, currentA: 1, cutoffV: 3, capMah: 2655, energyWh: 9.42, avgV: 3.548, ri100: 29, ri50: 31, riCurve: [[0, 29], [900, 30], [1300, 31], [2000, 34]], startOcv: 4.181, restOcv: 3.47, rechargeMah: 2702, rechargeWh: 10.3, rechargeSec: 9900, coulombEff: 98.3, energyEff: 91.5, after: "full", tempMax: 36.4, tempRise: 13.2, throttled: false, durationSec: 31200, soh: {score: 58, low: 58, high: 58, estimated: false, capScore: 66, riScore: 63, capRatio: 88.5, refCapMah: 3000, verdict: "Gut gebraucht"}},
@@ -2174,6 +2389,16 @@ const DEMO_CELLS = (() => {
     cells.push(mk(no, {name: `${srcN} Zelle ${(no - 7) % 6 + 1}`, preset: pid, presetName: pname, nom, riNew, loc, created: time - 3 * day, tests: [], first: {id: 0, time, cap}, last: last(0, time, cap, ri, score, +(cap * 3.63 / 1000).toFixed(2), !nom, Math.max(0, score - 9), Math.min(100, score + 9)), sd,
       status: no > 46 ? "verbaut" : "ok", pack: no > 46 ? "Gartenlampe 2P" : ""}));
   }
+  // Verlauf (auch von der Mini), Ruhespannung, ein Spannungscheck
+  cells.forEach(c => {
+    if (!c.last?.cap) return;
+    c.hist = [{dev: c.no % 3 ? "celldoc" : "celldoc-mini", id: c.last.id, t: c.last.time, cap: c.last.cap, ri: c.last.ri, score: c.last.score}];
+    c.rest = {v: c.sd ? 4.17 : 3.82, t: c.last.time + 3600, src: "test"};
+  });
+  const c4 = cells[3];
+  c4.hist.unshift({dev: "celldoc-mini", id: 0, t: T - 3000000, cap: 3110, ri: 33, score: 81});
+  c4.check = {v: 4.152, prevV: 4.171, days: 6.1, dv: -19, mvDay: 3.1, t: T - 2 * day};
+  c4.rest = {v: 4.152, t: T - 2 * day, src: "check"};
   return cells;
 })();
 DEMO_RESULTS.forEach(r => r.time += DEMO_OFF);
@@ -2185,7 +2410,7 @@ function demoState() {
   const i = d.phase === "discharge" ? -(j.currentA + (Math.random() - .5) * .002) : ["charge", "precharge", "recharge"].includes(d.phase) ? .98 : 0;
   const pB = j.port === "B";
   return {
-    version: "1.0.0", uptime: 86400, wifi: {ap: false, ssid: "Heimnetz", ip: "192.168.1.47", rssi: -58}, time: Date.now() / 1000 | 0, riInOhm: false, prefix: "CD", mqtt: "verbunden",
+    version: "1.0.0", uptime: 86400, wifi: {ap: false, ssid: "Heimnetz", ip: "192.168.1.47", rssi: -58}, time: Date.now() / 1000 | 0, riInOhm: false, prefix: "CD", mqtt: "verbunden", host: "celldoc",
     phase: d.phase, error: d.error || "", lastResult: d.results[0]?.id || 0, job: j, elapsed: 18000 + el, phaseElapsed: 9000 + el,
     mah, wh: mah * 3.72 / 1000, capMah: 0, riLast: 24.1, riCount: 9, riPulse: false, throttle: 1, throttled: false, saturated: false,
     eta: d.phase === "discharge" ? (j.nomCapMah - mah) / (j.currentA * 1000) * 3600 : 0, soc: act ? clamp(100 - mah / j.nomCapMah * 100, 0, 100) : 96,
@@ -2220,7 +2445,7 @@ function demoSlot(k, base) {
 }
 function demoMiniState() {
   const b = demoState();
-  return {version: b.version, uptime: b.uptime, wifi: b.wifi, time: b.time, riInOhm: false, prefix: "CD", mqtt: b.mqtt, mini: true, slotCount: MINI_N, oled: true,
+  return {version: b.version, uptime: b.uptime, wifi: b.wifi, time: b.time, riInOhm: false, prefix: "CD", mqtt: b.mqtt, host: "celldoc-mini", mini: true, slotCount: MINI_N, oled: true,
     limits: {...b.limits, sinkStop: 85}, fan: {duty: 45, rpm: 0}, bal: {ok: false, cells: []},
     slots: [1, 2, 3, 4].slice(0, MINI_N).map(k => demoSlot(k, b))};
 }
@@ -2249,9 +2474,19 @@ async function demoApi(path, body) {
     return pre.concat(demoCurve(2930, .5, mah));
   }
   if (path === "/api/results") return demo.results;
-  if (path.startsWith("/api/result?")) { const r = demo.results.find(x => x.id === id); if (!r) throw new Error("Ergebnis nicht gefunden"); return path.includes("curve=1") ? demoCurve(r.capMah / .985, r.currentA, r.capMah) : r; }
+  if (path.startsWith("/api/result?")) {
+    const r = demo.results.find(x => x.id === id); if (!r) throw new Error("Ergebnis nicht gefunden");
+    if (!path.includes("curve=1")) return r;
+    if (!r.cycles) return demoCurve(r.capMah / .985, r.currentA, r.capMah);
+    let out = [];  // Zyklen: Entladen, dazwischen Laden
+    r.cycles.forEach((c, k) => { out = out.concat(demoCurve(c.cap / .985, r.currentA, c.cap)); if (k < r.cycles.length - 1) for (let t = 0; t < 10; t++) out.push([0, 3.8 + t * .04, .98, t * 280, 28]); });
+    return out;
+  }
   if (path.startsWith("/api/result/delete")) { demo.results = demo.results.filter(x => x.id !== id); return {ok: true}; }
   if (path === "/api/cells") return demo.cells;
+  if (path === "/api/sync/status") return {host: MINI_N ? "celldoc-mini" : "celldoc", time: true, peers: [{host: MINI_N ? "celldoc" : "celldoc-mini", ok: true, ago: 84, err: "", merged: 7}]};
+  if (path === "/api/sync/discover") return [{host: MINI_N ? "celldoc" : "celldoc-mini", ip: "192.168.1.48"}, {host: "celldoc-werkstatt", ip: "192.168.1.61"}];
+  if (path === "/api/cell/check") { const c = demo.cells.find(x => x.no === body.no), now = Date.now() / 1000 | 0, v = 4.153; const r = c.rest ? {v, prevV: c.rest.v, days: +((now - c.rest.t) / 86400).toFixed(1), dv: Math.round((v - c.rest.v) * 1000)} : {v}; if (c.rest) { r.mvDay = +(-r.dv / Math.max(.5, r.days)).toFixed(1); c.check = {...r, t: now}; } c.rest = {v, t: now, src: "check"}; return {ok: true, ...r}; }
   if (path.startsWith("/api/cell?")) { const no = +(path.match(/no=(\d+)/) || [])[1]; const c = demo.cells.find(x => x.no === no); if (!c) throw new Error("Zelle nicht gefunden"); return JSON.parse(JSON.stringify(c)); }
   if (path === "/api/cell") {
     let c = demo.cells.find(x => x.no === body.no);
@@ -2269,7 +2504,7 @@ async function demoApi(path, body) {
     else { if (now - c.sd.t0 < 6 * 3600) throw new Error("Frühestens 6 Stunden nach dem Start messen, besser nach 7–14 Tagen"); }
     return {ok: true};
   }
-  if (path === "/api/settings" && body === undefined) return {cellPrefix: "CD", nextCellNo: Math.max(...demo.cells.map(x => x.no)) + 1, mqttOn: true, mqttHost: "homeassistant.local", mqttPort: 1883, mqttUser: "celldoc", mqttPassSet: true, mqttBase: "celldoc", wifiSsid: "Heimnetz", chargeWarnC: 40, chargeStopC: 45, dischargeWarnC: 45, dischargeStopC: 55, sinkWarnC: 75, sinkStopC: 90, restMin: 30, riInOhm: false, buzzer: true, storageUsed: 81920, storageTotal: 1441792};
+  if (path === "/api/settings" && body === undefined) return {hostname: MINI_N ? "celldoc-mini" : "celldoc", peers: MINI_N ? "celldoc" : "celldoc-mini", cellPrefix: "CD", nextCellNo: Math.max(...demo.cells.map(x => x.no)) + 1, mqttOn: true, mqttHost: "homeassistant.local", mqttPort: 1883, mqttUser: "celldoc", mqttPassSet: true, mqttBase: "celldoc", wifiSsid: "Heimnetz", chargeWarnC: 40, chargeStopC: 45, dischargeWarnC: 45, dischargeStopC: 55, sinkWarnC: 75, sinkStopC: 90, restMin: 30, riInOhm: false, buzzer: true, storageUsed: 81920, storageTotal: 1441792};
   if (path === "/api/diag" && MINI_N) return {ina: Array(MINI_N).fill(true), dac: true, oled: true, balancer: false, taps: [], heap: 172000, chip: "ESP32-D0WD-V3",
     sensors: [...Array(MINI_N)].map((_, k) => ({addr: "28FF4A1B6216031" + k, t: 24 + k * 2.3, role: "cell" + (k + 1)})).concat([{addr: "28FF91C3611604E2", t: 41.7, role: "sink"}])};
   if (path === "/api/diag") return {inaA: true, inaB: true, dac: true, balancer: true, taps: [0, 0, 0, 0, 0, 0], heap: 187000, chip: "ESP32-D0WD-V3",
