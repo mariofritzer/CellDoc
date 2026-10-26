@@ -36,7 +36,7 @@ void HalMini::begin() {
   ledcWrite(FAN_CH, 0);
 
   Wire.begin(PIN_SDA, PIN_SCL, 400000);
-  for (int s = 0; s < NSLOTS; s++) ina[s].begin(ADDR_INA0 + s);
+  for (int s = 0; s < NSLOTS; s++) ina[s].begin(ADDR_INA[s]);
   dacOk_ = dac.begin(ADDR_DAC);
 
   dallas.begin();

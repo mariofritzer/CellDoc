@@ -31,7 +31,7 @@ Zum Vergrößern anklicken. Jeder Plan enthält Stückliste und Hinweise. Erzeug
 
 ### So funktioniert ein Schacht
 
-- **Messung:** Ein INA226 pro Schacht (Adresse 0x40 + Schacht − 1) misst Strom und Zellspannung. Den Shunt des Moduls auf **10 mΩ** tauschen, sonst reicht der Messbereich nicht. Die Spannung kommt über eine eigene Leitung (SENSE) direkt vom Zellpol.
+- **Messung:** Ein INA226 pro Schacht (Adressen 0x40, 0x41, 0x44, 0x45: Schacht 2 mit A0 an VCC, Schacht 3 mit A1 an VCC, Schacht 4 mit beiden an VCC) misst Strom und Zellspannung. Den Shunt des Moduls auf **10 mΩ** tauschen, sonst reicht der Messbereich nicht. Die Spannung kommt über eine eigene Leitung (SENSE) direkt vom Zellpol.
 - **Last:** Ein Kanal des MCP4728 gibt den Sollwert vor, ein Teiler 7,5 kΩ / 1 kΩ, ein Opamp (LM358 bei 1–2 Schächten, LM324 bei 4) und ein IRLZ44N mit 0,1-Ω-Messwiderstand machen daraus eine Konstantstromlast. Die Firmware regelt mit dem INA226 nach.
 - **Laden:** Ein TP4056-Modul (1 A) pro Schacht, geschaltet über AO3400 + AO3401. Ist die Zelle zu warm, taktet die Firmware den Lader.
 - **Sicherheit:** LOAD_EN_N (GPIO 16) hält über BSS138 alle Lasten gesperrt, solange der ESP32 nicht läuft oder bootet. Dazu eine Sicherung pro Schacht und eine im Netzteilzweig.

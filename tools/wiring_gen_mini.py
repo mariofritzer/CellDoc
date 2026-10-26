@@ -64,12 +64,44 @@ dot(220, 612); res_v(220, 580, 612, "R9", "10 kΩ") if False else None
 t(170, 628, "R9 10 kΩ nach +3V3", 10, REF)
 t(310, 608, f"→ Gate-Klemmen Q{N * 3 + 1}…: BSS138 ziehen bei HIGH", 10, REF)
 t(310, 622, "alle Last-MOSFETs auf GND (Booten, Absturz).", 10, REF)
-# Opamp-Versorgung
-t(600, 410, f"U3 {OPAMP}", 11, REF)
-t(600, 424, "Versorgung", 10, REF)
-pwr(560, 380, "+5V"); line(560, 380, 560, 396); t(566, 394, "4" if OPAMP == "LM324" else "8", 9, PINNUM)
-o.append(f'<path d="M545 396 L545 444 L585 420 Z" fill="{FILL}" stroke="{COMP}" stroke-width="1.6"/>')
-line(560, 444, 560, 460); gnd(560, 460); t(566, 456, "11" if OPAMP == "LM324" else "4", 9, PINNUM)
+# Opamp als Chip (Draufsicht, Kerbe oben): zeigt, wo welche Pins am LM324/LM358 sitzen
+OUTR = [22 + 3 * k for k in range(4)]   # Gate-Widerstand je Schacht (R22, R25 …)
+FBR = [24 + 3 * k for k in range(4)]    # Rückführung vom Messwiderstand (R24, R27 …)
+if OPAMP == "LM324":
+    left = [("1OUT", 1, f"R{OUTR[0]}"), ("1IN−", 2, f"R{FBR[0]}"), ("1IN+", 3, "SET1"), ("VCC", 4, "+5V"),
+            ("2IN+", 5, "SET2"), ("2IN−", 6, f"R{FBR[1]}"), ("2OUT", 7, f"R{OUTR[1]}")]
+    right = [("4OUT", 14, f"R{OUTR[3]}"), ("4IN−", 13, f"R{FBR[3]}"), ("4IN+", 12, "SET4"), ("GND", 11, "GND"),
+             ("3IN+", 10, "SET3"), ("3IN−", 9, f"R{FBR[2]}"), ("3OUT", 8, f"R{OUTR[2]}")]
+else:
+    two = N > 1
+    left = [("1OUT", 1, f"R{OUTR[0]}"), ("1IN−", 2, f"R{FBR[0]}"), ("1IN+", 3, "SET1"), ("GND", 4, "GND")]
+    right = [("VCC", 8, "+5V"), ("2OUT", 7, f"R{OUTR[1]}" if two else "BRIDGE"), ("2IN−", 6, f"R{FBR[1]}" if two else "BRIDGE"),
+             ("2IN+", 5, "SET2" if two else "GND")]
+DX, DY, DW, RS = 560, 372, 80, 22
+DH = (len(left) - 1) * RS + 24
+t(DX, DY - 24, f"U3 {OPAMP} von oben", 11, REF, "start", "bold")
+box(DX, DY - 12, DW, DH)
+o.append(f'<path d="M{DX + DW / 2 - 7} {DY - 12} a7 7 0 0 0 14 0" fill="none" stroke="{COMP}" stroke-width="1.4"/>')
+for i, (nm, num, net) in enumerate(left):
+    y = DY + i * RS
+    p = pin(DX, y, "l", nm, num, L=16)
+    if net == "+5V": wire(p, (p[0] - 16, y)); pwr(p[0] - 16, y, "+5V", "l")
+    elif net == "GND": wire(p, (p[0] - 16, y)); gnd(p[0] - 16, y, "l")
+    else: wire(p, (p[0] - 34, y)); label(p[0] - 34, y, net, "r")
+bridge = []
+for i, (nm, num, net) in enumerate(right):
+    y = DY + i * RS
+    p = pin(DX + DW, y, "r", nm, num, L=16)
+    if net == "+5V": wire(p, (p[0] + 16, y)); pwr(p[0] + 16, y, "+5V", "r")
+    elif net == "GND": wire(p, (p[0] + 16, y)); gnd(p[0] + 16, y, "r")
+    elif net == "BRIDGE": wire(p, (p[0] + 14, y)); bridge.append((p[0] + 14, y))
+    else: wire(p, (p[0] + 34, y)); label(p[0] + 34, y, net, "l")
+if len(bridge) == 2:
+    wire(bridge[0], bridge[1])
+yb = DY - 12 + DH
+units = "U3A–U3D" if OPAMP == "LM324" else ("U3A/U3B" if N > 1 else "U3A")
+for k, line_ in enumerate([f"Die Dreiecke {units}", "bei den Schächten sind", "die Opamps im Chip."] + (["Pin 6+7 brücken, 5 an GND."] if N == 1 else [])):
+    t(DX - 40, yb + 16 + k * 14, line_, 10, REF)
 
 # ---------------------------------------------------------------- Bedienung, Temperatur
 section(50, 656, 720, 1548, "Bedienung, Temperatur, Lüfter")
@@ -189,7 +221,8 @@ for i, (n_, net) in enumerate(right):
     elif net == "+3V3": wire((px, py), (px + 20, py)); pwr(px + 20, py, "+3V3", "r")
     else: wire((px, py), (px + 80, py)); label(px + 80, py, net, "l")
 note(EX - 110, EY + EH + 30, "I²C: SDA = IO21, SCL = IO22, je 4,7 kΩ nach +3V3.")
-note(EX - 110, EY + EH + 46, f"INA226 der Schächte: 0x40{', 0x41' if N > 1 else ''}{', 0x42, 0x43' if N > 2 else ''} (A0/A1).")
+note(EX - 110, EY + EH + 46, f"INA226 der Schächte: 0x40{', 0x41' if N > 1 else ''}{', 0x44, 0x45' if N > 2 else ''}.")
+note(EX - 110, EY + EH + 62, "Adresse am Modul: 0x41 A0→VCC, 0x44 A1→VCC, 0x45 beide→VCC.")
 
 # ---------------------------------------------------------------- Stückliste
 nR = 4 * N + 6
@@ -246,7 +279,7 @@ for k in range(1, N + 1):
     dot(1250, y0 + 56); wire((1250, y0 + 56), (1250, y0 + 40), (1214, y0 + 40)); label(1214, y0 + 40, f"SENSE{k}", "r")
     ux = 1400
     box(ux, y0 + 40, 130, 196)
-    t(ux, y0 + 32, f"U{10 + k}" if False else f"INA{k}", 12, REF); t(ux + 130, y0 + 32, f"INA226 · 0x{0x3F + k:02X}", 11, REF, "end")
+    t(ux, y0 + 32, f"U{10 + k}" if False else f"INA{k}", 12, REF); t(ux + 130, y0 + 32, f"INA226 · 0x{[0x40, 0x41, 0x44, 0x45][k - 1]:02X}", 11, REF, "end")
     t(ux + 90, y0 + 138, "Shunt 10 mΩ", 10, PINNAME, "middle", rot=-90)
     pwire((1360, y0 + 56), (ux - 20, y0 + 56))
     pin(ux, y0 + 56, "l", "IN+", 1)

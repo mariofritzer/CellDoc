@@ -1464,7 +1464,7 @@ async function loadDiag() {
   const okc = b => b ? `<b style="color:var(--charge)">ok</b>` : `<b style="color:var(--danger)">fehlt</b>`;
   const st = SETTINGS || {};
   const rows = isMini()
-    ? [...(d.ina || []).map((ok, k) => [`Strommesser Schacht ${k + 1} (INA226 0x${(0x40 + k).toString(16)})`, okc(ok)]), ["Last-Sollwerte (MCP4728)", okc(d.dac)], ["Display (SH1106)", d.oled ? okc(true) : `<span class="note">nicht angeschlossen</span>`]]
+    ? [...(d.ina || []).map((ok, k) => [`Strommesser Schacht ${k + 1} (INA226 0x${[0x40, 0x41, 0x44, 0x45][k].toString(16)})`, okc(ok)]), ["Last-Sollwerte (MCP4728)", okc(d.dac)], ["Display (SH1106)", d.oled ? okc(true) : `<span class="note">nicht angeschlossen</span>`]]
     : [["Strommesser A (INA226 0x40)", okc(d.inaA)], ["Strommesser B (INA226 0x41)", okc(d.inaB)], ["Last-Sollwert (MCP4725)", okc(d.dac)], ["Balancer (2× ADS1115)", okc(d.balancer)],
        ["Balancer-Abgriffe", d.taps.map(v => nf(v, 2)).join(" · ") + " V"]];
   rows.push(["QR-Scanner (IO19/IO18)", S?.scanner ? okc(true) : `<span class="note">nicht angeschlossen</span>`]);

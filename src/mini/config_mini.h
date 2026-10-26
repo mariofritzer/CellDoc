@@ -22,7 +22,8 @@ constexpr uint8_t PIN_BTN_OK = 35;
 constexpr uint8_t PIN_BTN_NEXT = 39;
 constexpr uint8_t PIN_BOOT = 0;  // BOOT-Taste = Not-Aus
 
-constexpr uint8_t ADDR_INA0 = 0x40;   // Schacht k: 0x40 + k
+// INA226 je Schacht: A0/A1 nur an GND oder VCC, das können alle gängigen Module
+constexpr uint8_t ADDR_INA[4] = {0x40, 0x41, 0x44, 0x45};
 constexpr uint8_t ADDR_DAC = 0x60;    // MCP4728
 constexpr uint8_t ADDR_OLED = 0x3C;   // SH1106
 
