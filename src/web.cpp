@@ -255,7 +255,32 @@ void begin() {
   server.begin();
 }
 
+// RGB-LED auf dem S3-Board: grün bereit, türkis lädt, orange entlädt, grün hell fertig,
+// rot blinkend Fehler, blau blinkend Hotspot
+static void statusLed() {
+  if (cfg::PIN_RGB < 0) return;
+  static uint32_t last = 0;
+  uint32_t now = millis();
+  if (now - last < 250) return;
+  last = now;
+  bool blink = (now / 500) % 2;
+  uint8_t r = 0, g = 0, b = 0;
+  switch (device::ledState()) {
+    case 1: g = 14; b = 14; break;
+    case 2: r = 24; g = 9; break;
+    case 3: g = 30; break;
+    case 4: r = blink ? 40 : 0; break;
+    default:
+      if (ap) b = blink ? 30 : 0;
+      else g = 4;
+  }
+#if CONFIG_IDF_TARGET_ESP32S3
+  neopixelWrite(cfg::PIN_RGB, r, g, b);
+#endif
+}
+
 void update() {
+  statusLed();
   if (ap) dns.processNextRequest();
   server.handleClient();
   mqtt::update();

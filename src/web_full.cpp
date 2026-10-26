@@ -236,6 +236,17 @@ bool cellInUse(uint32_t no) { return tester.active() && tester.cellNo() == no; }
 
 const char* model() { return "CellDoc"; }
 
+uint8_t ledState() {
+  switch (tester.phase()) {
+    case Phase::Error: return 4;
+    case Phase::Done: return 3;
+    case Phase::Discharge:
+    case Phase::ManualDischarge: return 2;
+    case Phase::Idle: return 0;
+    default: return 1;
+  }
+}
+
 void mqttEntities(std::vector<MqttEntity>& e) {
   e.push_back({"phase", "Status", "phase:value_json.phase", "", ""});
   e.push_back({"zelle", "Zelle", "{{ value_json.job.cellId | default('') }}", "", ""});

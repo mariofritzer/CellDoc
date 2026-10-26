@@ -10,6 +10,26 @@
 namespace cfg {
 
 // ---------- Pins ----------
+#if CONFIG_IDF_TARGET_ESP32S3
+// ESP32-S3-DevKitC-1 (N16R8): IO35–37 gehören zum PSRAM, IO19/20 zu USB, IO0/3/45/46 sind Boot-Pins
+constexpr uint8_t PIN_SDA        = 8;
+constexpr uint8_t PIN_SCL        = 9;
+constexpr uint8_t PIN_ONEWIRE    = 4;
+constexpr uint8_t PIN_LOAD_EN_N  = 5;
+constexpr uint8_t PIN_RELAY_K1   = 6;
+constexpr uint8_t PIN_RELAY_K2   = 7;
+constexpr uint8_t PIN_CHG_CS_HI  = 15;
+constexpr uint8_t PIN_CHG_CS_LO  = 16;
+constexpr uint8_t PIN_CHG_CHRG   = 17;
+constexpr uint8_t PIN_CHG_STDBY  = 18;
+constexpr uint8_t PIN_FAN_PWM    = 10;
+constexpr uint8_t PIN_FAN_TACH   = 11;
+constexpr uint8_t PIN_BUZZER     = 12;
+constexpr uint8_t PIN_BUTTON     = 0;
+constexpr uint8_t PIN_SCAN_RX    = 13;
+constexpr uint8_t PIN_SCAN_TX    = 14;
+constexpr int8_t  PIN_RGB        = 48;  // RGB-LED auf dem Board (WS2812)
+#else
 constexpr uint8_t PIN_SDA        = 21;
 constexpr uint8_t PIN_SCL        = 22;
 constexpr uint8_t PIN_ONEWIRE    = 4;
@@ -27,6 +47,8 @@ constexpr uint8_t PIN_BUTTON     = 0;   // BOOT-Taste = Not-Aus
 // QR-Scanner (optional, GM861S, 3,3 V, 9600 Baud) – gleiche Pins bei CellDoc und Mini
 constexpr uint8_t PIN_SCAN_RX    = 19;  // vom TX des Scanners
 constexpr uint8_t PIN_SCAN_TX    = 18;  // zum RX des Scanners
+constexpr int8_t  PIN_RGB        = -1;
+#endif
 
 // ---------- I2C-Adressen ----------
 constexpr uint8_t ADDR_INA_A   = 0x40;

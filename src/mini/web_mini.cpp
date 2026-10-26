@@ -255,6 +255,18 @@ bool cellInUse(uint32_t no) {
   return false;
 }
 
+uint8_t ledState() {
+  uint8_t st = 0;
+  for (int s = 0; s < NSLOTS; s++) {
+    Phase p = slots[s].phase();
+    uint8_t v = p == Phase::Error ? 4 : (p == Phase::Discharge || p == Phase::ManualDischarge) ? 2 : p == Phase::Idle ? 0 : p == Phase::Done ? 3 : 1;
+    // Fehler vor Entladen vor Laden vor Fertig
+    static const uint8_t prio[] = {0, 2, 3, 1, 4};
+    if (prio[v] > prio[st]) st = v;
+  }
+  return st;
+}
+
 const char* model() {
   static char m[16];
   snprintf(m, sizeof(m), "CellDoc Mini %d", NSLOTS);

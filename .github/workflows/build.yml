@@ -25,14 +25,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - env: esp32dev
-            name: celldoc
-          - env: mini1
-            name: celldoc-mini1
-          - env: mini2
-            name: celldoc-mini2
-          - env: mini4
-            name: celldoc-mini4
+          - {env: esp32dev, name: celldoc, chip: esp32, boot: "0x1000", max: 1572864}
+          - {env: mini1, name: celldoc-mini1, chip: esp32, boot: "0x1000", max: 1572864}
+          - {env: mini2, name: celldoc-mini2, chip: esp32, boot: "0x1000", max: 1572864}
+          - {env: mini4, name: celldoc-mini4, chip: esp32, boot: "0x1000", max: 1572864}
+          - {env: esp32s3, name: celldoc-s3, chip: esp32s3, boot: "0x0", max: 3145728}
+          - {env: mini1-s3, name: celldoc-mini1-s3, chip: esp32s3, boot: "0x0", max: 3145728}
+          - {env: mini2-s3, name: celldoc-mini2-s3, chip: esp32s3, boot: "0x0", max: 3145728}
+          - {env: mini4-s3, name: celldoc-mini4-s3, chip: esp32s3, boot: "0x0", max: 3145728}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -78,11 +78,11 @@ jobs:
           mkdir -p out
           cp $B/firmware.bin out/${{ matrix.name }}-firmware.bin
           BOOT_APP0=$(find ~/.platformio/packages/framework-arduinoespressif32 -name boot_app0.bin | head -1)
-          pio pkg exec -p tool-esptoolpy -- esptool.py --chip esp32 merge_bin -o out/${{ matrix.name }}-factory.bin \
-            0x1000 $B/bootloader.bin 0x8000 $B/partitions.bin 0xe000 "$BOOT_APP0" 0x10000 $B/firmware.bin
+          pio pkg exec -p tool-esptoolpy -- esptool.py --chip ${{ matrix.chip }} merge_bin -o out/${{ matrix.name }}-factory.bin \
+            ${{ matrix.boot }} $B/bootloader.bin 0x8000 $B/partitions.bin 0xe000 "$BOOT_APP0" 0x10000 $B/firmware.bin
           SIZE=$(stat -c%s out/${{ matrix.name }}-firmware.bin)
-          echo "::notice::${{ matrix.env }}: $SIZE von 1572864 Bytes"
-          test "$SIZE" -lt 1564672
+          echo "::notice::${{ matrix.env }}: $SIZE von ${{ matrix.max }} Bytes"
+          test "$SIZE" -lt $(( ${{ matrix.max }} - 8192 ))
 
       - uses: actions/upload-artifact@v4
         with:
@@ -116,6 +116,12 @@ jobs:
             | CellDoc Mini 1 | celldoc-mini1-firmware.bin | celldoc-mini1-factory.bin |
             | CellDoc Mini 2 | celldoc-mini2-firmware.bin | celldoc-mini2-factory.bin |
             | CellDoc Mini 4 | celldoc-mini4-firmware.bin | celldoc-mini4-factory.bin |
+            | CellDoc · ESP32-S3 | celldoc-s3-firmware.bin | celldoc-s3-factory.bin |
+            | CellDoc Mini 1 · ESP32-S3 | celldoc-mini1-s3-firmware.bin | celldoc-mini1-s3-factory.bin |
+            | CellDoc Mini 2 · ESP32-S3 | celldoc-mini2-s3-firmware.bin | celldoc-mini2-s3-factory.bin |
+            | CellDoc Mini 4 · ESP32-S3 | celldoc-mini4-s3-firmware.bin | celldoc-mini4-s3-factory.bin |
+
+            Der Webflasher erkennt ESP32 und ESP32-S3 selbst und spielt die passende Datei auf.
           files: out/*.bin
 
       - name: Release veröffentlichen
@@ -160,14 +166,15 @@ jobs:
               celldoc-mini2) title="CellDoc Mini 2" ;;
               celldoc-mini4) title="CellDoc Mini 4" ;;
             esac
-            cp fw/$id-factory.bin site/flash/
+            cp fw/$id-factory.bin fw/$id-s3-factory.bin site/flash/
             cat > site/flash/manifest-$id.json <<EOF
           {
             "name": "$title",
             "version": "$VER",
             "new_install_prompt_erase": true,
             "builds": [
-              { "chipFamily": "ESP32", "parts": [ { "path": "$id-factory.bin", "offset": 0 } ] }
+              { "chipFamily": "ESP32", "parts": [ { "path": "$id-factory.bin", "offset": 0 } ] },
+              { "chipFamily": "ESP32-S3", "parts": [ { "path": "$id-s3-factory.bin", "offset": 0 } ] }
             ]
           }
           EOF

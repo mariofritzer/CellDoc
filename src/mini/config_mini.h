@@ -10,6 +10,19 @@ namespace mcfg {
 
 constexpr uint8_t NSLOTS = SLOTS;
 
+#if CONFIG_IDF_TARGET_ESP32S3
+// ESP32-S3-DevKitC-1 (N16R8): IO35–37 gehören zum PSRAM, IO19/20 zu USB, IO0/3/45/46 sind Boot-Pins
+constexpr uint8_t PIN_SDA = 8;
+constexpr uint8_t PIN_SCL = 9;
+constexpr uint8_t PIN_ONEWIRE = 4;
+constexpr uint8_t PIN_LOAD_EN_N = 5;
+constexpr uint8_t PIN_CHG[4] = {6, 7, 15, 16};
+constexpr uint8_t PIN_FAN = 10;
+constexpr uint8_t PIN_BUZZER = 12;
+constexpr uint8_t PIN_BTN_PREV = 17;
+constexpr uint8_t PIN_BTN_OK = 18;
+constexpr uint8_t PIN_BTN_NEXT = 11;
+#else
 constexpr uint8_t PIN_SDA = 21;
 constexpr uint8_t PIN_SCL = 22;
 constexpr uint8_t PIN_ONEWIRE = 4;
@@ -20,6 +33,7 @@ constexpr uint8_t PIN_BUZZER = 17;
 constexpr uint8_t PIN_BTN_PREV = 34;
 constexpr uint8_t PIN_BTN_OK = 35;
 constexpr uint8_t PIN_BTN_NEXT = 39;
+#endif
 constexpr uint8_t PIN_BOOT = 0;  // BOOT-Taste = Not-Aus
 
 // INA226 je Schacht: A0/A1 nur an GND oder VCC, das können alle gängigen Module

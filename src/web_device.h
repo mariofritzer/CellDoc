@@ -23,6 +23,8 @@ struct MqttEntity {
       : obj(o), name(n), tpl(t), unit(u), dclass(d), button(b) {}
 };
 const char* model();
+// Status für die RGB-LED des S3-Boards: 0 bereit, 1 lädt, 2 entlädt, 3 fertig, 4 Fehler
+uint8_t ledState();
 
 // QR-Scanner am Gerät: no = Zelle (0 = unbekannter Code)
 void onScan(uint32_t no, const String& id);

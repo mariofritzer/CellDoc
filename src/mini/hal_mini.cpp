@@ -27,9 +27,10 @@ void HalMini::begin() {
   }
   pinMode(PIN_BUZZER, OUTPUT);
   digitalWrite(PIN_BUZZER, LOW);
-  pinMode(PIN_BTN_PREV, INPUT);
-  pinMode(PIN_BTN_OK, INPUT);
-  pinMode(PIN_BTN_NEXT, INPUT);
+  // IO34/35/39 des ESP32 haben keine Pull-ups (externe 10 kΩ), beim S3 schaden die internen nicht
+  pinMode(PIN_BTN_PREV, PIN_BTN_PREV >= 34 ? INPUT : INPUT_PULLUP);
+  pinMode(PIN_BTN_OK, PIN_BTN_OK >= 34 ? INPUT : INPUT_PULLUP);
+  pinMode(PIN_BTN_NEXT, PIN_BTN_NEXT >= 34 ? INPUT : INPUT_PULLUP);
   pinMode(PIN_BOOT, INPUT_PULLUP);
   ledcSetup(FAN_CH, 25000, 8);
   ledcAttachPin(PIN_FAN, FAN_CH);
