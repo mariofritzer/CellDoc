@@ -52,9 +52,10 @@ void HalMini::update(uint32_t now) {
   if (now - lastFan_ >= 1000) fan(now);
   buttons(now);
 
-  // Lader im Takt (Drosselung)
+  // Lader im Takt (Drosselung), höchstens settings.chargeSlots gleichzeitig
+  grantChargers();
   for (int s = 0; s < NSLOTS; s++) {
-    bool on = chg_[s];
+    bool on = chg_[s] && grant_[s];
     if (on && chgDuty_[s] < 0.99f) on = (now % CHG_THROTTLE_PERIOD_MS) < uint32_t(chgDuty_[s] * CHG_THROTTLE_PERIOD_MS);
     digitalWrite(PIN_CHG[s], on ? HIGH : LOW);
   }
@@ -214,9 +215,30 @@ void HalMini::fan(uint32_t now) {
 
 void HalMini::setCharger(uint8_t s, bool on) {
   if (s >= NSLOTS) return;
+  if (on && !chg_[s]) chgSince_[s] = millis();
   chg_[s] = on;
   chgDuty_[s] = 1;
-  digitalWrite(PIN_CHG[s], on ? HIGH : LOW);
+  if (!on) {
+    grant_[s] = false;
+    digitalWrite(PIN_CHG[s], LOW);
+  }
+  grantChargers();
+}
+
+// Wer zuerst laden wollte, darf zuerst; wer schon lädt, behält seinen Platz
+void HalMini::grantChargers() {
+  int limit = settings.chargeSlots ? settings.chargeSlots : NSLOTS;
+  int used = 0;
+  for (int s = 0; s < NSLOTS; s++)
+    if (chg_[s] && grant_[s]) used++;
+  while (used < limit) {
+    int best = -1;
+    for (int s = 0; s < NSLOTS; s++)
+      if (chg_[s] && !grant_[s] && (best < 0 || chgSince_[s] < chgSince_[best])) best = s;
+    if (best < 0) break;
+    grant_[best] = true;
+    used++;
+  }
 }
 
 void HalMini::setChargerDuty(uint8_t s, float d) { chgDuty_[s] = d < 0.1f ? 0.1f : (d > 1 ? 1 : d); }
@@ -230,6 +252,7 @@ void HalMini::killAll() {
   digitalWrite(PIN_LOAD_EN_N, HIGH);
   for (int s = 0; s < NSLOTS; s++) {
     chg_[s] = false;
+    grant_[s] = false;
     digitalWrite(PIN_CHG[s], LOW);
     target_[s] = 0;
     code_[s] = 0;

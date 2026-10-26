@@ -668,6 +668,7 @@ tr:last-child td{border-bottom:0}
           <div class="field"><label for="sRest">Ruhezeit vor dem Entladen (Minuten)</label><input type="number" id="sRest" min="0" max="240"></div>
           <label class="switch"><span>Innenwiderstand in Ω statt mΩ</span><input type="checkbox" id="sOhm"></label>
           <label class="switch"><span>Summer</span><input type="checkbox" id="sBuzz"></label>
+          <div class="field" id="sChgF" hidden><label for="sChg">Gleichzeitig laden</label><select id="sChg"><option value="0">Alle Schächte</option><option value="1">höchstens 1 Schacht</option><option value="2">höchstens 2 Schächte</option><option value="3">höchstens 3 Schächte</option></select><span class="hint">Jeder Lader zieht 1 A. Weitere Schächte warten, bis ein Platz frei ist. Mini 4 am 5-V/5-A-Regler: 3, direkt an USB-C mit 5 V/3 A: 2.</span></div>
           <div class="field"><label for="sPrefix">Kürzel für Zellnummern</label><input type="text" id="sPrefix" maxlength="6" placeholder="CD" style="text-transform:uppercase"><span class="hint">Neue Zellen heißen dann z. B. <b id="sPrefixEx">CD-0001</b>. Bereits vergebene Nummern bleiben.</span></div>
           <div class="actions"><button class="btn primary" id="sSave" type="button">Einstellungen speichern</button></div>
         </section>
@@ -974,7 +975,10 @@ function renderLive() {
   $("temps").innerHTML = th;
 
   const thr = $("throttle");
-  if (isAct && (s.throttle < .99 || s.riPulse)) {
+  if (isAct && s.charger?.waiting) {
+    thr.hidden = false;
+    thr.innerHTML = `<div><b>Wartet auf einen freien Ladeplatz</b>Es laden schon so viele Schächte, wie das Netzteil schafft (Einstellungen → Gleichzeitig laden).</div>`;
+  } else if (isAct && (s.throttle < .99 || s.riPulse)) {
     thr.hidden = false;
     thr.innerHTML = s.riPulse ? `<div><b>Innenwiderstand wird gemessen</b>Kurzer Stromsprung für eine Sekunde.</div>` :
       `<div><b>Gedrosselt auf ${nf(s.throttle * 100)} %</b>Es wird warm. Der Strom wird reduziert, bis die Temperatur sinkt.</div>`;
@@ -999,7 +1003,7 @@ function renderLive() {
   if (isMini()) {
     $("ports-h").textContent = "Schächte";
     $("ports").style.gridTemplateColumns = RAW.slots.length > 2 ? "1fr 1fr" : `repeat(${RAW.slots.length}, 1fr)`;
-    const pl = sl => (PHASE[sl.phase] || PHASE.idle)[0].replace("Test · ", "");
+    const pl = sl => sl.charger?.waiting ? "wartet auf Ladeplatz" : (PHASE[sl.phase] || PHASE.idle)[0].replace("Test · ", "");
     const html = RAW.slots.map((sl, k) => {
       const p = sl.ports[0], c = (PHASE[sl.phase] || PHASE.idle)[1];
       return `<div class="slot-tile${k === SEL ? " on" : ""}" data-slot="${k}" role="button" tabindex="0" aria-pressed="${k === SEL}"><span>Schacht ${k + 1}</span><b>${p.ok ? (p.v > .5 ? nf(p.v, 3) + " V" : "leer") : "Messung fehlt"}</b><span><i class="sdot" style="background:var(${c})"></i>${esc(pl(sl))}${sl.soc >= 0 && p.v > .5 ? " · " + nf(sl.soc) + " %" : ""}</span>${sl.job?.cellId && sl.phase !== "idle" ? `<span class="num" style="font-family:var(--mono)">${esc(sl.job.cellId)}</span>` : sl.assigned?.no && sl.phase === "idle" ? `<span class="num" style="font-family:var(--mono)">${esc(sl.assigned.id)}${sl.assigned.check?.dv != null ? ` · ${sl.assigned.check.dv > 0 ? "+" : ""}${nf(sl.assigned.check.dv)} mV` : " gescannt"}</span>` : ""}</div>`;
@@ -1439,6 +1443,7 @@ async function loadSettings() {
     const st = SETTINGS;
     $("sCw").value = st.chargeWarnC; $("sCs").value = st.chargeStopC; $("sDw").value = st.dischargeWarnC; $("sDs").value = st.dischargeStopC;
     $("sKw").value = st.sinkWarnC; $("sKs").value = st.sinkStopC; $("sRest").value = st.restMin; $("sOhm").checked = st.riInOhm; $("sBuzz").checked = st.buzzer;
+    $("sChgF").hidden = !isMini(); $("sChg").value = String(st.chargeSlots ?? 0);
     $("sPrefix").value = st.cellPrefix || "CD"; $("sPrefixEx").textContent = `${st.cellPrefix || "CD"}-${String(st.nextCellNo || 1).padStart(4, "0")}`;
     $("mqOn").checked = !!st.mqttOn; $("mqHost").value = st.mqttHost || ""; $("mqPort").value = st.mqttPort || 1883; $("mqUser").value = st.mqttUser || ""; $("mqBase").value = st.mqttBase || "celldoc";
     $("mqPass").placeholder = st.mqttPassSet ? "gespeichert, leer lassen = unverändert" : "";
@@ -1475,7 +1480,7 @@ async function loadDiag() {
 $("sSave").addEventListener("click", async () => {
   try {
     await api("/api/settings", {chargeWarnC: +$("sCw").value, chargeStopC: +$("sCs").value, dischargeWarnC: +$("sDw").value, dischargeStopC: +$("sDs").value,
-      sinkWarnC: +$("sKw").value, sinkStopC: +$("sKs").value, restMin: +$("sRest").value, riInOhm: $("sOhm").checked, buzzer: $("sBuzz").checked, cellPrefix: $("sPrefix").value.trim() || "CD"});
+      sinkWarnC: +$("sKw").value, sinkStopC: +$("sKs").value, restMin: +$("sRest").value, riInOhm: $("sOhm").checked, buzzer: $("sBuzz").checked, cellPrefix: $("sPrefix").value.trim() || "CD", chargeSlots: +$("sChg").value || 0});
     toast("Gespeichert"); loadSettings();
   } catch (e) { toast(e.message); }
 });
@@ -2504,7 +2509,7 @@ async function demoApi(path, body) {
     else { if (now - c.sd.t0 < 6 * 3600) throw new Error("Frühestens 6 Stunden nach dem Start messen, besser nach 7–14 Tagen"); }
     return {ok: true};
   }
-  if (path === "/api/settings" && body === undefined) return {hostname: MINI_N ? "celldoc-mini" : "celldoc", peers: MINI_N ? "celldoc" : "celldoc-mini", cellPrefix: "CD", nextCellNo: Math.max(...demo.cells.map(x => x.no)) + 1, mqttOn: true, mqttHost: "homeassistant.local", mqttPort: 1883, mqttUser: "celldoc", mqttPassSet: true, mqttBase: "celldoc", wifiSsid: "Heimnetz", chargeWarnC: 40, chargeStopC: 45, dischargeWarnC: 45, dischargeStopC: 55, sinkWarnC: 75, sinkStopC: 90, restMin: 30, riInOhm: false, buzzer: true, storageUsed: 81920, storageTotal: 1441792};
+  if (path === "/api/settings" && body === undefined) return {chargeSlots: MINI_N > 2 ? 3 : 0, hostname: MINI_N ? "celldoc-mini" : "celldoc", peers: MINI_N ? "celldoc" : "celldoc-mini", cellPrefix: "CD", nextCellNo: Math.max(...demo.cells.map(x => x.no)) + 1, mqttOn: true, mqttHost: "homeassistant.local", mqttPort: 1883, mqttUser: "celldoc", mqttPassSet: true, mqttBase: "celldoc", wifiSsid: "Heimnetz", chargeWarnC: 40, chargeStopC: 45, dischargeWarnC: 45, dischargeStopC: 55, sinkWarnC: 75, sinkStopC: 90, restMin: 30, riInOhm: false, buzzer: true, storageUsed: 81920, storageTotal: 1441792};
   if (path === "/api/diag" && MINI_N) return {ina: Array(MINI_N).fill(true), dac: true, oled: true, balancer: false, taps: [], heap: 172000, chip: "ESP32-D0WD-V3",
     sensors: [...Array(MINI_N)].map((_, k) => ({addr: "28FF4A1B6216031" + k, t: 24 + k * 2.3, role: "cell" + (k + 1)})).concat([{addr: "28FF91C3611604E2", t: 41.7, role: "sink"}])};
   if (path === "/api/diag") return {inaA: true, inaB: true, dac: true, balancer: true, taps: [0, 0, 0, 0, 0, 0], heap: 187000, chip: "ESP32-D0WD-V3",

@@ -28,11 +28,7 @@ for i, c in enumerate("ABCDEF"):
 # ================================================================ Linke Spalte
 # ---------------------------------------------------------------- Stromversorgung
 section(50, 54, 720, 300, "Stromversorgung")
-box(90, 112, 70, 92)
-o.append(f'<circle cx="112" cy="158" r="12" fill="#e9e6da" stroke="{COMP}" stroke-width="1.4"/><circle cx="112" cy="158" r="4" fill="{COMP}"/>')
-t(90, 104, "J1", 12, REF); t(125, 222, "DC-Buchse 12 V", 11, REF, "middle")
-a = pin(160, 135, "r", "+", 1); b = pin(160, 180, "r", "−", 2)
-t(66, 146, "12 V", 11, "#333", "end") if False else None
+a, b = usbc_decoy(90, 112, "J1", 12)
 fuse_h(a[0], 270, 135, "F0", "3 A")
 wire((270, 135), (440, 135)); dot(330, 135); wire((330, 135), (330, 100)); pwr(330, 100, "+12V")
 wire(b, (440, 180)); dot(300, 180); gnd(300, 180)
@@ -43,7 +39,7 @@ pin(460, 135, "l", "IN+", 1); pin(460, 180, "l", "IN−", 2)
 c = pin(590, 135, "r", "OUT+", 3); d = pin(590, 180, "r", "OUT−", 4)
 wire(c, (700, 135)); dot(660, 135); wire((660, 135), (660, 100)); pwr(660, 100, "+5V")
 wire(d, (700, 180)); dot(680, 180); gnd(680, 180)
-note(66, 262, "+12V: Lüfter, LM358. +5V: ESP32 (VIN), TP5000, Relaismodul, Summer.")
+note(66, 262, "+12V: Lüfter, LM358. +5V: ESP32 (VIN), TP5000, Relais, Summer. USB-C-Netzteil mit 12 V.")
 note(66, 280, "+3V3 vom Regler auf dem ESP32-Board: INA226, ADS1115, MCP4725, DS18B20, Pull-ups.")
 
 # ---------------------------------------------------------------- Anschluss B
@@ -235,7 +231,8 @@ rows = [
     ("R", "1 kΩ ×6 · 7,5 kΩ ×1 · 10 kΩ ×12 · 4,7 kΩ ×3", ""),
     ("C1, C2", "10 nF (Regler-Kompensation)", "2"),
     ("M1 / BZ1", "CPU-Kühler 4-Pin 12 V / Summer 5 V", "1/1"),
-    ("J1–J4", "DC-Buchse · 18650-Halter · XT60 · JST-XH", ""),
+    ("J1", "USB-C-PD-Decoy auf 12 V (S1 S2 S3 = 1 1 0)", "1"),
+    ("J2–J4", "18650-Halter · XT60 · JST-XH", ""),
     ("U15", "QR-Scanner GM861S, 3,3 V (optional)", "(1)"),
 ]
 y = 762

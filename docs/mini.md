@@ -18,7 +18,7 @@ Die kleine Schwester von CellDoc: **nur 18650 Li-Ion**, dafür einfach nachzubau
 | Anschlüsse | A (Zelle) + B (Pack mit Balancer) | 1, 2 oder 4 Schächte, alle gleichzeitig |
 | Entladestrom | bis 8 A / 30 W | 2 A je Schacht (Mini 1/2), 1 A je Schacht (Mini 4), zusammen max. 16 W |
 | Laden | TP5000, 4,2 V oder 3,6 V | TP4056 je Schacht, 1 A, 4,2 V |
-| Netzteil | 12 V | 5 V (USB-Netzteil oder Steckernetzteil) |
+| Versorgung | USB-C, Decoy auf 12 V | USB-C, Decoy auf 5 V (Mini 4: 12 V + 5-V-Regler) |
 | Anzeige | Weboberfläche | Weboberfläche, optional OLED 1,3" mit drei Tastern |
 
 ## Schaltpläne
@@ -52,12 +52,32 @@ Zum Vergrößern anklicken. Jeder Plan enthält Stückliste und Hinweise. Erzeug
 | Messwiderstand 0,1 Ω / 1 W | 1 | 2 | 4 |
 | DS18B20 wasserdicht (Zellen + Kühlkörper) | 2 | 3 | 5 |
 | 18650-Halter | 1 | 2 | 4 |
-| Sicherung je Schacht 3 A + Hauptsicherung | 1 + 3 A | 2 + 3 A | 4 + 5 A |
-| Netzteil 5 V | 2 A | 3 A | 6 A |
+| Sicherung je Schacht 3 A + Hauptsicherung 3 A | 1 + 1 | 2 + 1 | 4 + 1 |
+| USB-C-PD-Decoy-Modul | auf 5 V | auf 5 V | auf 12 V |
+| Step-Down Mini560, 5 V / 5 A | – | – | 1 |
+| USB-C-Netzteil | ab 10 W | 5 V / 3 A (15 W) | mit 12 V, ab 36 W |
 | Kühlkörper | ca. 60 × 40 mm | ca. 100 × 60 mm + Lüfter | ca. 100 × 60 mm + Lüfter |
 | OLED SH1106 1,3" I²C + 3 Taster (optional) | ✓ | ✓ | ✓ |
 | QR-Scanner GM861S, 3,3 V (optional) | ✓ | ✓ | ✓ |
 | Summer, Widerstände, Kondensatoren | laut Schaltplan | | |
+
+## Stromversorgung über USB-C
+
+Alle Varianten bekommen ihren Strom über ein **USB-C-PD-Decoy-Modul** („PD/QC/AFC fast charge decoy trigger“). Es handelt mit dem Netzteil eine feste Spannung aus, eingestellt mit drei kleinen Schaltern auf der Rückseite:
+
+| Spannung | S1 | S2 | S3 |
+|---|:---:|:---:|:---:|
+| 5 V | 0 | 0 | 0 |
+| 9 V | 1 | 0 | 0 |
+| **12 V** | **1** | **1** | **0** |
+| 15 V | 0 | 1 | 0 |
+| 20 V | 0 | 1 | 1 |
+
+Die Tabelle steht auch auf der Platine. Es gibt Module mit anderer Belegung, im Zweifel gilt der Aufdruck. Das Modul liefert höchstens 3 A. Vor dem ersten Anschließen die Spannung am Ausgang mit dem Multimeter prüfen.
+
+- **Mini 1 und Mini 2:** Decoy auf **5 V** (alle Schalter 0). Jedes USB-C-Netzteil geht, für die Mini 2 eines mit 3 A.
+- **Mini 4:** Decoy auf **12 V** (S1 S2 S3 = 1 1 0) und dahinter ein Step-Down-Regler auf 5 V mit 5 A (z. B. Mini560). Vier Lader brauchen bis zu 4 A, deshalb lädt die Mini 4 ab Werk höchstens **3 Schächte gleichzeitig**, der vierte wartet kurz. Einstellbar unter Einstellungen → Gleichzeitig laden.
+- Wer die Mini 4 ohne Regler direkt an 5 V / 3 A betreibt, stellt „höchstens 2 Schächte“ ein.
 
 ## Pinbelegung
 

@@ -52,6 +52,13 @@ struct Settings {
 #endif
   String peers;
 
+  // Mini: höchstens so viele Schächte laden gleichzeitig (0 = alle). Mini 4 am 5-V/5-A-Regler: 3
+#if defined(CELLDOC_MINI) && defined(SLOTS) && SLOTS > 2
+  uint8_t chargeSlots = 3;
+#else
+  uint8_t chargeSlots = 0;
+#endif
+
   void toJson(JsonObject o, bool withSecrets) const;
   void fromJson(JsonObjectConst o);
   bool load();

@@ -10,7 +10,8 @@ OUT = sys.argv[2] if len(sys.argv) > 2 else f"schaltplan-mini-{N}.svg"
 assert N in (1, 2, 4)
 IMAX = 1.0 if N == 4 else 2.0
 OPAMP = "LM324" if N > 2 else "LM358"
-SUPPLY = {1: "5 V / 2 A", 2: "5 V / 3 A", 4: "5 V / 6 A"}[N]
+VUSB = 12 if N == 4 else 5  # Decoy-Spannung
+SUPPLY = {1: "USB-C-Netzteil ab 10 W", 2: "USB-C-Netzteil 5 V / 3 A", 4: "USB-C-Netzteil mit 12 V, ≥ 36 W"}[N]
 CHG_PINS = {1: "IO26", 2: "IO27", 3: "IO32", 4: "IO33"}
 
 W = 2240
@@ -21,15 +22,26 @@ frame(W, H)
 # ================================================================ Linke Spalte
 # ---------------------------------------------------------------- Stromversorgung
 section(50, 54, 720, 276, "Stromversorgung")
-box(90, 112, 70, 92)
-o.append(f'<circle cx="112" cy="158" r="12" fill="#e9e6da" stroke="{COMP}" stroke-width="1.4"/><circle cx="112" cy="158" r="4" fill="{COMP}"/>')
-t(90, 104, "J1", 12, REF); t(125, 222, f"DC {SUPPLY}", 11, REF, "middle")
-a = pin(160, 135, "r", "+", 1); b = pin(160, 180, "r", "−", 2)
-fuse_h(a[0], 270, 135, "F0", "5 A" if N == 4 else "3 A")
-pwire((270, 135), (560, 135)); dot(360, 135); pwr(360, 135, "+5V")
-pwire(b, (560, 180)); dot(330, 180); gnd(330, 180)
-dot(460, 135); dot(460, 180); cap_v(460, 135, 180, "C1", "470 µF")
-note(66, 246, "+5V: ESP32 (VIN), TP4056, Opamp, Lüfter, Summer, OLED.")
+a, b = usbc_decoy(90, 112, "J1", VUSB)
+if N == 4:
+    # 12 V aus dem Netzteil, 5-V-Regler mit 5 A für vier Lader
+    fuse_h(a[0], 260, 135, "F0", "3 A")
+    pwire((260, 135), (330, 135)); dot(300, 135); pwr(300, 135, "+12V")
+    pwire(b, (330, 180)); dot(280, 180); gnd(280, 180)
+    box(340, 110, 110, 100)
+    t(340, 102, "U11", 12, REF); t(395, 228, "Mini560 · 5 V / 5 A", 10, REF, "middle")
+    t(395, 166, "12V→5V", 12, PINNAME, "middle", "bold")
+    pin(340, 135, "l", "IN+", 1, L=10); pin(340, 180, "l", "IN−", 2, L=10)
+    c = pin(450, 135, "r", "OUT", 3, L=10); d = pin(450, 180, "r", "GND", 4, L=10)
+    pwire(c, (640, 135)); dot(520, 135); pwr(520, 135, "+5V")
+    pwire(d, (640, 180)); dot(500, 180); gnd(500, 180)
+    dot(590, 135); dot(590, 180); cap_v(590, 135, 180, "C1", "470 µF")
+else:
+    fuse_h(a[0], 270, 135, "F0", "3 A")
+    pwire((270, 135), (560, 135)); dot(360, 135); pwr(360, 135, "+5V")
+    pwire(b, (560, 180)); dot(330, 180); gnd(330, 180)
+    dot(460, 135); dot(460, 180); cap_v(460, 135, 180, "C1", "470 µF")
+note(66, 246, "+5V: ESP32 (VIN), TP4056, Opamp, Lüfter, Summer, OLED." + (" +12V nur für U11." if N == 4 else ""))
 note(66, 262, "+3V3 vom ESP32-Board: INA226, MCP4728, DS18B20, Pull-ups.")
 
 # ---------------------------------------------------------------- Sollwerte
@@ -239,10 +251,13 @@ rows = [
     ("Q (Klemme)", "BSS138", str(N)),
     ("Q (Lüfter, Summer)", "AO3400", "2"),
     ("R (Mess)", "0,1 Ω / 1 W", str(N)),
-    ("R", f"10 kΩ ×{3 * N + 5} · 7,5 kΩ ×{N} · 1 kΩ ×{2 * N} · 4,7 kΩ ×3", ""),
+    ("R", f"10k ×{3 * N + 5} · 7,5k ×{N} · 1k ×{2 * N} · 4,7k ×3", ""),
     ("C", f"470 µF ×1 · 10 nF ×{N}", ""),
-    ("F", f"F0 {'5' if N == 4 else '3'} A · {N} × 3 A (je Schacht)", str(N + 1)),
-    ("J", f"DC-Buchse {SUPPLY} · {N} × 18650-Halter", ""),
+    ("F", f"F0 3 A · {N} × 3 A (je Schacht)", str(N + 1)),
+    ("J1", f"USB-C-PD-Decoy, auf {VUSB} V gestellt", "1"),
+] + ([("U11", "Step-Down Mini560, 5 V / 5 A", "1")] if N == 4 else []) + [
+    ("BT", f"18650-Halter", str(N)),
+    ("", SUPPLY, "1"),
     ("SW, BZ1, M1", "3 Taster (opt.) · Summer · Lüfter 5 V", ""),
     (f"U{6 + N}", "QR-Scanner GM861S, 3,3 V (optional)", "(1)"),
     ("", "Kühlkörper: " + ("ca. 60 × 40 mm" if N == 1 else "ca. 100 × 60 mm + Lüfter"), ""),

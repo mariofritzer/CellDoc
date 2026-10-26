@@ -89,13 +89,13 @@ Jeder Test legt die Zelle mit einer festen Nummer an. Die Nummer kommt mit einem
 </picture>
 </details>
 
-ESP32 DevKit, 2× INA226 (Strom/Spannung), MCP4725 + LM358 + 2× IRFP250N (Konstantstromlast), TP5000 (Lader 4,2/3,6 V), 2× ADS1115 (Balancer), 3× DS18B20, zwei Relais, CPU-Kühler mit 4-Pin-Lüfter, 12-V-Netzteil.
+ESP32 DevKit, 2× INA226 (Strom/Spannung), MCP4725 + LM358 + 2× IRFP250N (Konstantstromlast), TP5000 (Lader 4,2/3,6 V), 2× ADS1115 (Balancer), 3× DS18B20, zwei Relais, CPU-Kühler mit 4-Pin-Lüfter, Versorgung über USB-C (PD-Decoy auf 12 V).
 
 Schaltung, Pinbelegung, optionaler QR-Scanner und Einkaufsliste: **[docs/hardware.md](docs/hardware.md)**
 
 ## CellDoc Mini
 
-Die kleine Version nur für **18650 Li-Ion**: laden, entladen, Kapazität, Innenwiderstand und Lebenszahl, in drei Größen mit **1, 2 oder 4 Schächten**, die gleichzeitig laufen. 5-V-Netzteil, ein TP4056 und eine kleine Konstantstromlast pro Schacht (2 A bzw. 1 A bei vier Schächten), optional ein OLED mit drei Tastern. Weboberfläche und Ergebnisse sind dieselben wie beim großen CellDoc.
+Die kleine Version nur für **18650 Li-Ion**: laden, entladen, Kapazität, Innenwiderstand und Lebenszahl, in drei Größen mit **1, 2 oder 4 Schächten**, die gleichzeitig laufen. Versorgung über USB-C, ein TP4056 und eine kleine Konstantstromlast pro Schacht (2 A bzw. 1 A bei vier Schächten), optional ein OLED mit drei Tastern. Weboberfläche und Ergebnisse sind dieselben wie beim großen CellDoc.
 
 <img src="docs/img/mini4-desktop.png" alt="Weboberfläche der CellDoc Mini 4 mit Schachtübersicht">
 

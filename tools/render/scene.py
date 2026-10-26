@@ -373,10 +373,19 @@ T_PWR = terminal("Klemme_Versorgung", 30, 160 - 6, 3)  # 12V, 5V, GND
 T_LOAD = terminal("Klemme_Last", 196, 120, 2)        # Last+, GND
 
 # =============================================================== Außerhalb des Lochrasters
-# --- Hohlbuchse + F0
-box("Hohlbuchse", 14, 214, BASE_Z, 14, 11, 11, M["plastic_black"], bevel=0.8)
-cyl("hb_loch", 7, 214, BASE_Z + 5.5, 3, 0.2, M["chip"], axis="X")
-ANCHORS["12 V Netzteil"] = (14, 214, BASE_Z + 14)
+# --- USB-C-PD-Decoy (auf 12 V gestellt) + F0
+dz = BASE_Z + 3
+for sx in (-1, 1):
+    for sy in (-1, 1):
+        cyl("decoy_steh", 16 + sx * 7, 214 + sy * 12, BASE_Z, 1.6, 3, M["brass"], verts=6)
+box("USB-C-Decoy", 16, 214, dz, 20, 31, 1.2, M["purple"], bevel=0.3)
+box("usbc", 8.5, 214, dz + 1.2, 7.4, 9.0, 3.2, M["silver"], bevel=1.1)
+box("usbc_loch", 4.9, 214, dz + 1.95, 0.4, 7.4, 1.7, M["plastic_black"], bevel=0.5)
+box("dip", 21, 214, dz + 1.2, 6, 8.6, 2.6, M["fuse_red"], bevel=0.2)
+for k in range(3):
+    box("dip_sw", 21 + (0.9 if k < 2 else -0.9), 211.2 + k * 2.8, dz + 3.8, 2.0, 1.4, 0.8, M["silk"])
+box("decoy_ic", 14, 205, dz + 1.2, 3, 3, 0.8, M["chip"])
+ANCHORS["USB-C-Decoy 12 V"] = (16, 214, dz + 6)
 def fuse(name, x, y, color, amps, rot=0):
     box(name + "_halter", x, y, BASE_Z, 22, 9, 7, M["plastic_black"], bevel=0.6, rot=rot)
     box(name, x, y, BASE_Z + 7, 13, 4, 9, color, bevel=0.8, rot=rot)

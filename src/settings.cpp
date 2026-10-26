@@ -62,6 +62,7 @@ void Settings::toJson(JsonObject o, bool withSecrets) const {
   o["mqttBase"] = mqttBase;
   o["hostname"] = hostname;
   o["peers"] = peers;
+  o["chargeSlots"] = chargeSlots;
 }
 
 static float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
@@ -121,6 +122,7 @@ void Settings::fromJson(JsonObjectConst o) {
       if ((isalnum((unsigned char)c) || c == '-') && clean.length() < 24) clean += c;
     if (clean.length()) hostname = clean;
   }
+  chargeSlots = uint8_t(clampf(o["chargeSlots"] | chargeSlots, 0, 4));
   if (o["peers"].is<const char*>()) {
     String p = o["peers"].as<const char*>(), clean;
     for (char c : p)

@@ -315,6 +315,13 @@ void Slot::safety(uint32_t now) {
 
 void Slot::handleCharge(uint32_t now) {
   const SlotMeas& m = hal.m(s_);
+  if (hal.chargerWaiting(s_)) {
+    // wartet auf einen freien Ladeplatz: Zeitüberwachung beginnt erst beim Laden
+    phaseMs_ = now;
+    fullSince_ = 0;
+    hal.resetCounters(s_);
+    return;
+  }
   uint32_t t = now - phaseMs_;
   float mah = float(m.chargeAs / 3.6);
   if (t > CHARGE_TIMEOUT_MS) { fail("Laden dauert zu lange (über 8 h)"); return; }
@@ -605,6 +612,7 @@ void Slot::stateJson(JsonObject o) const {
   if (!isnan(hal.tSink())) t["sink"] = hal.tSink();
   JsonObject ch = o["charger"].to<JsonObject>();
   ch["mode"] = hal.charger(s_) ? "4.2" : "off";
+  if (hal.chargerWaiting(s_)) ch["waiting"] = true;
   ch["charging"] = hal.charger(s_) && m.i > 0.05f;
   ch["full"] = false;
 }

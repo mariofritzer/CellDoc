@@ -52,6 +52,22 @@ Die Bilder entstehen aus `tools/render/scene.py` (Blender) und `tools/render/com
 
 Zelle A und Pack B haben getrennte Sicherungen und Strommesser. K2 schaltet die Last auf genau einen Anschluss. Der Lader ist fest nur mit Anschluss A verdrahtet und kann ein Pack daher nie erreichen. Alle Minuspole treffen sich an einem Masse-Sternpunkt.
 
+## Stromversorgung über USB-C
+
+Alle Varianten bekommen ihren Strom über ein **USB-C-PD-Decoy-Modul** („PD/QC/AFC fast charge decoy trigger“). Es handelt mit dem Netzteil eine feste Spannung aus, eingestellt mit drei kleinen Schaltern auf der Rückseite:
+
+| Spannung | S1 | S2 | S3 |
+|---|:---:|:---:|:---:|
+| 5 V | 0 | 0 | 0 |
+| 9 V | 1 | 0 | 0 |
+| **12 V** | **1** | **1** | **0** |
+| 15 V | 0 | 1 | 0 |
+| 20 V | 0 | 1 | 1 |
+
+Die Tabelle steht auch auf der Platine. Es gibt Module mit anderer Belegung, im Zweifel gilt der Aufdruck. Das Modul liefert höchstens 3 A. Vor dem ersten Anschließen die Spannung am Ausgang mit dem Multimeter prüfen.
+
+**CellDoc:** Decoy auf **12 V** (S1 S2 S3 = 1 1 0). Die 12 V versorgen Lüfter und LM358 direkt, der LM2596 macht daraus 5 V für ESP32, TP5000, Relais und Summer. Gebraucht werden nur etwa 10–15 W, die Entladeleistung kommt aus dem Akku. Wichtig: Das Netzteil muss **12 V** können. Viele Laptop-Netzteile liefern nur 5, 9, 15 und 20 V, das steht klein auf dem Netzteil (z. B. „12V⎓2.5A“).
+
 ## Leistungspfad
 
 | Von | Nach | Hinweis |
@@ -176,7 +192,8 @@ Ein fertiges Scanner-Modul liest die Etiketten direkt am Gerät. Es dekodiert de
 | – | 3× BSS138, 4× AO3400, 1× AO3401, 1× BC547 | Schalter |
 | 1 | Aktiver Summer 5 V | Alarm |
 | 1 | Step-Down LM2596 (auf 5,0 V einstellen) | 5-V-Versorgung |
-| 1 | Netzteil 12 V / 3 A + Hohlbuchse | Versorgung |
+| 1 | USB-C-PD-Decoy-Modul (5/9/12/15/20 V), auf 12 V gestellt | Versorgung |
+| 1 | USB-C-Netzteil mit 12 V, ab 20 W | Versorgung |
 | 3 | Flachsicherungshalter + Sicherungen 3 / 7,5 / 10 A | F0–F2 |
 | 2 | Schottky 15SQ045 | Verpolschutz |
 | 1 | 18650-Halter, Schraubklemme ≥ 10 A | Anschluss A |

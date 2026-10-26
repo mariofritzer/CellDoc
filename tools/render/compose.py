@@ -11,7 +11,7 @@ THEMES = {
     "dark": dict(bg="#0b0d10", card="#1d2128", fg="#eef1f5", muted="#8d96a3", line="#5d6672"),
 }
 WIRES = [
-    ("12 V", "#e03131"), ("5 V", "#ff8787"), ("Masse", "#25262b"), ("Akku / Last", "#f08c00"),
+    ("12 V (USB-C)", "#e03131"), ("5 V", "#ff8787"), ("Masse", "#25262b"), ("Akku / Last", "#f08c00"),
     ("Ladestrom", "#2f9e44"), ("I²C SDA", "#1c7ed6"), ("I²C SCL", "#f2c200"),
     ("1-Wire (DS18B20)", "#12b886"), ("Steuersignale", "#9c36b5"), ("Balancer", "#adb5bd"),
 ]

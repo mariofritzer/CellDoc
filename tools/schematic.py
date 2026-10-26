@@ -170,6 +170,23 @@ def npn(cx, cy, ref, val):
     return (cx - 22, cy), (cx + 8, cy - 36), (cx + 8, cy + 34)
 
 
+DIP_SET = {5: "0 0 0", 9: "1 0 0", 12: "1 1 0", 15: "0 1 0", 20: "0 1 1"}
+
+
+def usbc_decoy(x, y, ref, volts):
+    """USB-C-PD-Decoy-Modul (Schalter S1–S3), Ausgang rechts: liefert (+, −)"""
+    box(x, y, 70, 92)
+    o.append(f'<rect x="{x + 14}" y="{y + 36}" width="26" height="12" rx="6" fill="#e9e6da" stroke="{COMP}" stroke-width="1.4"/>')
+    o.append(f'<rect x="{x + 19}" y="{y + 40}" width="16" height="4" rx="2" fill="{COMP}"/>')
+    t(x + 27, y + 66, "USB-C", 9, PINNAME, "middle")
+    t(x + 27, y + 80, "PD", 9, PINNAME, "middle", "bold")
+    t(x, y - 8, ref, 12, REF); t(x + 70, y - 8, f"PD-Decoy · {volts} V", 11, REF)
+    t(x - 20, y + 110, f"S1 S2 S3 = {DIP_SET[volts]}", 10, REF)
+    a = pin(x + 70, y + 23, "r", "+", 1)
+    b = pin(x + 70, y + 68, "r", "−", 2)
+    return a, b
+
+
 def opamp(x, y, ref, val, power=False, pins=None):
     """Dreieck nach rechts; liefert (in+, in-, out) als Anschlusspunkte. pins = (in+, in-, out)"""
     o.append(f'<path d="M{x} {y-34} L{x} {y+34} L{x+64} {y} Z" fill="{FILL}" stroke="{COMP}" stroke-width="1.6"/>')

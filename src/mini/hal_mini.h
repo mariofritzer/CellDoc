@@ -33,6 +33,8 @@ class HalMini {
 
   void setCharger(uint8_t s, bool on);
   bool charger(uint8_t s) const { return chg_[s]; }
+  // Begrenzung gleichzeitig ladender Schächte (Netzteil): Lader wartet, bis ein Platz frei ist
+  bool chargerWaiting(uint8_t s) const { return chg_[s] && !grant_[s]; }
   void setChargerDuty(uint8_t s, float d);
 
   void resetCounters(uint8_t s);
@@ -61,6 +63,9 @@ class HalMini {
   float code_[4] = {};
   bool saturated_[4] = {};
   bool chg_[4] = {};
+  bool grant_[4] = {};
+  uint32_t chgSince_[4] = {};
+  void grantChargers();
   float chgDuty_[4] = {1, 1, 1, 1};
   uint32_t lastSeq_[4] = {};
   uint32_t lastIna_ = 0, lastInaMicros_ = 0, lastTemp_ = 0, lastFan_ = 0;
