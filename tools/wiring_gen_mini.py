@@ -164,7 +164,7 @@ for k, (ref, where) in enumerate(sensors):
     t(bx + 9, 1104, "V", 9, PINNAME); t(bx + 29, 1104, "Q", 9, PINNAME); t(bx + 47, 1156, "G", 9, PINNAME)
     line(bx + 50, 1160, bx + 50, 1174); gnd(bx + 50, 1174)
     t(bx + 30, 1212, where, 10, REF, "middle")
-note(66, 1240, "Zellfühler mit Kaptonband an die Zelle, Kühlkörperfühler zwischen die MOSFETs.")
+note(66, 1240, "Fühler nach Wahl TO-92 oder wasserdicht. Zellfühler im Halter unter der Zelle.")
 
 # Lüfter und Summer
 box(90, 1300, 80, 70)
@@ -243,7 +243,7 @@ rows = [
     ("U2", "MCP4728-Modul (4 × DAC)", "1"),
     ("U3", f"{OPAMP} (DIP) + Sockel", "1"),
     ("U4", "OLED SH1106 1,3\" I²C (optional)", "(1)"),
-    (f"U5–U{5 + N}", "DS18B20 (wasserdicht)", str(N + 1)),
+    (f"U5–U{5 + N}", "DS18B20 TO-92 (oder wasserdicht)", str(N + 1)),
     ("INA", "INA226-Modul, Shunt auf 10 mΩ ändern", str(N)),
     ("TP", "TP4056-Modul ohne Schutzschaltung, 1 A", str(N)),
     ("Q (Last)", "IRLZ44N, isoliert auf Kühlkörper", str(N)),

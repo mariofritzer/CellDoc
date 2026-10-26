@@ -109,6 +109,12 @@ Zwei gleiche Kanäle mit je 15 W. Beide bekommen denselben Sollwert und teilen s
 
 Beide IRFP250N isoliert (Drain liegt am Gehäuse) auf einen CPU-Kühler mit 4-Pin-Lüfter schrauben. DS18B20 T3 mit Wärmeleitkleber zwischen die MOSFETs.
 
+**Temperaturfühler DS18B20: TO-92 oder wasserdicht, nach Wahl.**
+- **TO-92 (empfohlen, vor allem an der Zelle):** reagiert schneller und liegt mit der flachen Seite gut an der Zelle an. Am besten fest in den Zellenhalter kleben (Wärmeleitkleber oder Kaptonband), so dass die eingesetzte Zelle darauf liegt. Beinchen mit Schrumpfschlauch isolieren, der Zellmantel ist Minus.
+- **Wasserdicht (Edelstahlhülse mit Kabel):** robuster und fertig verkabelt, aber träger. Gut für den Kühlkörper, an der Zelle weniger.
+- Beide Bauformen sind elektrisch gleich (rot = 3,3 V, schwarz/gelb je nach Hersteller = GND/Daten, im Zweifel nachmessen). Die Firmware erkennt beide.
+
+
 ## Lader TP5000
 
 Der CS-Pin wählt die Ladeschlussspannung: **hoch = 4,2 V**, **offen = 3,6 V**, **auf Masse = aus**. Bei Modulen mit 3,6-V-Lötbrücke diese öffnen, damit der ESP32 den Pin steuern kann.
@@ -188,7 +194,7 @@ Ein fertiges Scanner-Modul liest die Etiketten direkt am Gerät. Es dekodiert de
 | 2 | Widerstand 0,1 Ω / 5 W | Messwiderstand Last |
 | 1 | LM358 + Sockel | Regler Last |
 | 1 | CPU-Kühler mit 4-Pin-Lüfter 12 V | Kühlung |
-| 3 | DS18B20 wasserdicht | T1–T3 |
+| 3 | DS18B20, TO-92 oder wasserdicht (nach Wahl) | T1–T3 |
 | – | 3× BSS138, 4× AO3400, 1× AO3401, 1× BC547 | Schalter |
 | 1 | Aktiver Summer 5 V | Alarm |
 | 1 | Step-Down LM2596 (auf 5,0 V einstellen) | 5-V-Versorgung |

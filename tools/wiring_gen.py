@@ -138,7 +138,8 @@ for k, (ref, where) in enumerate([("U12", "T1 Zelle"), ("U13", "T2 Pack"), ("U14
     t(bx + 9, 1144, "V", 9, PINNAME); t(bx + 29, 1144, "Q", 9, PINNAME); t(bx + 47, 1196, "G", 9, PINNAME)
     line(bx + 50, 1200, bx + 50, 1214); gnd(bx + 50, 1214)
     t(bx + 30, 1252, where, 10, REF, "middle")
-note(66, 1280, "T1 mit Kaptonband an die Zelle, T2 lose aufs Pack, T3 zwischen die MOSFETs.")
+note(66, 1280, "T1 TO-92 im Halter unter der Zelle, T2 aufs Pack, T3 zwischen die MOSFETs.")
+note(66, 1296, "DS18B20 nach Wahl: TO-92 (reagiert schneller) oder wasserdicht.")
 
 # Lüfter
 box(500, 1036, 120, 110)
@@ -219,7 +220,7 @@ rows = [
     ("U9", "TP5000-Modul (4,2 V / 3,6 V)", "1"),
     ("U10", "LM358 (DIP-8) + Sockel", "1"),
     ("U11", "Relaismodul 2-fach 5 V, 10 A", "1"),
-    ("U12–U14", "DS18B20 (wasserdicht)", "3"),
+    ("U12–U14", "DS18B20 TO-92 (oder wasserdicht)", "3"),
     ("Q2, Q3", "IRFP250N auf CPU-Kühler, isoliert", "2"),
     ("Q1, Q4, Q5", "BSS138", "3"),
     ("Q7–Q9 / Q6", "AO3400 / AO3401", "3/1"),

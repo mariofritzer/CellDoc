@@ -29,6 +29,13 @@ Die kleine Schwester von CellDoc: **nur 18650 Li-Ion**, dafür einfach nachzubau
 
 Zum Vergrößern anklicken. Jeder Plan enthält Stückliste und Hinweise. Erzeugt werden sie mit `python3 tools/wiring_gen_mini.py <1|2|4> docs/img/schaltplan-mini-<n>.svg`.
 
+### Temperaturfühler
+
+**Temperaturfühler DS18B20: TO-92 oder wasserdicht, nach Wahl.**
+- **TO-92 (empfohlen, vor allem an der Zelle):** reagiert schneller und liegt mit der flachen Seite gut an der Zelle an. Am besten fest in den Zellenhalter kleben (Wärmeleitkleber oder Kaptonband), so dass die eingesetzte Zelle darauf liegt. Beinchen mit Schrumpfschlauch isolieren, der Zellmantel ist Minus.
+- **Wasserdicht (Edelstahlhülse mit Kabel):** robuster und fertig verkabelt, aber träger. Gut für den Kühlkörper, an der Zelle weniger.
+- Beide Bauformen sind elektrisch gleich (rot = 3,3 V, schwarz/gelb je nach Hersteller = GND/Daten, im Zweifel nachmessen). Die Firmware erkennt beide.
+
 ### So funktioniert ein Schacht
 
 - **Messung:** Ein INA226 pro Schacht (Adressen 0x40, 0x41, 0x44, 0x45: Schacht 2 mit A0 an VCC, Schacht 3 mit A1 an VCC, Schacht 4 mit beiden an VCC) misst Strom und Zellspannung. Den Shunt des Moduls auf **10 mΩ** tauschen, sonst reicht der Messbereich nicht. Die Spannung kommt über eine eigene Leitung (SENSE) direkt vom Zellpol.
@@ -50,7 +57,7 @@ Zum Vergrößern anklicken. Jeder Plan enthält Stückliste und Hinweise. Erzeug
 | BSS138 (Lastsperre) | 1 | 2 | 4 |
 | AO3400 für Lüfter und Summer | 2 | 2 | 2 |
 | Messwiderstand 0,1 Ω / 1 W | 1 | 2 | 4 |
-| DS18B20 wasserdicht (Zellen + Kühlkörper) | 2 | 3 | 5 |
+| DS18B20, TO-92 oder wasserdicht (Zellen + Kühlkörper) | 2 | 3 | 5 |
 | 18650-Halter | 1 | 2 | 4 |
 | Sicherung je Schacht 3 A + Hauptsicherung 3 A | 1 + 1 | 2 + 1 | 4 + 1 |
 | USB-C-PD-Decoy-Modul | auf 5 V | auf 5 V | auf 12 V |
