@@ -29,6 +29,9 @@ constexpr uint8_t PIN_BUTTON     = 0;
 constexpr uint8_t PIN_SCAN_RX    = 13;
 constexpr uint8_t PIN_SCAN_TX    = 14;
 constexpr int8_t  PIN_RGB        = 48;  // RGB-LED auf dem Board (WS2812)
+constexpr uint8_t PIN_BTN_PREV   = 1;   // Taster gegen GND (optional, interne Pull-ups)
+constexpr uint8_t PIN_BTN_OK     = 2;
+constexpr uint8_t PIN_BTN_NEXT   = 42;
 #else
 constexpr uint8_t PIN_SDA        = 21;
 constexpr uint8_t PIN_SCL        = 22;
@@ -48,6 +51,9 @@ constexpr uint8_t PIN_BUTTON     = 0;   // BOOT-Taste = Not-Aus
 constexpr uint8_t PIN_SCAN_RX    = 19;  // vom TX des Scanners
 constexpr uint8_t PIN_SCAN_TX    = 18;  // zum RX des Scanners
 constexpr int8_t  PIN_RGB        = -1;
+constexpr uint8_t PIN_BTN_PREV   = 13;  // Taster gegen GND (optional, interne Pull-ups)
+constexpr uint8_t PIN_BTN_OK     = 14;
+constexpr uint8_t PIN_BTN_NEXT   = 23;
 #endif
 
 // ---------- I2C-Adressen ----------
@@ -56,6 +62,7 @@ constexpr uint8_t ADDR_INA_B   = 0x41;
 constexpr uint8_t ADDR_DAC     = 0x60;
 constexpr uint8_t ADDR_ADS_1   = 0x48;  // Balancer-Abgriffe 1–4
 constexpr uint8_t ADDR_ADS_2   = 0x49;  // Balancer-Abgriffe 5–6
+constexpr uint8_t ADDR_OLED    = 0x3C;  // SH1106 1,3" (optional)
 
 // ---------- Messkette ----------
 constexpr float SHUNT_OHM        = 0.010f;   // INA226-Shunt A und B

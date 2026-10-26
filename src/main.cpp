@@ -2,6 +2,7 @@
 // https://github.com/mariofritzer/CellDoc
 #include <Arduino.h>
 #include "config.h"
+#include "display_full.h"
 #include "hal.h"
 #include "settings.h"
 #include "storage.h"
@@ -17,6 +18,7 @@ void setup() {
   settings.load();
   hal.rescanTempSensors();
   tester.begin();
+  display::begin();  // optionales OLED mit drei Tastern
   web::begin();
   hal.beep(80);
 }
@@ -25,5 +27,6 @@ void loop() {
   uint32_t now = millis();
   hal.update(now);
   tester.update(now);
+  display::update(now);
   web::update();
 }

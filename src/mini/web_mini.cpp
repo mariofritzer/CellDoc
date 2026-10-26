@@ -291,6 +291,7 @@ void mqttEntities(std::vector<MqttEntity>& e) {
 }
 
 void onScan(uint32_t no, const String& id) { assign::onScan(no, id); }
+uint32_t scannedCell() { return 0; }
 void scanTick(uint32_t now) { assign::tick(now); }
 void scanState(JsonObject) {}  // steht schon in den Schächten
 

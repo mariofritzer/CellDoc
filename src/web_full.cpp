@@ -3,6 +3,7 @@
 #include <WebServer.h>
 #include "cells.h"
 #include "config.h"
+#include "display_full.h"
 #include "hal.h"
 #include "profiles.h"
 #include "settings.h"
@@ -219,7 +220,10 @@ void routes() {
 
 bool busy() { return tester.active(); }
 
-void fillState(JsonObject o) { tester.stateJson(o); }
+void fillState(JsonObject o) {
+  tester.stateJson(o);
+  o["oled"] = display::available();
+}
 
 String cellVoltage(JsonDocument& b, float& v) {
   Port p = String(b["port"] | "A") == "B" ? PORT_B : PORT_A;
@@ -275,6 +279,8 @@ static uint32_t scanNo = 0, scanAt = 0, checkAt = 0;
 static String scanId;
 static bool checked = false;
 static JsonDocument checkRes;  // Ergebnis des Spannungschecks
+
+uint32_t scannedCell() { return scanNo; }
 
 void onScan(uint32_t no, const String& id) {
   if (!no) {
