@@ -6,13 +6,15 @@ from schematic import *  # noqa: F401,F403
 from schematic import o
 
 N = int(sys.argv[1]) if len(sys.argv) > 1 else 2
-OUT = sys.argv[2] if len(sys.argv) > 2 else f"schaltplan-mini-{N}.svg"
+BOARD = "s3" if "s3" in sys.argv[3:] else "esp32"
+SFX = "-s3" if BOARD == "s3" else ""
+OUT = sys.argv[2] if len(sys.argv) > 2 else f"schaltplan-mini-{N}{SFX}.svg"
+S3 = BOARD == "s3"
 assert N in (1, 2, 4)
 IMAX = 1.0 if N == 4 else 2.0
 OPAMP = "LM324" if N > 2 else "LM358"
 VUSB = 12 if N == 4 else 5  # Decoy-Spannung
 SUPPLY = {1: "USB-C-Netzteil ab 10 W", 2: "USB-C-Netzteil 5 V / 3 A", 4: "USB-C-Netzteil mit 12 V, ≥ 36 W"}[N]
-CHG_PINS = {1: "IO26", 2: "IO27", 3: "IO32", 4: "IO33"}
 
 W = 2240
 BLOCK = 286
@@ -132,7 +134,7 @@ for k, (n_, net) in enumerate([("VCC", "+3V3"), ("GND", "GND"), ("SCL", "SCL"), 
     else:
         wire(p, (330, y)); label(330, y, net, "l")
 # Taster
-for k, (ref, net, io) in enumerate([("SW1", "BTN_PREV", "IO34"), ("SW2", "BTN_OK", "IO35"), ("SW3", "BTN_NEXT", "IO39")]):
+for k, (ref, net, io) in enumerate([("SW1", "BTN_PREV", "IO17" if S3 else "IO34"), ("SW2", "BTN_OK", "IO18" if S3 else "IO35"), ("SW3", "BTN_NEXT", "IO11" if S3 else "IO39")]):
     x = 430 + k * 90
     wire((x, 760), (x, 790)); dot(x, 760)
     res_v(x, 700, 760, f"R{10 + k}", "10 kΩ")
@@ -204,42 +206,23 @@ for k, (n_, net) in enumerate([("VCC", "+3V3"), ("GND", "GND"), ("TX", "SCAN_TX"
         wire(p, (705, yy)); label(705, yy, net, "l")
 
 # ================================================================ Mitte: ESP32
-EX, EY, EW, SP = 860, 96, 200, 36
-EH = 14 * SP + 60
-box(EX, EY, EW, EH)
-o.append(f'<rect x="{EX+60}" y="{EY+8}" width="80" height="26" fill="none" stroke="{COMP}" stroke-width="1" stroke-dasharray="3 3"/>')
-t(EX + 100, EY + 25, "Antenne", 10, PINNAME, "middle")
-o.append(f'<rect x="{EX+78}" y="{EY+EH-18}" width="44" height="18" rx="4" fill="none" stroke="{COMP}" stroke-width="1.2"/>')
-t(EX + 100, EY + EH - 5, "USB", 10, PINNAME, "middle")
-t(EX, EY - 10, "U1", 12, REF); t(EX + EW, EY - 10, "ESP32 DevKit V1 (30 Pin)", 11, REF, "end")
-t(EX + 100, EY + EH / 2, "ESP32-WROOM-32", 12, PINNAME, "middle", "bold", rot=-90)
+EX, EY, EW = 860, 96, 200
 chg = {k: (f"CHG{k}" if k <= N else None) for k in range(1, 5)}
-left = [("EN", None), ("IO36/VP", None), ("IO39/VN", "BTN_NEXT"), ("IO34", "BTN_PREV"), ("IO35", "BTN_OK"), ("IO32", chg[3]), ("IO33", chg[4]),
-        ("IO25", "FAN"), ("IO26", chg[1]), ("IO27", chg[2]), ("IO14", None), ("IO12", None), ("IO13", None), ("GND", "GND"), ("VIN", "+5V")]
-right = [("IO23", None), ("IO22", "SCL"), ("TX0", None), ("RX0", None), ("IO21", "SDA"), ("IO19", "SCAN_TX"), ("IO18", "SCAN_RX"), ("IO5", None),
-         ("TX2/IO17", "BUZZER"), ("RX2/IO16", "LOAD_EN_N"), ("IO4", "ONEWIRE"), ("IO2", None), ("IO15", None), ("GND", "GND"), ("3V3", "+3V3")]
-for i, (n_, net) in enumerate(left):
-    y = EY + 40 + i * SP
-    px, py = pin(EX, y, "l", n_, i + 1, L=30)
-    if net is None: nc(px, py)
-    elif net == "GND": wire((px, py), (px - 20, py)); gnd(px - 20, py, "l")
-    elif net == "+5V": wire((px, py), (px - 20, py)); pwr(px - 20, py, "+5V", "l")
-    else: wire((px, py), (px - 80, py)); label(px - 80, py, net, "r")
-for i, (n_, net) in enumerate(right):
-    y = EY + 40 + i * SP
-    px, py = pin(EX + EW, y, "r", n_, 30 - i, L=30)
-    if net is None: nc(px, py)
-    elif net == "GND": wire((px, py), (px + 20, py)); gnd(px + 20, py, "r")
-    elif net == "+3V3": wire((px, py), (px + 20, py)); pwr(px + 20, py, "+3V3", "r")
-    else: wire((px, py), (px + 80, py)); label(px + 80, py, net, "l")
-note(EX - 110, EY + EH + 30, "I²C: SDA = IO21, SCL = IO22, je 4,7 kΩ nach +3V3.")
+if S3:
+    nets = {4: "ONEWIRE", 5: "LOAD_EN_N", 6: chg[1], 7: chg[2], 15: chg[3], 16: chg[4], 8: "SDA", 9: "SCL", 10: "FAN",
+            11: "BTN_NEXT", 12: "BUZZER", 13: "SCAN_TX", 14: "SCAN_RX", 17: "BTN_PREV", 18: "BTN_OK"}
+else:
+    nets = {39: "BTN_NEXT", 34: "BTN_PREV", 35: "BTN_OK", 32: chg[3], 33: chg[4], 25: "FAN", 26: chg[1], 27: chg[2],
+            22: "SCL", 21: "SDA", 19: "SCAN_TX", 18: "SCAN_RX", 17: "BUZZER", 16: "LOAD_EN_N", 4: "ONEWIRE"}
+EH = mcu_block(BOARD, EX, EY, nets, EW)
+note(EX - 110, EY + EH + 30, f"I²C: SDA = {'IO8' if S3 else 'IO21'}, SCL = {'IO9' if S3 else 'IO22'}, je 4,7 kΩ nach +3V3.")
 note(EX - 110, EY + EH + 46, f"INA226 der Schächte: 0x40{', 0x41' if N > 1 else ''}{', 0x44, 0x45' if N > 2 else ''}.")
 note(EX - 110, EY + EH + 62, "Adresse am Modul: 0x41 A0→VCC, 0x44 A1→VCC, 0x45 beide→VCC.")
 
 # ---------------------------------------------------------------- Stückliste
 nR = 4 * N + 6
 rows = [
-    ("U1", "ESP32 DevKit V1 (WROOM-32, 30 Pin)", "1"),
+    ("U1", "ESP32-S3-DevKitC-1 N16R8 (44 Pin)" if S3 else "ESP32 DevKit V1 (WROOM-32, 30 Pin)", "1"),
     ("U2", "MCP4728-Modul (4 × DAC)", "1"),
     ("U3", f"{OPAMP} (DIP) + Sockel", "1"),
     ("U4", "OLED SH1106 1,3\" I²C (optional)", "(1)"),
@@ -276,9 +259,9 @@ for k, s_ in enumerate([
     f"3. Entladung max. {str(IMAX).replace('.', ',')} A je Schacht, zusammen max. 16 W.",
     "4. SENSEk als eigene Leitung direkt vom Zellpol.",
     "5. TP4056 ohne Schutz-IC: Schutz macht die Firmware.",
-    "6. Ungenutzte Pins (×) frei; IO0/2/5/12/15 = Boot.",
+    "6. Freie Pins (×): IO0/3/45/46 Boot, 35–37 PSRAM." if S3 else "6. Ungenutzte Pins (×) frei; IO0/2/5/12/15 = Boot.",
     "7. Netzlabel mit gleichem Namen sind verbunden.",
-    "8. QR-Scanner optional, UART 9600 Baud, 3,3-V-Pegel."]):
+    "8. QR-Scanner optional, UART 9600 Baud, 3,3-V-Pegel."] + (["9. IO19/20 = USB, nicht belegen."] if S3 else [])):
     if yh + 40 + k * 21 < 1540:
         t(752, yh + 40 + k * 21, s_, 11, "#222")
 
@@ -339,7 +322,7 @@ for k in range(1, N + 1):
     note(1214, y0 + 258, f"Q{3 * (k - 1) + 3}-Gate: 10 kΩ nach GND + BSS138-Klemme an LOAD_EN_N.")
     note(1730, y0 + 258, f"Q{3 * (k - 1) + 1}-Gate: 10 kΩ nach GND.")
 
-title_block(1616, 1430, f"CellDoc Mini {N} – Verdrahtung", f"docs/img/schaltplan-mini-{N}.svg", "1.0", "2026-10-25", "A2")
+title_block(1616, 1430, f"CellDoc Mini {N}{' · ESP32-S3' if S3 else ''} – Verdrahtung", f"docs/img/schaltplan-mini-{N}{SFX}.svg", "1.0", "2026-10-26", "A2")
 t(1214, 1440 if N < 4 else 1440, "Netzlabel mit gleichem Namen", 11, "#555", italic=True)
 t(1214, 1456, "sind miteinander verbunden.", 11, "#555", italic=True)
 t(1214, 1480, "CELLk = Pluspol Schacht k", 11, "#555", italic=True)

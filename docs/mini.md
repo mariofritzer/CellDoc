@@ -100,6 +100,30 @@ Die Tabelle steht auch auf der Platine. Es gibt Module mit anderer Belegung, im 
 | 19 / 18 | QR-Scanner TX / RX (optional) |
 | 0 | BOOT-Taste = Not-Aus |
 
+### Variante mit ESP32-S3
+
+Statt des ESP32 DevKit V1 geht auch ein **ESP32-S3-DevKitC-1 N16R8** (16 MB Flash, 8 MB PSRAM, zwei USB-C-Buchsen). Vorteile: rund 10 MB Speicher für Bestand und Kurven statt 896 KB, mehr Reserve, und die RGB-LED auf dem Board zeigt den Zustand (grün bereit, türkis lädt, orange entlädt, rot blinkend Fehler, blau blinkend Hotspot). Die Pinbelegung ist eine andere, alles Übrige bleibt gleich. Der Webflasher erkennt den S3 selbst; für Updates über die Weboberfläche die Dateien mit `-s3` im Namen nehmen.
+
+- Nicht belegen: IO35–37 (gehören zum PSRAM), IO19/20 (USB), IO0/3/45/46 (Boot-Pins).
+- Zum Flashen die USB-C-Buchse mit der Aufschrift **COM** (bzw. UART) nehmen, die zweite (USB) geht auch.
+
+| Mini 1 · S3 | Mini 2 · S3 | Mini 4 · S3 |
+|:---:|:---:|:---:|
+| [![Schaltplan Mini 1 S3](img/schaltplan-mini-1-s3.svg)](img/schaltplan-mini-1-s3.svg) | [![Schaltplan Mini 2 S3](img/schaltplan-mini-2-s3.svg)](img/schaltplan-mini-2-s3.svg) | [![Schaltplan Mini 4 S3](img/schaltplan-mini-4-s3.svg)](img/schaltplan-mini-4-s3.svg) |
+
+| Funktion | ESP32 | ESP32-S3 |
+|---|---|---|
+| I²C SDA / SCL | 21 / 22 | 8 / 9 |
+| 1-Wire DS18B20 | 4 | 4 |
+| Last-Freigabe | 16 | 5 |
+| Lader Schacht 1–4 | 26, 27, 32, 33 | 6, 7, 15, 16 |
+| Lüfter | 25 | 10 |
+| Summer | 17 | 12 |
+| Taster ◀ / OK / ▶ | 34 / 35 / 39 | 17 / 18 / 11 |
+| QR-Scanner TX / RX | 19 / 18 | 13 / 14 |
+| BOOT = Not-Aus | 0 | 0 |
+| RGB-LED auf dem Board | – | 48 |
+
 ## Bedienung
 
 **Weboberfläche:** genau wie beim großen CellDoc (siehe [README](../README.md#erste-schritte)). Auf der Live-Seite zeigt die Kachel *Schächte* alle Schächte auf einen Blick. Ein Tipp wählt den Schacht, dann beziehen sich Anzeige, Starten, Stoppen und Kalibrierung auf ihn. Unter *Einstellungen → Temperaturfühler* bekommt jeder Schacht seinen Fühler (Zelle 1–4) und einer den Kühlkörper.

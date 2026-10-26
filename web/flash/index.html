@@ -107,7 +107,7 @@ esp-web-install-button{--esp-tools-button-color:var(--accent);--esp-tools-button
       <dl>
         <dt>Firmware</dt><dd id="fwName">–</dd>
         <dt>Version</dt><dd id="fwVer">wird geladen …</dd>
-        <dt>Chip</dt><dd>ESP32 (DevKit V1, WROOM-32)</dd>
+        <dt>Chip</dt><dd>ESP32 oder ESP32-S3 (wird erkannt)</dd>
       </dl>
       <esp-web-install-button id="installer" manifest="manifest-celldoc.json">
         <button slot="activate" class="btn" type="button">
@@ -125,7 +125,7 @@ esp-web-install-button{--esp-tools-button-color:var(--accent);--esp-tools-button
       <h2>2 · So geht's</h2>
       <ol class="steps">
         <li><div><b>ESP32 per USB anschließen</b><p>Ein Datenkabel verwenden, reine Ladekabel funktionieren nicht.</p></div></li>
-        <li><div><b>„Verbinden und installieren“ klicken</b><p>Im Fenster den Port wählen, meist „CP2102“, „CH340“ oder „USB Serial“.</p></div></li>
+        <li><div><b>„Verbinden und installieren“ klicken</b><p>Im Fenster den Port wählen, meist „CP2102“, „CH340“, „CH343“ oder „USB Serial“. Beim ESP32-S3 die Buchse „COM“ benutzen.</p></div></li>
         <li><div><b>Installieren</b><p>Beim ersten Mal „Gerät löschen“ anhaken. Bei einem Update nicht löschen, dann bleiben Einstellungen und Ergebnisse erhalten.</p></div></li>
         <li><div><b>WLAN einrichten</b><p>Nach dem Neustart öffnet CellDoc den Hotspot <b>CellDoc-XXXX</b>, Passwort <code>celldoc1</code>. Die Seite öffnet sich von selbst, sonst <code>192.168.4.1</code> aufrufen.</p></div></li>
       </ol>

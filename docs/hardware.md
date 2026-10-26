@@ -163,6 +163,29 @@ Jeder Abgriff des JST-XH-Steckers bekommt einen Teiler 100 kΩ / 10 kΩ (0,1 %).
 
 Relaismodule mit Jumper auf **High Level Trigger**, dann bleiben die Relais beim Booten aus.
 
+### Variante mit ESP32-S3
+
+Statt des ESP32 DevKit V1 geht auch ein **ESP32-S3-DevKitC-1 N16R8** (16 MB Flash, 8 MB PSRAM, zwei USB-C-Buchsen). Vorteile: rund 10 MB Speicher für Bestand und Kurven statt 896 KB, mehr Reserve, und die RGB-LED auf dem Board zeigt den Zustand (grün bereit, türkis lädt, orange entlädt, rot blinkend Fehler, blau blinkend Hotspot). Die Pinbelegung ist eine andere, alles Übrige bleibt gleich. Der Webflasher erkennt den S3 selbst; für Updates über die Weboberfläche die Dateien mit `-s3` im Namen nehmen.
+
+- Nicht belegen: IO35–37 (gehören zum PSRAM), IO19/20 (USB), IO0/3/45/46 (Boot-Pins).
+- Zum Flashen die USB-C-Buchse mit der Aufschrift **COM** (bzw. UART) nehmen, die zweite (USB) geht auch.
+
+[![Schaltplan mit ESP32-S3](img/schaltplan-s3.svg)](img/schaltplan-s3.svg)
+
+| Funktion | ESP32 | ESP32-S3 |
+|---|---|---|
+| I²C SDA / SCL | 21 / 22 | 8 / 9 |
+| 1-Wire DS18B20 | 4 | 4 |
+| Last-Freigabe | 16 | 5 |
+| K1 / K2 | 26 / 27 | 6 / 7 |
+| TP5000 CS hoch / Masse | 32 / 33 | 15 / 16 |
+| TP5000 CHRG / STDBY | 34 / 35 | 17 / 18 |
+| Lüfter PWM / Drehzahl | 25 / 39 | 10 / 11 |
+| Summer | 17 | 12 |
+| QR-Scanner TX / RX | 19 / 18 | 13 / 14 |
+| BOOT = Not-Aus | 0 | 0 |
+| RGB-LED auf dem Board | – | 48 |
+
 ## QR-Scanner (optional)
 
 Ein fertiges Scanner-Modul liest die Etiketten direkt am Gerät. Es dekodiert den QR-Code selbst und schickt nur den Text über die serielle Schnittstelle (9600 Baud) an den ESP32.

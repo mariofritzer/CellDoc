@@ -91,6 +91,8 @@ Jeder Test legt die Zelle mit einer festen Nummer an. Die Nummer kommt mit einem
 
 ESP32 DevKit, 2× INA226 (Strom/Spannung), MCP4725 + LM358 + 2× IRFP250N (Konstantstromlast), TP5000 (Lader 4,2/3,6 V), 2× ADS1115 (Balancer), 3× DS18B20, zwei Relais, CPU-Kühler mit 4-Pin-Lüfter, Versorgung über USB-C (PD-Decoy auf 12 V).
 
+Statt des ESP32 DevKit V1 geht auch ein **ESP32-S3-DevKitC-1 N16R8** (mehr Speicher, RGB-Statusleuchte). Dafür gibt es eigene Schaltpläne und Firmware-Dateien mit `-s3` im Namen. Der Webflasher erkennt den Chip selbst.
+
 Schaltung, Pinbelegung, optionaler QR-Scanner und Einkaufsliste: **[docs/hardware.md](docs/hardware.md)**
 
 ## CellDoc Mini

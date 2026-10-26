@@ -3,6 +3,8 @@
 # Aufruf: python3 tools/wiring_gen.py docs/img/schaltplan.svg
 import math
 import sys
+BOARD = "s3" if "s3" in sys.argv[2:] else "esp32"
+S3 = BOARD == "s3"
 
 W, H = 2240, 1584
 from schematic import *  # noqa: F401,F403  Symbole und Stil
@@ -176,43 +178,21 @@ note(400, 1470, "Ohne Drehzahl bei warmem Kühlkörper")
 note(400, 1486, "schaltet die Firmware die Last ab.")
 
 # ================================================================ Mitte: ESP32
-EX, EY, EW, SP = 860, 96, 200, 36
-EH = 14 * SP + 60
-box(EX, EY, EW, EH)
-o.append(f'<rect x="{EX+60}" y="{EY+8}" width="80" height="26" fill="none" stroke="{COMP}" stroke-width="1" stroke-dasharray="3 3"/>')
-t(EX + 100, EY + 25, "Antenne", 10, PINNAME, "middle")
-o.append(f'<rect x="{EX+78}" y="{EY+EH-18}" width="44" height="18" rx="4" fill="none" stroke="{COMP}" stroke-width="1.2"/>')
-t(EX + 100, EY + EH - 5, "USB", 10, PINNAME, "middle")
-t(EX, EY - 10, "U1", 12, REF); t(EX + EW, EY - 10, "ESP32 DevKit V1 (30 Pin)", 11, REF, "end")
-t(EX + 100, EY + EH / 2, "ESP32-WROOM-32", 12, PINNAME, "middle", "bold", rot=-90)
-left = [("EN", None), ("IO36/VP", None), ("IO39/VN", "FAN_TACH"), ("IO34", "CHG_CHRG"), ("IO35", "CHG_STDBY"), ("IO32", "CHG_42"), ("IO33", "CHG_STOP"),
-        ("IO25", "FAN_PWM"), ("IO26", "K1_IN"), ("IO27", "K2_IN"), ("IO14", None), ("IO12", None), ("IO13", None), ("GND", "GND"), ("VIN", "+5V")]
-right = [("IO23", None), ("IO22", "SCL"), ("TX0", None), ("RX0", None), ("IO21", "SDA"), ("IO19", "SCAN_TX"), ("IO18", "SCAN_RX"), ("IO5", None),
-         ("TX2/IO17", "BUZZER"), ("RX2/IO16", "LOAD_EN_N"), ("IO4", "ONEWIRE"), ("IO2", None), ("IO15", None), ("GND", "GND"), ("3V3", "+3V3")]
-for i, (n, net) in enumerate(left):
-    y = EY + 40 + i * SP
-    px, py = pin(EX, y, "l", n, i + 1, L=30)
-    if net is None: nc(px, py)
-    elif net == "GND": wire((px, py), (px - 20, py)); gnd(px - 20, py, "l")
-    elif net == "+5V": wire((px, py), (px - 20, py)); pwr(px - 20, py, "+5V", "l")
-    else: wire((px, py), (px - 80, py)); label(px - 80, py, net, "r")
-for i, (n, net) in enumerate(right):
-    y = EY + 40 + i * SP
-    px, py = pin(EX + EW, y, "r", n, 30 - i, L=30)
-    if net is None: nc(px, py)
-    elif net == "GND": wire((px, py), (px + 20, py)); gnd(px + 20, py, "r")
-    elif net == "+3V3": wire((px, py), (px + 20, py)); pwr(px + 20, py, "+3V3", "r")
-    else: wire((px, py), (px + 80, py)); label(px + 80, py, net, "l")
-# I²C-Pull-ups
-for k, (net, y) in enumerate([("SCL", EY + 40 + SP), ("SDA", EY + 40 + 4 * SP)]):
-    pass
-note(EX - 110, EY + EH + 30, "I²C: SDA = IO21, SCL = IO22, je 4,7 kΩ (R31, R32) nach +3V3.")
+EX, EY, EW = 860, 96, 200
+if S3:
+    nets = {4: "ONEWIRE", 5: "LOAD_EN_N", 6: "K1_IN", 7: "K2_IN", 15: "CHG_42", 16: "CHG_STOP", 17: "CHG_CHRG", 18: "CHG_STDBY",
+            8: "SDA", 9: "SCL", 10: "FAN_PWM", 11: "FAN_TACH", 12: "BUZZER", 13: "SCAN_TX", 14: "SCAN_RX"}
+else:
+    nets = {39: "FAN_TACH", 34: "CHG_CHRG", 35: "CHG_STDBY", 32: "CHG_42", 33: "CHG_STOP", 25: "FAN_PWM", 26: "K1_IN", 27: "K2_IN",
+            22: "SCL", 21: "SDA", 19: "SCAN_TX", 18: "SCAN_RX", 17: "BUZZER", 16: "LOAD_EN_N", 4: "ONEWIRE"}
+EH = mcu_block(BOARD, EX, EY, nets, EW)
+note(EX - 110, EY + EH + 30, f"I²C: SDA = {'IO8' if S3 else 'IO21'}, SCL = {'IO9' if S3 else 'IO22'}, je 4,7 kΩ (R31, R32) nach +3V3.")
 note(EX - 110, EY + EH + 46, "BOOT-Taste (IO0) auf dem Board = Not-Aus im Betrieb.")
 
 # ---------------------------------------------------------------- Stückliste
 section(740, 730, 1180, 1290, "Stückliste")
 rows = [
-    ("U1", "ESP32 DevKit V1 (WROOM-32, 30 Pin)", "1"),
+    ("U1", "ESP32-S3-DevKitC-1 N16R8 (44 Pin)" if S3 else "ESP32 DevKit V1 (WROOM-32, 30 Pin)", "1"),
     ("U2", "Step-Down LM2596, auf 5,0 V einstellen", "1"),
     ("U4, U5", "INA226-Modul, Shunt auf 10 mΩ ändern", "2"),
     ("U6", "MCP4725-Modul (12-Bit-DAC)", "1"),
@@ -251,7 +231,7 @@ for k, s in enumerate([
     "4. Relaismodul auf High-Level-Trigger stellen.",
     "5. Lader nur an Anschluss A: Packs nie über U9 laden.",
     "6. TP5000-Lötbrücke 3,6 V öffnen, CS steuert U1.",
-    "7. Ungenutzte Pins (×) frei; IO0/2/5/12/15 = Boot.",
+    "7. Frei (×): IO0/3/45/46 Boot, 35–37 PSRAM, 19/20 USB." if S3 else "7. Ungenutzte Pins (×) frei; IO0/2/5/12/15 = Boot.",
     "8. LiPo nur auf nicht brennbarer Unterlage testen."]):
     t(752, 1346 + k * 21, s, 11, "#222")
 
@@ -389,8 +369,8 @@ X1, Y1, X2, Y2 = 1616, 1430, 2190, 1542
 o.append(f'<rect x="{X1}" y="{Y1}" width="{X2-X1}" height="{Y2-Y1}" fill="none" stroke="{COMP}" stroke-width="1.4"/>')
 line(X1, Y1 + 46, X2, Y1 + 46, COMP, 1); line(X1, Y1 + 80, X2, Y1 + 80, COMP, 1)
 line(X1 + 290, Y1 + 46, X1 + 290, Y2, COMP, 1); line(X1 + 430, Y1 + 46, X1 + 430, Y2, COMP, 1)
-t(X1 + 10, Y1 + 18, "Titel", 9, COMP); t(X1 + 10, Y1 + 38, "CellDoc – Verdrahtung", 18, "#000", weight="bold")
-t(X1 + 10, Y1 + 58, "Datei", 9, COMP); t(X1 + 10, Y1 + 74, "docs/img/schaltplan.svg", 11, "#000")
+t(X1 + 10, Y1 + 18, "Titel", 9, COMP); t(X1 + 10, Y1 + 38, "CellDoc · ESP32-S3 – Verdrahtung" if S3 else "CellDoc – Verdrahtung", 18, "#000", weight="bold")
+t(X1 + 10, Y1 + 58, "Datei", 9, COMP); t(X1 + 10, Y1 + 74, "docs/img/schaltplan-s3.svg" if S3 else "docs/img/schaltplan.svg", 11, "#000")
 t(X1 + 300, Y1 + 58, "Rev.", 9, COMP); t(X1 + 300, Y1 + 74, "1.0", 11, "#000")
 t(X1 + 440, Y1 + 58, "Blatt", 9, COMP); t(X1 + 440, Y1 + 74, "1 / 1", 11, "#000")
 t(X1 + 10, Y1 + 92, "Projekt", 9, COMP); t(X1 + 10, Y1 + 108, "github.com/mariofritzer/CellDoc", 11, "#000")

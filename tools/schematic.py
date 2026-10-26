@@ -172,6 +172,56 @@ def npn(cx, cy, ref, val):
 
 DIP_SET = {5: "0 0 0", 9: "1 0 0", 12: "1 1 0", 15: "0 1 0", 20: "0 1 1"}
 
+# Steckleisten der Boards: (Beschriftung, GPIO oder Netz) von oben nach unten
+BOARDS = {
+    "esp32": dict(
+        title="ESP32 DevKit V1 (30 Pin)", chip="ESP32-WROOM-32", sp=36, rnum=lambda i: 30 - i,
+        left=[("EN", None), ("IO36/VP", 36), ("IO39/VN", 39), ("IO34", 34), ("IO35", 35), ("IO32", 32), ("IO33", 33), ("IO25", 25),
+              ("IO26", 26), ("IO27", 27), ("IO14", 14), ("IO12", 12), ("IO13", 13), ("GND", "GND"), ("VIN", "+5V")],
+        right=[("IO23", 23), ("IO22", 22), ("TX0", None), ("RX0", None), ("IO21", 21), ("IO19", 19), ("IO18", 18), ("IO5", 5),
+               ("TX2/IO17", 17), ("RX2/IO16", 16), ("IO4", 4), ("IO2", 2), ("IO15", 15), ("GND", "GND"), ("3V3", "+3V3")]),
+    "s3": dict(
+        title="ESP32-S3 DevKitC-1 N16R8", chip="ESP32-S3-WROOM-1", sp=24, rnum=lambda i: i + 1,
+        left=[("3V3", "+3V3"), ("3V3", None), ("RST", None), ("IO4", 4), ("IO5", 5), ("IO6", 6), ("IO7", 7), ("IO15", 15), ("IO16", 16),
+              ("IO17", 17), ("IO18", 18), ("IO8", 8), ("IO3", 3), ("IO46", 46), ("IO9", 9), ("IO10", 10), ("IO11", 11), ("IO12", 12),
+              ("IO13", 13), ("IO14", 14), ("5V", "+5V"), ("GND", "GND")],
+        right=[("GND", "GND"), ("TX/IO43", None), ("RX/IO44", None), ("IO1", 1), ("IO2", 2), ("IO42", 42), ("IO41", 41), ("IO40", 40),
+               ("IO39", 39), ("IO38", 38), ("IO37", 37), ("IO36", 36), ("IO35", 35), ("IO0", 0), ("IO45", 45), ("IO48", 48), ("IO47", 47),
+               ("IO21", 21), ("IO20", 20), ("IO19", 19), ("GND", None), ("GND", None)]),
+}
+
+
+def mcu_block(board, EX, EY, nets, EW=200):
+    """Entwicklungsboard mit Steckleisten; nets: GPIO → Netzname. Liefert die Höhe."""
+    B = BOARDS[board]
+    SP = B["sp"]
+    n = max(len(B["left"]), len(B["right"]))
+    EH = (n - 1) * SP + 60
+    box(EX, EY, EW, EH)
+    o.append(f'<rect x="{EX+60}" y="{EY+8}" width="80" height="26" fill="none" stroke="{COMP}" stroke-width="1" stroke-dasharray="3 3"/>')
+    t(EX + 100, EY + 25, "Antenne", 10, PINNAME, "middle")
+    o.append(f'<rect x="{EX+78}" y="{EY+EH-18}" width="44" height="18" rx="4" fill="none" stroke="{COMP}" stroke-width="1.2"/>')
+    t(EX + 100, EY + EH - 5, "USB", 10, PINNAME, "middle")
+    t(EX, EY - 10, "U1", 12, REF); t(EX + EW, EY - 10, B["title"], 11, REF, "end")
+    t(EX + 100, EY + EH / 2, B["chip"], 12, PINNAME, "middle", "bold", rot=-90)
+    for side, pins in (("l", B["left"]), ("r", B["right"])):
+        for i, (name, g) in enumerate(pins):
+            y = EY + 40 + i * SP
+            x = EX if side == "l" else EX + EW
+            num = i + 1 if side == "l" else B["rnum"](i)
+            px, py = pin(x, y, side, name, num, L=30)
+            net = g if isinstance(g, str) else nets.get(g) if g is not None else None
+            sgn = -1 if side == "l" else 1
+            if net is None:
+                nc(px, py)
+            elif net == "GND":
+                wire((px, py), (px + sgn * 20, py)); gnd(px + sgn * 20, py, side)
+            elif net in ("+5V", "+3V3"):
+                wire((px, py), (px + sgn * 20, py)); pwr(px + sgn * 20, py, net, side)
+            else:
+                wire((px, py), (px + sgn * 80, py)); label(px + sgn * 80, py, net, "r" if side == "l" else "l")
+    return EH
+
 
 def usbc_decoy(x, y, ref, volts):
     """USB-C-PD-Decoy-Modul (Schalter S1–S3), Ausgang rechts: liefert (+, −)"""
