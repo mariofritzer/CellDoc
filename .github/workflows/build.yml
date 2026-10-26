@@ -81,8 +81,8 @@ jobs:
           pio pkg exec -p tool-esptoolpy -- esptool.py --chip esp32 merge_bin -o out/${{ matrix.name }}-factory.bin \
             0x1000 $B/bootloader.bin 0x8000 $B/partitions.bin 0xe000 "$BOOT_APP0" 0x10000 $B/firmware.bin
           SIZE=$(stat -c%s out/${{ matrix.name }}-firmware.bin)
-          echo "::notice::${{ matrix.env }}: $SIZE von 1966080 Bytes"
-          test "$SIZE" -lt 1957888
+          echo "::notice::${{ matrix.env }}: $SIZE von 1572864 Bytes"
+          test "$SIZE" -lt 1564672
 
       - uses: actions/upload-artifact@v4
         with:

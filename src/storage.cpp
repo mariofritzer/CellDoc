@@ -17,16 +17,28 @@ bool begin() {
 }
 
 // Ältere Ergebnisse löschen, wenn der Speicher knapp wird
+// Wird der Speicher knapp: zuerst die Kurven der ältesten Tests löschen (Messwerte bleiben),
+// erst danach ganze alte Ergebnisse. Der Zellenbestand wird nie angetastet.
+static uint32_t oldestIn(const char* dir) {
+  uint32_t oldest = UINT32_MAX;
+  File d = LittleFS.open(dir);
+  for (File f = d.openNextFile(); f; f = d.openNextFile()) {
+    uint32_t id = String(f.name()).toInt();
+    if (id && id < oldest) oldest = id;
+  }
+  return oldest;
+}
+
 static void makeRoom() {
   while (LittleFS.totalBytes() - LittleFS.usedBytes() < 60000) {
-    uint32_t oldest = UINT32_MAX;
-    File dir = LittleFS.open("/r");
-    for (File f = dir.openNextFile(); f; f = dir.openNextFile()) {
-      uint32_t id = String(f.name()).toInt();
-      if (id && id < oldest) oldest = id;
+    uint32_t c = oldestIn("/c");
+    if (c != UINT32_MAX) {
+      LittleFS.remove(cPath(c));
+      continue;
     }
-    if (oldest == UINT32_MAX) return;
-    removeResult(oldest);
+    uint32_t r = oldestIn("/r");
+    if (r == UINT32_MAX) return;
+    removeResult(r);
   }
 }
 
