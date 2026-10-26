@@ -27,6 +27,7 @@
 - **Mehrere Geräte, ein Bestand:** CellDoc und Mini im selben WLAN teilen sich Zellen und Nummern
 - **Home Assistant** über MQTT mit automatischer Erkennung, **Datensicherung** und CSV-Export
 - **Handbuch** direkt im Gerät: Akkutypen, Bauformen, Stecker, Messwerte, Sicherheit, Lagerung und Entsorgung
+- **Display und Taster** (optional, wie bei der Mini): Messwerte, Temperaturen, Balancer, IP-Adresse; Test starten und stoppen direkt am Gerät
 - **Firmware-Updates** über den Browser, WLAN-Einrichtung über einen eigenen Hotspot
 
 ## Bilder

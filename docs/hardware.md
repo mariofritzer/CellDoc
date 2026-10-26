@@ -159,6 +159,7 @@ Jeder Abgriff des JST-XH-Steckers bekommt einen Teiler 100 kΩ / 10 kΩ (0,1 %).
 | 39 | Lüfter Drehzahl |
 | 17 | Summer |
 | 19 / 18 | QR-Scanner TX / RX (optional) |
+| 13 / 14 / 23 | Taster ◀ / OK / ▶ (optional, gegen GND) |
 | 0 | BOOT-Taste = Not-Aus |
 
 Relaismodule mit Jumper auf **High Level Trigger**, dann bleiben die Relais beim Booten aus.
@@ -183,8 +184,21 @@ Statt des ESP32 DevKit V1 geht auch ein **ESP32-S3-DevKitC-1 N16R8** (16 MB Flas
 | Lüfter PWM / Drehzahl | 25 / 39 | 10 / 11 |
 | Summer | 17 | 12 |
 | QR-Scanner TX / RX | 19 / 18 | 13 / 14 |
+| Taster ◀ / OK / ▶ | 13 / 14 / 23 | 1 / 2 / 42 |
 | BOOT = Not-Aus | 0 | 0 |
 | RGB-LED auf dem Board | – | 48 |
+
+## Display und Taster (optional)
+
+Wie bei der Mini lässt sich ein **OLED SH1106 1,3"** (I²C, Adresse 0x3C) mit drei Tastern anschließen. Das Display hängt mit an SDA/SCL, die Taster schalten gegen GND (interne Pull-ups, keine Widerstände nötig). Ohne Display läuft alles wie bisher, die Firmware erkennt es beim Start.
+
+| Taste | Wirkung |
+|---|---|
+| ◀ / ▶ | Seiten: Live, Temperaturen, Balancer, Netzwerk (mit IP-Adresse) |
+| OK | Ergebnis oder Fehler bestätigen; auf „Live“ ohne Vorgang: Standardtest an Anschluss A (gescannte oder neue Zelle, 0,5 A, danach Lagerspannung) |
+| OK lang | laufenden Vorgang stoppen |
+
+Nach einem Test steht die Zellnummer groß mit Kapazität, Note und Lebenszahl auf dem Display, zum Übertragen aufs Etikett.
 
 ## QR-Scanner (optional)
 
@@ -230,6 +244,7 @@ Ein fertiges Scanner-Modul liest die Etiketten direkt am Gerät. Es dekodiert de
 | – | Widerstände 12× 100 kΩ + 12× 10 kΩ (0,1 %), 7,5 kΩ, 1 kΩ, 10 kΩ, 4,7 kΩ; 10 nF, 100 nF | |
 | – | Lochraster, Silikonkabel 1,5 mm² und 0,25 mm² | Aufbau |
 | (1) | QR-Scanner GM861S, 3,3 V (optional) | U15 |
+| (1) | OLED SH1106 1,3" I²C + 3 Taster (optional) | U16, SW1–3 |
 
 ## Aufbau und erste Inbetriebnahme
 

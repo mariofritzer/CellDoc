@@ -181,10 +181,12 @@ note(400, 1486, "schaltet die Firmware die Last ab.")
 EX, EY, EW = 860, 96, 200
 if S3:
     nets = {4: "ONEWIRE", 5: "LOAD_EN_N", 6: "K1_IN", 7: "K2_IN", 15: "CHG_42", 16: "CHG_STOP", 17: "CHG_CHRG", 18: "CHG_STDBY",
-            8: "SDA", 9: "SCL", 10: "FAN_PWM", 11: "FAN_TACH", 12: "BUZZER", 13: "SCAN_TX", 14: "SCAN_RX"}
+            8: "SDA", 9: "SCL", 10: "FAN_PWM", 11: "FAN_TACH", 12: "BUZZER", 13: "SCAN_TX", 14: "SCAN_RX",
+            1: "BTN_PREV", 2: "BTN_OK", 42: "BTN_NEXT"}
 else:
     nets = {39: "FAN_TACH", 34: "CHG_CHRG", 35: "CHG_STDBY", 32: "CHG_42", 33: "CHG_STOP", 25: "FAN_PWM", 26: "K1_IN", 27: "K2_IN",
-            22: "SCL", 21: "SDA", 19: "SCAN_TX", 18: "SCAN_RX", 17: "BUZZER", 16: "LOAD_EN_N", 4: "ONEWIRE"}
+            22: "SCL", 21: "SDA", 19: "SCAN_TX", 18: "SCAN_RX", 17: "BUZZER", 16: "LOAD_EN_N", 4: "ONEWIRE",
+            13: "BTN_PREV", 14: "BTN_OK", 23: "BTN_NEXT"}
 EH = mcu_block(BOARD, EX, EY, nets, EW)
 note(EX - 110, EY + EH + 30, f"I²C: SDA = {'IO8' if S3 else 'IO21'}, SCL = {'IO9' if S3 else 'IO22'}, je 4,7 kΩ (R31, R32) nach +3V3.")
 note(EX - 110, EY + EH + 46, "BOOT-Taste (IO0) auf dem Board = Not-Aus im Betrieb.")
@@ -215,11 +217,12 @@ rows = [
     ("J1", "USB-C-PD-Decoy auf 12 V (S1 S2 S3 = 1 1 0)", "1"),
     ("J2–J4", "18650-Halter · XT60 · JST-XH", ""),
     ("U15", "QR-Scanner GM861S, 3,3 V (optional)", "(1)"),
+    ("U16, SW1–3", "OLED SH1106 1,3\" + 3 Taster (optional)", "(1)"),
 ]
 y = 762
 for r in rows:
     t(752, y, r[0], 11, PINNUM); t(870, y, r[1], 11, "#222"); t(1168, y, r[2], 11, "#222", "end")
-    line(748, y + 5, 1172, y + 5, COMP, .5, 'opacity=".4"'); y += 23
+    line(748, y + 5, 1172, y + 5, COMP, .5, 'opacity=".4"'); y += 22
 
 # ---------------------------------------------------------------- Hinweise
 section(740, 1306, 1180, 1548, "Hinweise")
@@ -365,6 +368,28 @@ note(1214, 1378, "Je Gate: R23/R24 10 kΩ nach GND und Q4/Q5 (BSS138, Gate an LO
 note(1214, 1394, "So sind die MOSFETs beim Booten, Flashen und bei Absturz sicher aus.")
 
 # ---------------------------------------------------------------- Schriftfeld
+# ---------------------------------------------------------------- Bedienung (optional): OLED + 3 Taster
+section(1214, 1092, 1626, 1330, "Bedienung (optional)")
+box(1240, 1140, 110, 96)
+o.append(f'<rect x="1254" y="1156" width="60" height="36" fill="#e9e6da" stroke="{COMP}" stroke-width="1"/>')
+t(1284, 1178, "128×64", 9, PINNAME, "middle")
+t(1240, 1132, "U16", 12, REF); t(1240, 1254, "OLED SH1106 1,3\" · 0x3C", 10, REF)
+for k, (n_, net) in enumerate([("VCC", "+3V3"), ("GND", "GND"), ("SCL", "SCL"), ("SDA", "SDA")]):
+    y = 1158 + k * 22
+    p = pin(1350, y, "r", n_, k + 1, L=14)
+    if net == "+3V3": wire(p, (1384, y)); pwr(1384, y, "+3V3", "r")
+    elif net == "GND": wire(p, (1384, y)); gnd(1384, y, "r")
+    else: wire(p, (1426, y)); label(1426, y, net, "l")
+for k, net in enumerate(["BTN_PREV", "BTN_OK", "BTN_NEXT"]):
+    y = 1152 + k * 42
+    wire((1452, y), (1532, y)); label(1452, y, net, "r")
+    o.append(f'<circle cx="1536" cy="{y}" r="3.5" fill="none" stroke="{COMP}" stroke-width="1.5"/><circle cx="1570" cy="{y}" r="3.5" fill="none" stroke="{COMP}" stroke-width="1.5"/>')
+    line(1536, y - 10, 1570, y - 10, COMP, 1.6); line(1553, y - 10, 1553, y - 18, COMP, 1.6)
+    t(1553, y + 16, f"SW{k + 1}", 10, REF, "middle")
+    wire((1574, y), (1598, y)); gnd(1598, y, "r")
+note(1230, 1296, "◀ / ▶ Seiten, OK = Test an A / bestätigen, lang = Stopp.")
+note(1230, 1312, "Taster gegen GND, interne Pull-ups. Display wird erkannt.")
+
 X1, Y1, X2, Y2 = 1616, 1430, 2190, 1542
 o.append(f'<rect x="{X1}" y="{Y1}" width="{X2-X1}" height="{Y2-Y1}" fill="none" stroke="{COMP}" stroke-width="1.4"/>')
 line(X1, Y1 + 46, X2, Y1 + 46, COMP, 1); line(X1, Y1 + 80, X2, Y1 + 80, COMP, 1)
