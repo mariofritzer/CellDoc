@@ -91,10 +91,27 @@ void HalMini::readIna(uint32_t now) {
   }
 }
 
+// Robust gegen Aussetzer billiger DS18B20: einzelne Fehllesungen, den Einschaltwert 85 °C
+// und unplausible Sprünge überbrücken, erst nach 3 Fehlern in Folge gilt der Fühler als fehlend
+static float lastT[SENSOR_ROLES];
+static uint8_t badT[SENSOR_ROLES];
+
 static float readRole(int role) {
   if (!settings.sensorSet[role]) return NAN;
   float t = dallas.getTempC(settings.sensorAddr[role]);
-  return (t <= DEVICE_DISCONNECTED_C + 1) ? NAN : t;
+  float last = badT[role] < 3 ? lastT[role] : NAN;
+  bool bad = t <= DEVICE_DISCONNECTED_C + 1;
+  if (!bad && !isnan(last) && last != 0) {
+    if (t == 85.0f && fabsf(last - 85.0f) > 10) bad = true;  // Einschaltwert nach Spannungseinbruch
+    else if (fabsf(t - last) > 15 && badT[role] < 2) bad = true;  // Sprung um mehr als 15 K: erst nach 3 Lesungen glauben
+  }
+  if (bad) {
+    if (badT[role] < 255) badT[role]++;
+    return badT[role] < 3 ? last : NAN;
+  }
+  badT[role] = 0;
+  lastT[role] = t;
+  return t;
 }
 
 void HalMini::readTemps(uint32_t now) {
