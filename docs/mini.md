@@ -2,6 +2,8 @@
 
 Die kleine Schwester von CellDoc: **nur 18650 Li-Ion**, dafür einfach nachzubauen und in drei Größen mit **1, 2 oder 4 Schächten**. Jeder Schacht lädt, entlädt mit Konstantstrom und misst Kapazität, Innenwiderstand und Lebenszahl, alle Schächte laufen unabhängig voneinander. Weboberfläche, Ergebnisse und Handbuch sind dieselben wie beim großen CellDoc.
 
+> Noch weniger Teile: die **[CellDoc Nano](nano.md)** mit ESP32-C3 und festem Lastwiderstand.
+
 > **Ausprobieren ohne Hardware:** [Demo Mini 2](https://mariofritzer.github.io/CellDoc/?mini=2) · [Demo Mini 4](https://mariofritzer.github.io/CellDoc/?mini=4)
 
 <img src="img/mini4-desktop.png" alt="Weboberfläche der CellDoc Mini 4 mit Schachtübersicht, laufendem Test in Schacht 1 und letztem Ergebnis">

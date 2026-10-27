@@ -631,8 +631,15 @@ tr:last-child td{border-bottom:0}
         <li>Mit OLED und Tastern: <b>◀ / ▶</b> wählt den Schacht, <b>OK</b> öffnet die Detailansicht, in der Detailansicht eines freien Schachts startet <b>OK</b> einen Standardtest (unbekannte Zelle, 0,5 A, danach Lagerspannung). <b>OK lang</b> stoppt, <b>OK</b> bestätigt ein Ergebnis oder einen Fehler.</li>
         <li>Ohne Fühler an der Zelle startet ein Schacht nicht.</li>
       </ul>
+      <h4>CellDoc Nano</h4>
+      <ul>
+        <li>Die Nano ist die kleinste Variante: ein Schacht für <b>18650 Li-Ion</b>, ESP32-C3 SuperMini, fester Lastwiderstand (3 Ω). Die Firmware taktet ihn mit 10 kHz und regelt so auf Konstantstrom, bis 1,2 A. Mit 0,8 A bleibt der Strom bis zur Abschaltspannung konstant.</li>
+        <li><b>BOOT-Taste</b> am Board: kurz = Standardtest starten (0,8 A, danach Lagerspannung) oder Ergebnis bestätigen, lang = stoppen.</li>
+        <li><b>Blaue LED</b>: kurzer Blitz alle 3 s = bereit, langsam blinkend = lädt, an = entlädt, Doppelblitz = fertig, schnell blinkend = Fehler, zwei Blitze pro Sekunde = Hotspot.</li>
+        <li>Ein zweiter DS18B20 am Lastwiderstand ist optional. Ist er da, drosselt und stoppt die Nano bei zu viel Wärme.</li>
+      </ul>
       <h4>Firmware aktualisieren</h4>
-      <p>Neue Versionen gibt es auf GitHub unter Releases. Unter Einstellungen → Firmware-Update die passende Datei hochladen: <b>celldoc-firmware.bin</b> für CellDoc, <b>celldoc-mini1/2/4-firmware.bin</b> für die Mini mit 1, 2 oder 4 Schächten. Einstellungen und Ergebnisse bleiben erhalten.</p>
+      <p>Neue Versionen gibt es auf GitHub unter Releases. Unter Einstellungen → Firmware-Update die passende Datei hochladen: <b>celldoc-firmware.bin</b> für CellDoc, <b>celldoc-mini1/2/4-firmware.bin</b> für die Mini mit 1, 2 oder 4 Schächten, <b>celldoc-nano-firmware.bin</b> für die Nano. Einstellungen und Ergebnisse bleiben erhalten.</p>
     </section>
   </main>
 
@@ -779,6 +786,8 @@ const dateStr = t => t ? new Date(t * 1000).toLocaleString("de-AT", {day: "2-dig
 let S = null, RAW = null, INFO = null, SETTINGS = null, curveCache = [], lastCurveAt = 0;
 let SEL = 0;  // gewählter Schacht (Mini)
 const isMini = () => !!(RAW && RAW.slots);
+const isNano = () => !!(RAW && RAW.nano);
+const sinkName = () => isNano() ? "Lastwiderstand" : "Kühlkörper";
 const slotQ = () => isMini() ? "?slot=" + (SEL + 1) : "";
 const slotBody = (b = {}) => isMini() ? {...b, slot: SEL + 1} : b;
 try { SEL = +localStorage.getItem("celldoc-slot") || 0; } catch (e) {}
@@ -915,7 +924,7 @@ function renderLive() {
   const pIdx = (job.port === "B" || (!isAct && s.ports[0].v < .5 && s.ports[1].v > .5)) ? 1 : 0;
   const port = s.ports[pIdx];
   const [label, color] = PHASE[ph] || PHASE.idle;
-  $("live-h").firstChild.textContent = isMini() ? `Schacht ${SEL + 1} ` : "Live ";
+  $("live-h").firstChild.textContent = isMini() && !isNano() ? `Schacht ${SEL + 1} ` : "Live ";
   const pill = $("modePill"); pill.textContent = label + (job.cycles > 1 && isAct ? ` · Zyklus ${s.cycle || 1}/${job.cycles}` : ""); pill.style.background = `var(${color})`;
   cellColor = ph === "error" ? "--danger" : (color === "--muted" || color === "--rest") ? (port.i < -0.01 ? "--discharge" : "--charge") : color;
 
@@ -973,7 +982,7 @@ function renderLive() {
   let th = "";
   if (pIdx === 0 || t.cell != null) th += tempBox(isMini() ? "Zelle" : "Zelle (A)", t.cell, chg ? L.chargeWarn : L.dischargeWarn, chg ? L.chargeStop : L.dischargeStop);
   if (pIdx === 1 || t.pack != null) th += tempBox("Pack (B)", t.pack, L.dischargeWarn, L.dischargeStop);
-  th += tempBox("Kühlkörper", t.sink, L.sinkWarn, L.sinkStop);
+  if (!isNano() || t.sink != null) th += tempBox(sinkName(), t.sink, L.sinkWarn, L.sinkStop);
   $("temps").innerHTML = th;
 
   const thr = $("throttle");
@@ -1003,7 +1012,7 @@ function renderLive() {
 
   // Anschlüsse
   if (isMini()) {
-    $("ports-h").textContent = "Schächte";
+    $("ports-h").textContent = isNano() ? "CellDoc Nano" : "Schächte";
     $("ports").style.gridTemplateColumns = RAW.slots.length > 2 ? "1fr 1fr" : `repeat(${RAW.slots.length}, 1fr)`;
     const pl = sl => sl.charger?.waiting ? "wartet auf Ladeplatz" : (PHASE[sl.phase] || PHASE.idle)[0].replace("Test · ", "");
     const html = RAW.slots.map((sl, k) => {
@@ -1018,7 +1027,7 @@ function renderLive() {
       });
     }
     $("balWrap").hidden = true;
-    $("fanLine").textContent = `Lüfter ${RAW.fan?.duty ?? 0} %${RAW.oled ? " · Display angeschlossen" : ""}`;
+    $("fanLine").textContent = isNano() ? `Last per PWM (3 Ω)${RAW.oled ? " · Display angeschlossen" : ""}` : `Lüfter ${RAW.fan?.duty ?? 0} %${RAW.oled ? " · Display angeschlossen" : ""}`;
   } else {
   $("ports").innerHTML = s.ports.map((p, k) => `<div><span>Anschluss ${k ? "B · Pack" : "A · Zelle"}${s.loadPort === (k ? "B" : "A") && s.loadTarget > 0 ? " · Last" : ""}</span><b>${p.ok ? (p.v > .3 ? nf(p.v, 3) + " V" : "leer") : "Messung fehlt"}</b><span>${p.ok && Math.abs(p.i) > .002 ? nf(p.i, 3) + " A" : "&nbsp;"}</span></div>`).join("");
   const bc = s.bal?.cells || [];
@@ -1033,7 +1042,7 @@ function renderLive() {
 
   // Kopfzeile
   const w = s.wifi || {};
-  $("hdrChips").innerHTML = `<span class="chip"><span class="dot ${w.ap ? "off" : ""}"></span>${w.ap ? "Hotspot " + esc(w.ssid) : "WLAN " + nf(w.rssi) + " dBm"}</span><span class="chip">${esc(w.ip || "")}</span>${isMini() ? `<span class="chip">Mini ${RAW.slots.length}</span>` : ""}<span class="chip">v${esc(s.version)}</span>`;
+  $("hdrChips").innerHTML = `<span class="chip"><span class="dot ${w.ap ? "off" : ""}"></span>${w.ap ? "Hotspot " + esc(w.ssid) : "WLAN " + nf(w.rssi) + " dBm"}</span><span class="chip">${esc(w.ip || "")}</span>${isNano() ? `<span class="chip">Nano</span>` : isMini() ? `<span class="chip">Mini ${RAW.slots.length}</span>` : ""}<span class="chip">v${esc(s.version)}</span>`;
 }
 
 // Entladekurven immer vom Entladeschluss bis zur Ladeschlussspannung zeigen
@@ -1149,7 +1158,7 @@ function openStart(preCell) {
     <div class="seg" role="group" aria-label="Betriebsart" id="stMode">
       <button type="button" data-m="test" aria-pressed="true">Kapazitätstest</button><button type="button" data-m="charge" aria-pressed="false">Laden</button><button type="button" data-m="discharge" aria-pressed="false">Entladen</button>
     </div>
-    ${isMini() ? `<div class="note">Schacht ${SEL + 1} · 18650 Li-Ion · max. ${nf(INFO.limits.maxCurrentA, 1)} A</div>` : ""}
+    ${isNano() ? `<div class="note">CellDoc Nano · 18650 Li-Ion · bis ${nf(INFO.limits.maxCurrentA, 1)} A, empfohlen ${nf(INFO.limits.defaultCurrentA || .8, 1)} A (bleibt bis zur Abschaltung konstant)</div>` : isMini() ? `<div class="note">Schacht ${SEL + 1} · 18650 Li-Ion · max. ${nf(INFO.limits.maxCurrentA, 1)} A</div>` : ""}
     <div class="seg" role="group" aria-label="Anschluss" id="stPort"${isMini() ? " hidden" : ""}>
       <button type="button" data-p="A" aria-pressed="${!pB}">A · Einzelzelle</button><button type="button" data-p="B" aria-pressed="${pB}">B · Pack</button>
     </div>
@@ -1274,6 +1283,7 @@ function openStart(preCell) {
   }
   ["#stType", "#stChem", "#stCells", "#stCap", "#stCur", "#stPre", "#stRest", "#stAfter", "#stCyc"].forEach(s => q(s).addEventListener("input", () => upd(s === "#stChem")));
   q("#stType").value = INFO.presets[0]?.id || "unknown"; if (isMini()) { q("#stAfter").value = "storage"; q("#stCur").max = INFO.limits.maxCurrentA; }
+  if (INFO.limits.defaultCurrentA) q("#stCur").value = INFO.limits.defaultCurrentA;
   if (cellSel) pickCell(cellSel); else upd(true);
   q("#stGo").addEventListener("click", async () => {
     const type = q("#stType").value;
@@ -1445,7 +1455,8 @@ async function loadSettings() {
     const st = SETTINGS;
     $("sCw").value = st.chargeWarnC; $("sCs").value = st.chargeStopC; $("sDw").value = st.dischargeWarnC; $("sDs").value = st.dischargeStopC;
     $("sKw").value = st.sinkWarnC; $("sKs").value = st.sinkStopC; $("sRest").value = st.restMin; $("sOhm").checked = st.riInOhm; $("sBuzz").checked = st.buzzer;
-    $("sChgF").hidden = !isMini(); $("sChg").value = String(st.chargeSlots ?? 0);
+    $("sChgF").hidden = !isMini() || isNano();
+    $("sKw").previousElementSibling.textContent = sinkName() + ": drosseln ab °C"; $("sKs").previousElementSibling.textContent = sinkName() + ": Stopp ab °C (max. 90)"; $("sChg").value = String(st.chargeSlots ?? 0);
     $("sPrefix").value = st.cellPrefix || "CD"; $("sPrefixEx").textContent = `${st.cellPrefix || "CD"}-${String(st.nextCellNo || 1).padStart(4, "0")}`;
     $("mqOn").checked = !!st.mqttOn; $("mqHost").value = st.mqttHost || ""; $("mqPort").value = st.mqttPort || 1883; $("mqUser").value = st.mqttUser || ""; $("mqBase").value = st.mqttBase || "celldoc";
     $("mqPass").placeholder = st.mqttPassSet ? "gespeichert, leer lassen = unverändert" : "";
@@ -1464,14 +1475,14 @@ async function loadSettings() {
 async function loadDiag() {
   const d = await api("/api/diag");
   const role = isMini()
-    ? Object.fromEntries([...RAW.slots.map((_, k) => ["cell" + (k + 1), "Zelle Schacht " + (k + 1)]), ["sink", "Kühlkörper"], ["", "nicht verwendet"]])
+    ? Object.fromEntries([...RAW.slots.map((_, k) => ["cell" + (k + 1), isNano() ? "Zelle" : "Zelle Schacht " + (k + 1)]), ["sink", sinkName()], ["", "nicht verwendet"]])
     : {cell: "Zelle (A)", pack: "Pack (B)", sink: "Kühlkörper", "": "nicht verwendet"};
   $("sensorList").innerHTML = d.sensors.length ? d.sensors.map(s => `<div class="row"><div class="l"><b>${s.t > -100 ? nf(s.t, 1) + " °C" : "Fehler"}</b><small style="font-family:var(--mono)">${esc(s.addr)}</small></div>
     <select data-addr="${esc(s.addr)}" style="width:auto" aria-label="Rolle">${Object.entries(role).map(([k, v]) => `<option value="${k}" ${s.role === k ? "selected" : ""}>${v}</option>`).join("")}</select></div>`).join("") : `<div class="empty">Keine DS18B20 gefunden</div>`;
   const okc = b => b ? `<b style="color:var(--charge)">ok</b>` : `<b style="color:var(--danger)">fehlt</b>`;
   const st = SETTINGS || {};
   const rows = isMini()
-    ? [...(d.ina || []).map((ok, k) => [`Strommesser Schacht ${k + 1} (INA226 0x${[0x40, 0x41, 0x44, 0x45][k].toString(16)})`, okc(ok)]), ["Last-Sollwerte (MCP4728)", okc(d.dac)], ["Display (SH1106)", d.oled ? okc(true) : `<span class="note">nicht angeschlossen</span>`]]
+    ? [...(d.ina || []).map((ok, k) => [`Strommesser ${isNano() ? "" : "Schacht " + (k + 1) + " "}(INA226 0x${[0x40, 0x41, 0x44, 0x45][k].toString(16)})`, okc(ok)]), ...(isNano() ? [] : [["Last-Sollwerte (MCP4728)", okc(d.dac)]]), ["Display (SH1106)", d.oled ? okc(true) : `<span class="note">nicht angeschlossen</span>`]]
     : [["Strommesser A (INA226 0x40)", okc(d.inaA)], ["Strommesser B (INA226 0x41)", okc(d.inaB)], ["Last-Sollwert (MCP4725)", okc(d.dac)], ["Balancer (2× ADS1115)", okc(d.balancer)],
        ["Balancer-Abgriffe", d.taps.map(v => nf(v, 2)).join(" · ") + " V"], ["Display (SH1106)", S?.oled ? okc(true) : `<span class="note">nicht angeschlossen</span>`]];
   rows.push(["QR-Scanner (IO19/IO18)", S?.scanner ? okc(true) : `<span class="note">nicht angeschlossen</span>`]);
@@ -2430,7 +2441,9 @@ function demoState() {
   };
 }
 // Mini-Demo: ?mini=1, ?mini=2 oder ?mini=4
-const MINI_N = [1, 2, 4].includes(+params.get("mini")) ? +params.get("mini") : 0;
+// Nano-Demo: ?nano=1 (wie Mini 1, aber ohne Kühlkörper)
+const NANO_DEMO = params.has("nano");
+const MINI_N = NANO_DEMO ? 1 : [1, 2, 4].includes(+params.get("mini")) ? +params.get("mini") : 0;
 const demoSlots = {2: {phase: "precharge"}, 3: {phase: "done"}, 4: {phase: "idle"}};
 function demoSlot(k, base) {
   const pick = ({phase, error, lastResult, job, elapsed, phaseElapsed, mah, wh, capMah, riLast, riPulse, throttle, throttled, saturated, eta, soc, ports, loadPort, loadTarget, temps, charger}) =>
@@ -2452,9 +2465,10 @@ function demoSlot(k, base) {
 }
 function demoMiniState() {
   const b = demoState();
-  return {version: b.version, uptime: b.uptime, wifi: b.wifi, time: b.time, riInOhm: false, prefix: "CD", mqtt: b.mqtt, host: "celldoc-mini", mini: true, slotCount: MINI_N, oled: true,
-    limits: {...b.limits, sinkStop: 85}, fan: {duty: 45, rpm: 0}, bal: {ok: false, cells: []},
-    slots: [1, 2, 3, 4].slice(0, MINI_N).map(k => demoSlot(k, b))};
+  const slots = [1, 2, 3, 4].slice(0, MINI_N).map(k => demoSlot(k, b));
+  if (NANO_DEMO) slots.forEach(x => { if (x.temps) delete x.temps.sink; if (x.job) x.job.currentA = .8; if (x.loadTarget) x.loadTarget = .8; if (x.ports?.[0]?.i < 0) { x.ports[0].i = -.8; x.ports[0].p = -.8 * x.ports[0].v; } });
+  return {version: b.version, uptime: b.uptime, wifi: b.wifi, time: b.time, riInOhm: false, prefix: "CD", mqtt: b.mqtt, host: NANO_DEMO ? "celldoc-nano" : "celldoc-mini", mini: true, nano: NANO_DEMO || undefined, slotCount: MINI_N, oled: !NANO_DEMO,
+    limits: {...b.limits, sinkStop: 85}, fan: {duty: NANO_DEMO ? 0 : 45, rpm: 0}, bal: {ok: false, cells: []}, slots};
 }
 
 async function demoApi(path, body) {
@@ -2463,7 +2477,7 @@ async function demoApi(path, body) {
   const slot = body?.slot || +(path.match(/slot=(\d+)/) || [])[1] || 1;
   if (path === "/api/state") return MINI_N ? demoMiniState() : demoState();
   if (path === "/api/info") return MINI_N ? {...DEMO_INFO, chemistries: DEMO_INFO.chemistries.filter(c => c.id === "liion"), presets: DEMO_INFO.presets.filter(p => p.chem === "liion" && p.name.includes("18650")),
-    limits: {maxCurrentA: MINI_N > 2 ? 1 : 2, maxCurrentB: 0, maxPowerW: 16}, slots: MINI_N, mini: true} : DEMO_INFO;
+    limits: NANO_DEMO ? {maxCurrentA: 1.2, defaultCurrentA: .8, maxCurrentB: 0, maxPowerW: 6} : {maxCurrentA: MINI_N > 2 ? 1 : 2, maxCurrentB: 0, maxPowerW: 16}, slots: MINI_N, mini: true, nano: NANO_DEMO || undefined} : DEMO_INFO;
   if (MINI_N && slot > 1) {
     if (path.startsWith("/api/curve")) {
       const ph = (demoSlots[slot] || {}).phase;
@@ -2513,7 +2527,7 @@ async function demoApi(path, body) {
   }
   if (path === "/api/settings" && body === undefined) return {chargeSlots: MINI_N > 2 ? 3 : 0, hostname: MINI_N ? "celldoc-mini" : "celldoc", peers: MINI_N ? "celldoc" : "celldoc-mini", cellPrefix: "CD", nextCellNo: Math.max(...demo.cells.map(x => x.no)) + 1, mqttOn: true, mqttHost: "homeassistant.local", mqttPort: 1883, mqttUser: "celldoc", mqttPassSet: true, mqttBase: "celldoc", wifiSsid: "Heimnetz", chargeWarnC: 40, chargeStopC: 45, dischargeWarnC: 45, dischargeStopC: 55, sinkWarnC: 75, sinkStopC: 90, restMin: 30, riInOhm: false, buzzer: true, storageUsed: 81920, storageTotal: 1441792};
   if (path === "/api/diag" && MINI_N) return {ina: Array(MINI_N).fill(true), dac: true, oled: true, balancer: false, taps: [], heap: 172000, chip: "ESP32-D0WD-V3",
-    sensors: [...Array(MINI_N)].map((_, k) => ({addr: "28FF4A1B6216031" + k, t: 24 + k * 2.3, role: "cell" + (k + 1)})).concat([{addr: "28FF91C3611604E2", t: 41.7, role: "sink"}])};
+    sensors: [...Array(MINI_N)].map((_, k) => ({addr: "28FF4A1B6216031" + k, t: 24 + k * 2.3, role: "cell" + (k + 1)})).concat(NANO_DEMO ? [] : [{addr: "28FF91C3611604E2", t: 41.7, role: "sink"}])};
   if (path === "/api/diag") return {inaA: true, inaB: true, dac: true, balancer: true, taps: [0, 0, 0, 0, 0, 0], heap: 187000, chip: "ESP32-D0WD-V3",
     sensors: [{addr: "28FF4A1B62160318", t: 30.1, role: "cell"}, {addr: "28FF91C3611604E2", t: 41.7, role: "sink"}, {addr: "28FF07D2701603A9", t: 22.4, role: "pack"}]};
   if (path === "/api/wifi/scan") return [{ssid: "Heimnetz", rssi: -52, open: false}, {ssid: "Werkstatt", rssi: -71, open: false}];

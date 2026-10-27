@@ -104,19 +104,25 @@ Die kleine Version nur für **18650 Li-Ion**: laden, entladen, Kapazität, Innen
 
 Schaltpläne für alle drei Varianten, Stücklisten und Bedienung: **[docs/mini.md](docs/mini.md)** · [Demo Mini 4](https://mariofritzer.github.io/CellDoc/?mini=4)
 
+## CellDoc Nano
+
+Die kleinste Variante mit rund zwölf Teilen: **ein Schacht für 18650**, ein **ESP32-C3 SuperMini**, ein INA226, ein TP4056 und ein fester **Lastwiderstand (3 Ω)**, den die Firmware per PWM auf Konstantstrom regelt (bis 1,2 A, empfohlen 0,8 A). Strom kommt über die USB-C-Buchse des C3, bedient wird sie über die BOOT-Taste und die LED auf dem Board oder ganz normal über die Weboberfläche. Kapazität, Innenwiderstand, Lebenszahl, Bestand, Etiketten, MQTT und Sync wie bei den großen Geschwistern.
+
+Schaltplan, Stückliste und Bedienung: **[docs/nano.md](docs/nano.md)** · [Demo Nano](https://mariofritzer.github.io/CellDoc/?nano=1)
+
 ## Firmware installieren
 
 ### Erstinstallation per USB
 
-Am einfachsten mit dem **[CellDoc Webflasher](https://mariofritzer.github.io/CellDoc/flash/)**: ESP32 per USB anschließen, im Chrome oder Edge Gerät wählen (CellDoc, Mini 1, 2 oder 4), *Verbinden und installieren*. Er spielt immer den neuesten Stand von `main` auf.
+Am einfachsten mit dem **[CellDoc Webflasher](https://mariofritzer.github.io/CellDoc/flash/)**: ESP32 per USB anschließen, im Chrome oder Edge Gerät wählen (CellDoc, Mini 1, 2, 4 oder Nano), *Verbinden und installieren*. Er spielt immer den neuesten Stand von `main` auf.
 
-Von Hand: unter [Releases](../../releases) die Datei **`celldoc-factory.bin`** laden (Mini: `celldoc-mini1-factory.bin`, `-mini2-` oder `-mini4-`) und mit dem [ESP Web Flasher von Espressif](https://espressif.github.io/esptool-js/) an Adresse **0x0** schreiben.
+Von Hand: unter [Releases](../../releases) die Datei **`celldoc-factory.bin`** laden (Mini: `celldoc-mini1-factory.bin`, `-mini2-` oder `-mini4-`, Nano: `celldoc-nano-factory.bin`) und mit dem [ESP Web Flasher von Espressif](https://espressif.github.io/esptool-js/) an Adresse **0x0** schreiben.
 
 Alternativ mit PlatformIO: `pio run -t upload`
 
 ### Updates
 
-Unter **Einstellungen → Firmware-Update** die Datei **`celldoc-firmware.bin`** hochladen (Mini: `celldoc-mini<n>-firmware.bin`). Einstellungen und Ergebnisse bleiben erhalten.
+Unter **Einstellungen → Firmware-Update** die Datei **`celldoc-firmware.bin`** hochladen (Mini: `celldoc-mini<n>-firmware.bin`, Nano: `celldoc-nano-firmware.bin`). Einstellungen und Ergebnisse bleiben erhalten.
 
 ## Erste Schritte
 
@@ -142,6 +148,7 @@ pip install platformio
 pio run -e esp32dev            # baut Firmware und bettet web/index.html ein
 pio run -e esp32dev -t upload  # flasht per USB
 pio run -e mini2 -t upload     # CellDoc Mini mit 2 Schächten (mini1, mini2, mini4)
+pio run -e nano -t upload      # CellDoc Nano (ESP32-C3 SuperMini)
 pio device monitor             # serielle Ausgabe, 115200 Baud
 ```
 
@@ -160,7 +167,7 @@ Die Weboberfläche ist eine einzelne Datei: [`web/index.html`](web/index.html). 
 | `src/scanner.*` | QR-Scanner-Modul |
 | `src/web_data.cpp` | Bestand, Datensicherung und Uhrzeit über die REST-API |
 | `src/web.*` | WLAN, REST-API, Firmware-Update |
-| `src/mini/` | CellDoc Mini: Schächte, OLED, eigene Web-API |
+| `src/mini/` | CellDoc Mini und Nano: Schächte, OLED, eigene Web-API (`hal_nano.cpp` = Nano-Hardware) |
 | `web/index.html` | Weboberfläche inkl. Handbuch |
 
 Jeder Push auf `main` baut die Firmware über GitHub Actions und aktualisiert die Vorabversion `latest`. Ein Tag `v1.2.3` erzeugt ein normales Release.

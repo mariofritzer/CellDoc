@@ -80,11 +80,7 @@ constexpr float CHG_MAX_A = 1.2f;  // TP4056 mit 1,2 kΩ
 constexpr float MAX_CELL_V = 4.30f;
 constexpr float OVERCURRENT_FACTOR = 1.25f;
 constexpr uint32_t OVERCURRENT_MS = 300;
-#ifdef CELLDOC_NANO
-constexpr float SINK_STOP_C = 120.0f;  // optionaler Fühler am Lastwiderstand (Alugehäuse verträgt mehr)
-#else
-constexpr float SINK_STOP_C = 85.0f;
-#endif
+constexpr float SINK_STOP_C = 85.0f;  // Nano: optionaler Fühler am Lastwiderstand
 
 constexpr uint32_t INA_PERIOD_MS = 40;
 constexpr uint32_t TEMP_PERIOD_MS = 1000;

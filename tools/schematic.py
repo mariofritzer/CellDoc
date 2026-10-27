@@ -188,6 +188,11 @@ BOARDS = {
         right=[("GND", "GND"), ("TX/IO43", None), ("RX/IO44", None), ("IO1", 1), ("IO2", 2), ("IO42", 42), ("IO41", 41), ("IO40", 40),
                ("IO39", 39), ("IO38", 38), ("IO37", 37), ("IO36", 36), ("IO35", 35), ("IO0", 0), ("IO45", 45), ("IO48", 48), ("IO47", 47),
                ("IO21", 21), ("IO20", 20), ("IO19", 19), ("GND", None), ("GND", None)]),
+    # ESP32-C3 SuperMini von oben, Antenne oben, USB-C unten (Beschriftung auf der Platine gilt)
+    "c3": dict(
+        title="ESP32-C3 SuperMini", chip="ESP32-C3", sp=36, rnum=lambda i: 16 - i,
+        left=[("IO21/TX", 21), ("IO20/RX", 20), ("IO10", 10), ("IO9", 9), ("IO8", 8), ("IO7", 7), ("IO6", 6), ("IO5", 5)],
+        right=[("IO0", 0), ("IO1", 1), ("IO2", 2), ("IO3", 3), ("IO4", 4), ("3V3", "+3V3"), ("GND", "GND"), ("5V", "+5V")]),
 }
 
 

@@ -35,7 +35,7 @@ h1{font-size:34px;line-height:1.1;letter-spacing:-.02em;margin:0;font-weight:800
 .chip:hover{border-color:var(--accent)}
 .card{background:var(--card);border-radius:22px;padding:22px;margin-bottom:16px}
 h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 14px;font-weight:700}
-.devices{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.devices{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
 @media (max-width:720px){.devices{grid-template-columns:repeat(2,1fr)}}
 .dev{position:relative;display:block;cursor:pointer}
 .dev input{position:absolute;opacity:0;pointer-events:none}
@@ -101,13 +101,16 @@ esp-web-install-button{--esp-tools-button-color:var(--accent);--esp-tools-button
       <label class="dev"><input type="radio" name="dev" value="celldoc-mini4"><div class="box">
         <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="6.5" height="25" rx="2.5"/><rect x="10" y="5" width="6.5" height="25" rx="2.5"/><rect x="18" y="5" width="6.5" height="25" rx="2.5"/><rect x="26" y="5" width="6.5" height="25" rx="2.5"/></svg>
         <b>Mini 4</b><span>4 Schächte 18650 · 1 A</span></div></label>
+      <label class="dev"><input type="radio" name="dev" value="celldoc-nano"><div class="box">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2"><rect x="13" y="9" width="8" height="20" rx="2.5"/><rect x="15" y="7" width="4" height="2" fill="currentColor"/><path d="M6 13v8M28 13v8" stroke-linecap="round"/></svg>
+        <b>Nano</b><span>1 Schacht 18650 · ESP32-C3</span></div></label>
     </div>
 
     <div class="detail">
       <dl>
         <dt>Firmware</dt><dd id="fwName">–</dd>
         <dt>Version</dt><dd id="fwVer">wird geladen …</dd>
-        <dt>Chip</dt><dd>ESP32 oder ESP32-S3 (wird erkannt)</dd>
+        <dt>Chip</dt><dd id="fwChip">ESP32 oder ESP32-S3 (wird erkannt)</dd>
       </dl>
       <esp-web-install-button id="installer" manifest="manifest-celldoc.json">
         <button slot="activate" class="btn" type="button">
@@ -125,7 +128,7 @@ esp-web-install-button{--esp-tools-button-color:var(--accent);--esp-tools-button
       <h2>2 · So geht's</h2>
       <ol class="steps">
         <li><div><b>ESP32 per USB anschließen</b><p>Ein Datenkabel verwenden, reine Ladekabel funktionieren nicht.</p></div></li>
-        <li><div><b>„Verbinden und installieren“ klicken</b><p>Im Fenster den Port wählen, meist „CP2102“, „CH340“, „CH343“ oder „USB Serial“. Beim ESP32-S3 die Buchse „COM“ benutzen.</p></div></li>
+        <li><div><b>„Verbinden und installieren“ klicken</b><p>Im Fenster den Port wählen, meist „CP2102“, „CH340“, „CH343“ oder „USB Serial“. Beim ESP32-S3 die Buchse „COM“ benutzen, beim ESP32-C3 SuperMini heißt der Port „USB JTAG/serial debug unit“.</p></div></li>
         <li><div><b>Installieren</b><p>Beim ersten Mal „Gerät löschen“ anhaken. Bei einem Update nicht löschen, dann bleiben Einstellungen und Ergebnisse erhalten.</p></div></li>
         <li><div><b>WLAN einrichten</b><p>Nach dem Neustart öffnet CellDoc den Hotspot <b>CellDoc-XXXX</b>, Passwort <code>celldoc1</code>. Die Seite öffnet sich von selbst, sonst <code>192.168.4.1</code> aufrufen.</p></div></li>
       </ol>
@@ -151,7 +154,8 @@ const NAMES = {
   "celldoc": "CellDoc",
   "celldoc-mini1": "CellDoc Mini 1",
   "celldoc-mini2": "CellDoc Mini 2",
-  "celldoc-mini4": "CellDoc Mini 4"
+  "celldoc-mini4": "CellDoc Mini 4",
+  "celldoc-nano": "CellDoc Nano"
 };
 const inst = document.getElementById("installer");
 const fwName = document.getElementById("fwName");
@@ -160,6 +164,7 @@ const fwVer = document.getElementById("fwVer");
 async function choose(id) {
   inst.setAttribute("manifest", "manifest-" + id + ".json");
   fwName.textContent = NAMES[id];
+  document.getElementById("fwChip").textContent = id === "celldoc-nano" ? "ESP32-C3 SuperMini" : "ESP32 oder ESP32-S3 (wird erkannt)";
   fwVer.textContent = "wird geladen …";
   try { localStorage.setItem("celldoc-flash", id); } catch (e) {}
   try {
