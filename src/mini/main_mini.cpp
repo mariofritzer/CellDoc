@@ -1,4 +1,4 @@
-// CellDoc Mini – 18650-Prüfstand mit 1, 2 oder 4 Schächten
+// CellDoc Mini – 18650-Prüfstand mit 1, 2 oder 4 Schächten, CellDoc Nano mit einem Schacht
 // https://github.com/mariofritzer/CellDoc
 #include <Arduino.h>
 #include "config.h"
@@ -8,11 +8,12 @@
 #include "slot.h"
 #include "storage.h"
 #include "web.h"
+#include "web_device.h"
 
 void setup() {
   Serial.begin(115200);
   hal.begin();  // Last und Lader zuerst sicher aus
-  Serial.printf("\nCellDoc Mini %d · %s\n", mcfg::NSLOTS, CELLDOC_VERSION);
+  Serial.printf("\n%s · %s\n", device::model(), CELLDOC_VERSION);
   if (!storage::begin()) Serial.println("LittleFS konnte nicht eingebunden werden");
   settings.load();
   hal.rescanTempSensors();

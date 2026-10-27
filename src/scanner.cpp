@@ -4,6 +4,13 @@
 #include "config.h"
 #include "web_device.h"
 
+// ESP32-C3 hat nur zwei UARTs
+#if CONFIG_IDF_TARGET_ESP32C3
+#define SCAN_UART Serial1
+#else
+#define SCAN_UART Serial2
+#endif
+
 namespace scanner {
 
 static String buf;
@@ -13,7 +20,7 @@ static String lastId;
 static bool lastOk = false, present = false;
 
 void begin() {
-  Serial2.begin(9600, SERIAL_8N1, cfg::PIN_SCAN_RX, cfg::PIN_SCAN_TX);
+  SCAN_UART.begin(9600, SERIAL_8N1, cfg::PIN_SCAN_RX, cfg::PIN_SCAN_TX);
   gpio_pullup_en((gpio_num_t)cfg::PIN_SCAN_RX);  // ohne Scanner kein Rauschen
 }
 
@@ -46,8 +53,8 @@ static void handle(const String& code) {
 }
 
 void update() {
-  while (Serial2.available()) {
-    char c = Serial2.read();
+  while (SCAN_UART.available()) {
+    char c = SCAN_UART.read();
     present = true;
     if (c == '\r' || c == '\n') {
       buf.trim();

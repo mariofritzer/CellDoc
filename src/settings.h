@@ -45,7 +45,9 @@ struct Settings {
   String mqttBase = "celldoc";
 
   // Mehrere Geräte: eigener Name im Netz und Partnergeräte (Namen oder IPs, mit Komma getrennt)
-#ifdef CELLDOC_MINI
+#if defined(CELLDOC_NANO)
+  String hostname = "celldoc-nano";
+#elif defined(CELLDOC_MINI)
   String hostname = "celldoc-mini";
 #else
   String hostname = "celldoc";

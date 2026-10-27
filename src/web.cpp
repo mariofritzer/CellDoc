@@ -210,6 +210,9 @@ static void startAp() {
   snprintf(name, sizeof(name), "CellDoc-%02X%02X", mac[4], mac[5]);
   WiFi.mode(WIFI_AP);
   WiFi.softAP(name, cfg::AP_PASSWORD);
+#if CONFIG_IDF_TARGET_ESP32C3
+  WiFi.setTxPower(WIFI_POWER_8_5dBm);
+#endif
   dns.start(53, "*", WiFi.softAPIP());
   Serial.printf("Hotspot %s, Passwort %s, http://%s\n", name, cfg::AP_PASSWORD,
                 WiFi.softAPIP().toString().c_str());
@@ -222,6 +225,9 @@ void begin() {
     WiFi.mode(WIFI_STA);
     WiFi.setAutoReconnect(true);
     WiFi.begin(settings.wifiSsid.c_str(), settings.wifiPass.c_str());
+#if CONFIG_IDF_TARGET_ESP32C3
+    WiFi.setTxPower(WIFI_POWER_8_5dBm);  // C3 SuperMini: Antenne verträgt volle Sendeleistung schlecht
+#endif
     uint32_t t0 = millis();
     while (WiFi.status() != WL_CONNECTED && millis() - t0 < 15000) {
       device::idle();  // Messungen laufen weiter, Last ist ohnehin aus

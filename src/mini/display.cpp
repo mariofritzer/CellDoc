@@ -49,7 +49,7 @@ static const char* shortPhase(Phase p) {
 static void quickStart(uint8_t s) {
   SlotJob j;
   j.cellNo = assign::no(s);  // gescannte Zelle, sonst neue
-  j.currentA = 0.5f;
+  j.currentA = DEFAULT_CURRENT_A;
   j.preCharge = true;
   j.restMin = settings.restMin;
   j.after = After::Storage;

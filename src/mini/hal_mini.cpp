@@ -1,3 +1,4 @@
+#ifndef CELLDOC_NANO  // Nano: siehe hal_nano.cpp
 #include "hal_mini.h"
 #include <DallasTemperature.h>
 #include <OneWire.h>
@@ -321,3 +322,5 @@ BtnEvent HalMini::button() {
   pending_ = BtnEvent::None;
   return e;
 }
+
+#endif  // !CELLDOC_NANO

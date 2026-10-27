@@ -33,6 +33,7 @@ jobs:
           - {env: mini1-s3, name: celldoc-mini1-s3, chip: esp32s3, boot: "0x0", max: 3145728}
           - {env: mini2-s3, name: celldoc-mini2-s3, chip: esp32s3, boot: "0x0", max: 3145728}
           - {env: mini4-s3, name: celldoc-mini4-s3, chip: esp32s3, boot: "0x0", max: 3145728}
+          - {env: nano, name: celldoc-nano, chip: esp32c3, boot: "0x0", max: 1572864}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -120,6 +121,7 @@ jobs:
             | CellDoc Mini 1 · ESP32-S3 | celldoc-mini1-s3-firmware.bin | celldoc-mini1-s3-factory.bin |
             | CellDoc Mini 2 · ESP32-S3 | celldoc-mini2-s3-firmware.bin | celldoc-mini2-s3-factory.bin |
             | CellDoc Mini 4 · ESP32-S3 | celldoc-mini4-s3-firmware.bin | celldoc-mini4-s3-factory.bin |
+            | CellDoc Nano (ESP32-C3) | celldoc-nano-firmware.bin | celldoc-nano-factory.bin |
 
             Der Webflasher erkennt ESP32 und ESP32-S3 selbst und spielt die passende Datei auf.
           files: out/*.bin
@@ -179,6 +181,17 @@ jobs:
           }
           EOF
           done
+          cp fw/celldoc-nano-factory.bin site/flash/
+          cat > site/flash/manifest-celldoc-nano.json <<EOF
+          {
+            "name": "CellDoc Nano",
+            "version": "$VER",
+            "new_install_prompt_erase": true,
+            "builds": [
+              { "chipFamily": "ESP32-C3", "parts": [ { "path": "celldoc-nano-factory.bin", "offset": 0 } ] }
+            ]
+          }
+          EOF
           ls -la site/flash
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

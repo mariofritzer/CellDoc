@@ -72,7 +72,11 @@ String Slot::precheck(const SlotJob& j, bool charge, bool discharge) const {
   if (isnan(m.tCell)) return "Temperaturfühler an Schacht " + String(s_ + 1) + " fehlt";
   if (discharge) {
     if (!hal.dacOk()) return "Last-Sollwertgeber (MCP4728) antwortet nicht";
+#ifdef CELLDOC_NANO
+    if (settings.sensorSet[SENSOR_SINK] && isnan(hal.tSink())) return "Temperaturfühler am Lastwiderstand fehlt";
+#else
     if (isnan(hal.tSink())) return "Temperaturfühler am Kühlkörper fehlt";
+#endif
     if (j.currentA < 0.05f || j.currentA > MAX_CURRENT_A)
       return "Entladestrom muss zwischen 0,05 und " + String(MAX_CURRENT_A, 1) + " A liegen";
   }
@@ -274,7 +278,9 @@ void Slot::update(uint32_t now) {
 
 void Slot::safety(uint32_t now) {
   const SlotMeas& m = hal.m(s_);
+#ifndef CELLDOC_NANO  // Nano: BOOT-Taste ist die Bedientaste (lang = stoppen)
   if (digitalRead(PIN_BOOT) == LOW) { fail("Not-Aus-Taste gedrückt"); return; }
+#endif
   if (!m.ok) { fail("Strommesser antwortet nicht mehr"); return; }
   float t = m.tCell;
   if (isnan(t)) { fail("Temperaturfühler an der Zelle ausgefallen"); return; }
@@ -305,9 +311,15 @@ void Slot::safety(uint32_t now) {
   } else if (isDischarge(phase_)) {
     if (t >= settings.dischargeStopC) { fail("Zelle zu heiß beim Entladen (" + String(t, 1) + " °C)"); return; }
     float ts = hal.tSink();
-    if (isnan(ts)) { fail("Temperaturfühler am Kühlkörper ausgefallen"); return; }
     float sinkStop = min(settings.sinkStopC, SINK_STOP_C);
+#ifdef CELLDOC_NANO
+    // Fühler am Lastwiderstand ist optional
+    if (isnan(ts) && settings.sensorSet[SENSOR_SINK]) { fail("Temperaturfühler am Lastwiderstand ausgefallen"); return; }
+    if (!isnan(ts) && ts >= sinkStop) { fail("Lastwiderstand zu heiß (" + String(ts, 1) + " °C)"); return; }
+#else
+    if (isnan(ts)) { fail("Temperaturfühler am Kühlkörper ausgefallen"); return; }
     if (ts >= sinkStop) { fail("Kühlkörper zu heiß (" + String(ts, 1) + " °C)"); return; }
+#endif
     loadF_ = min(thermal(t, settings.dischargeWarnC, settings.dischargeStopC), thermal(ts, settings.sinkWarnC, sinkStop));
     if (loadF_ < 0.99f) throttled_ = true;
   }
@@ -390,8 +402,14 @@ void Slot::handleDischarge(uint32_t now) {
 void Slot::startRi(uint32_t now) {
   if (riCount_ >= MAX_RI) return;
   riBase_ = hal.loadTarget(s_);
+#ifdef CELLDOC_NANO
+  // Nano: Last kurz ganz abschalten (Sprung nach unten)
+  riDelta_ = -riBase_;
+  if (riBase_ < 0.2f) return;
+#else
   riDelta_ = min(1.0f, MAX_CURRENT_A - riBase_);
   if (riDelta_ < 0.2f) return;
+#endif
   riStage_ = 1;
   riT0_ = now;
   riV1_ = riI1_ = 0;
@@ -424,7 +442,7 @@ void Slot::handleRi(uint32_t now) {
   float v1 = riV1_ / riN1_, i1 = riI1_ / riN1_, v2 = m.v, i2 = -m.i;
   hal.setLoad(s_, riBase_);
   riStage_ = 0;
-  if (i2 - i1 < 0.15f) return;
+  if (fabsf(i2 - i1) < 0.15f) return;
   riQ_[riCount_] = capMah_;
   riR_[riCount_] = (v1 - v2) / (i2 - i1) * 1000;
   lastRi_ = riR_[riCount_];

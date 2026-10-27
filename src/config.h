@@ -10,7 +10,12 @@
 namespace cfg {
 
 // ---------- Pins ----------
-#if CONFIG_IDF_TARGET_ESP32S3
+#if CONFIG_IDF_TARGET_ESP32C3
+// ESP32-C3 SuperMini (nur CellDoc Nano, übrige Pins in src/mini/config_mini.h)
+constexpr uint8_t PIN_SCAN_RX    = 20;  // vom TX des Scanners
+constexpr uint8_t PIN_SCAN_TX    = 21;  // zum RX des Scanners
+constexpr int8_t  PIN_RGB        = -1;
+#elif CONFIG_IDF_TARGET_ESP32S3
 // ESP32-S3-DevKitC-1 (N16R8): IO35–37 gehören zum PSRAM, IO19/20 zu USB, IO0/3/45/46 sind Boot-Pins
 constexpr uint8_t PIN_SDA        = 8;
 constexpr uint8_t PIN_SCL        = 9;

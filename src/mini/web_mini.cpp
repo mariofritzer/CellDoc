@@ -12,6 +12,11 @@
 #include "web_device.h"
 
 using namespace mcfg;
+#ifdef CELLDOC_NANO
+static constexpr bool NANO_MODE = true;
+#else
+static constexpr bool NANO_MODE = false;
+#endif
 using web::readBody;
 using web::sendError;
 using web::sendJson;
@@ -38,6 +43,9 @@ void handleState() {
 
 void fillStateImpl(JsonObject o) {
   o["mini"] = true;
+#ifdef CELLDOC_NANO
+  o["nano"] = true;
+#endif
   o["slotCount"] = NSLOTS;
   o["oled"] = display::available();
   JsonObject lim = o["limits"].to<JsonObject>();
@@ -94,6 +102,10 @@ void handleInfo() {
   lim["maxPowerW"] = MAX_TOTAL_W;
   d["slots"] = NSLOTS;
   d["mini"] = true;
+#ifdef CELLDOC_NANO
+  d["nano"] = true;
+#endif
+  lim["defaultCurrentA"] = DEFAULT_CURRENT_A;
   d["nextCellNo"] = settings.nextCellNo;
   sendJson(d);
 }
@@ -110,7 +122,7 @@ void handleStart() {
   j.cellNo = b["cell"].is<const char*>() ? cells::parseRef(b["cell"].as<const char*>()) : (b["cell"] | 0u);
   j.nomCapMah = b["nomCapMah"] | 0.0f;
   j.riNewMilli = b["riNew"] | 0.0f;
-  j.currentA = b["currentA"] | 0.5f;
+  j.currentA = b["currentA"] | DEFAULT_CURRENT_A;
   j.cutoffV = b["cutoffV"] | 3.0f;
   j.preCharge = b["preCharge"] | true;
   j.restMin = b["restMin"] | settings.restMin;
@@ -269,7 +281,11 @@ uint8_t ledState() {
 
 const char* model() {
   static char m[16];
+#ifdef CELLDOC_NANO
+  snprintf(m, sizeof(m), "CellDoc Nano");
+#else
   snprintf(m, sizeof(m), "CellDoc Mini %d", NSLOTS);
+#endif
   return m;
 }
 
@@ -287,7 +303,7 @@ void mqttEntities(std::vector<MqttEntity>& e) {
     e.push_back({o + "lebenszahl", n + "Letzte Lebenszahl", "{{ " + p + ".last.score | default(None) }}", "%", ""});
     e.push_back(MqttEntity(o + "stopp", n + "stoppen", "stop" + k, "", "", true));
   }
-  e.push_back({"temp_kuehlkoerper", "Temperatur Kühlkörper", "{{ value_json.slots[0].temps.sink | default(None) }}", "°C", "temperature"});
+  e.push_back({"temp_kuehlkoerper", NANO_MODE ? "Temperatur Lastwiderstand" : "Temperatur Kühlkörper", "{{ value_json.slots[0].temps.sink | default(None) }}", "°C", "temperature"});
 }
 
 void onScan(uint32_t no, const String& id) { assign::onScan(no, id); }
