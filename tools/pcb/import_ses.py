@@ -12,8 +12,10 @@ def pt(x, y): return P.VECTOR2I(int(float(x) * k), int(-float(y) * k))
 LAY = {"F.Cu": P.F_Cu, "B.Cu": P.B_Cu}
 routes = s[s.index("(network_out"):]
 nw = nv = 0
-for m in re.finditer(r'\(net\s+("[^"]*"|\S+)(.*?)\n    \)', routes, re.S):
-    name = m.group(1).strip('"'); body = m.group(2)
+chunks = re.split(r'\n\s*\(net\s+', routes)[1:]
+for ch in chunks:
+    mm_ = re.match(r'("[^"]*"|\S+)', ch)
+    name = mm_.group(1).strip('"'); body = ch[mm_.end():]
     n = b.FindNet(name)
     for w in re.finditer(r"\(path\s+(\S+)\s+(\d+)\s+([-\d\s]+)\)", body):
         layer, width, nums = w.group(1), int(w.group(2)), w.group(3).split()
@@ -61,8 +63,10 @@ for layer in (P.F_Cu, P.B_Cu):
     z.SetThermalReliefGap(mm(0.4)); z.SetThermalReliefSpokeWidth(mm(0.6))
     z.SetAssignedPriority(0)
     o = z.Outline(); o.NewOutline()
-    for x, y in [(0.3, 0.3), (94.7, 0.3), (94.7, 75.7), (0.3, 75.7)]:
-        o.Append(mm(x), mm(y))
+    bb = b.GetBoardEdgesBoundingBox()
+    X0, Y0, X1, Y1 = bb.GetX() + mm(0.3), bb.GetY() + mm(0.3), bb.GetRight() - mm(0.3), bb.GetBottom() - mm(0.3)
+    for x, y in [(X0, Y0), (X1, Y0), (X1, Y1), (X0, Y1)]:
+        o.Append(int(x), int(y))
     b.Add(z)
 P.ZONE_FILLER(b).Fill(b.Zones())
 b.Save(dst)

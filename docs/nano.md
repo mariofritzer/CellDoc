@@ -79,27 +79,28 @@ IO0–2 sind frei. IO2, IO8 und IO9 sind Boot-Pins, deshalb liegen dort nur LED 
 |:---:|:---:|
 | [![Platine oben](img/pcb-nano-oben.png)](img/pcb-nano-oben.png) | [![Platine unten](img/pcb-nano-unten.png)](img/pcb-nano-unten.png) |
 
-Zweilagig, 95 × 76 mm, beidseitig GND-Fläche. Die Module werden über Buchsenleisten aufgesteckt, die 18650-Zelle sitzt in einem Keystone-1042-Halter direkt auf der Platine. KiCad-Projekt und Gerber-Dateien liegen in [`hardware/nano-pcb/`](../hardware/nano-pcb/), `CellDoc-Nano-gerber.zip` geht direkt an JLCPCB & Co. (1,6 mm, 1 oz, Standardregeln).
+Zweilagig, 95 × 100 mm, beidseitig GND-Fläche. Alles sitzt auf der Platine: die Module über Buchsenleisten, der 18650-Halter, der Sicherungshalter und der Lastwiderstand. KiCad-Projekt und Gerber-Dateien liegen in [`hardware/nano-pcb/`](../hardware/nano-pcb/), `CellDoc-Nano-gerber.zip` geht direkt an JLCPCB & Co. (1,6 mm, 1 oz, Standardregeln).
 
 **Zusätzliche Teile für die Platine**
 
 | Menge | Teil | Anmerkung |
 |---|---|---|
-| 1 | Keystone 1042 (18650-Halter, SMD) | ersetzt den Halter mit Kabeln |
-| 2 | Sicherungsclip 5 × 20 mm, Raster 5 mm (Littelfuse 111 o. ä.) | F1, Glassicherung 3 A flink |
-| 1 | Schraubklemme 2-polig, Raster 5,08 mm | J1, Lastwiderstand |
-| 2 | Schraubklemme 3-polig, Raster 3,5 mm | J2/J3, DS18B20 wasserdicht (rot +, gelb D, schwarz −) |
 | 3 | Buchsenleiste 1 × 8, Raster 2,54 mm | 2 × C3 SuperMini, 1 × INA226 |
 | 6 | einzelne Stifte (von einer Stiftleiste abgebrochen) | TP4056, seine Lötpunkte liegen nicht im 2,54-mm-Raster |
+| 2 | Schraubklemme 3-polig, Raster 3,5 mm | J2/J3, DS18B20 wasserdicht |
+| 3 | Schraube M3 + Mutter | Halter (1) und Lastwiderstand (2) |
 | opt. | Stift- oder Buchsenleiste 1 × 4 | J4 OLED, J5 QR-Scanner |
 
-**Hinweise zur Platine**
+**Aufbau**
 
-- **INA226:** R100-Shunt gegen R010 tauschen, bevor das Modul aufgesteckt wird. VBS ist getrennt herausgeführt und greift die Zellspannung vor der Sicherung ab.
-- **R6/R7** (I²C-Pull-ups) nur bestücken, wenn das INA226-Modul keine eigenen hat.
-- **TP4056:** Die Lochpositionen stammen aus der Maßzeichnung des Moduls (27,9 × 17,3 mm). Vor der Bestellung mit dem Lineal am eigenen Modul nachmessen. OUT+/OUT− sind nur zur Befestigung da und nicht angeschlossen.
-- **C3 SuperMini:** Reihenabstand 15,24 mm, 5V/GND/3V3 und IO5 an der USB-Seite. Vor dem Bestellen mit dem eigenen Board vergleichen. Unter der Antenne liegt kein Kupfer.
-- **Zelle:** Pluspol rechts (Seite der Sicherung). Der Aufdruck auf dem Halter muss dazu passen.
+- **18650-Halter:** mit einer M3-Schraube durch das Loch in der Mitte befestigen. Die Kabel kürzen und in die Lötaugen rechts löten: rot an +, schwarz an −.
+- **Sicherungshalter:** liegt unter dem Zellhalter. Die Kabel kürzen und in die beiden Lötaugen links und rechts löten, den Halter mit einem Tropfen Heißkleber fixieren.
+- **Lastwiderstand:** mit zwei M3-Schrauben durch die Laschen festschrauben, die Lötfahnen auf die beiden ovalen Lötaugen biegen und anlöten. Er wird bei 0,8 A etwa handwarm, bei 1,2 A deutlich warm.
+- **Temperaturfühler:** Klemme „Zelle“ (Pflicht) und „Last“ (optional, Fühler an den Lastwiderstand kleben). + = rot (3,3 V), D = gelb/weiß (Daten), − = schwarz (GND).
+- **INA226:** R100-Shunt gegen R010 tauschen, bevor das Modul aufgesteckt wird. R6/R7 (I²C-Pull-ups) weglassen, das Modul hat eigene.
+- **TP4056:** Die USB-Buchse am Modul bleibt frei, Strom kommt über die USB-C-Buchse des C3 links an der Kante. Die Lochpositionen stammen aus der Maßzeichnung (27,9 × 17,3 mm), vor der Bestellung am eigenen Modul nachmessen.
+- **C3 SuperMini:** Reihenabstand 15,24 mm, USB-C zeigt nach links über die Kante. Unter der Antenne liegt kein Kupfer.
+- **Summer:** Platz ist vorgesehen (aktiver 5-V-Summer, Raster 7,6 mm), bestücken kann man ihn später.
 - Zum Platine neu erzeugen: `tools/pcb/build.sh` (KiCad-Python + Freerouting). Zu dieser Platine gibt es noch keinen KiCad-Schaltplan, deshalb in KiCad **nicht** „Platine aus Schaltplan aktualisieren“ ausführen.
 
 ## Firmware

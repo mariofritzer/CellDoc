@@ -9,7 +9,7 @@ OUT = sys.argv[1]
 LIBOUT = sys.argv[2]
 KL = "/usr/share/kicad/footprints/"
 mm = P.FromMM
-W, H = 95.0, 76.0
+W, H = 95.0, 100.0
 
 b = P.BOARD()
 ds = b.GetDesignSettings()
@@ -49,6 +49,25 @@ def th_pad(f, num, x, y, drill=1.0, size=1.8, square=False):
     p.SetPosition(P.VECTOR2I(mm(x), mm(y)))
     p.SetPos0(P.VECTOR2I(mm(x), mm(y))) if hasattr(p, "SetPos0") else None
     f.Add(p)
+    return p
+
+
+def npth(f, x, y, d):
+    p = P.PAD(f)
+    p.SetAttribute(P.PAD_ATTRIB_NPTH)
+    p.SetShape(P.PAD_SHAPE_CIRCLE)
+    p.SetSize(P.VECTOR2I(mm(d), mm(d)))
+    p.SetDrillSize(P.VECTOR2I(mm(d), mm(d)))
+    p.SetLayerSet(P.PAD.UnplatedHoleMask())
+    p.SetPosition(P.VECTOR2I(mm(x), mm(y)))
+    p.SetPos0(P.VECTOR2I(mm(x), mm(y))) if hasattr(p, "SetPos0") else None
+    f.Add(p)
+
+
+def oval_pad(f, num, x, y, w, h, drill):
+    p = th_pad(f, num, x, y, drill=drill)
+    p.SetShape(P.PAD_SHAPE_OVAL)
+    p.SetSize(P.VECTOR2I(mm(w), mm(h)))
     return p
 
 
@@ -128,7 +147,42 @@ def make_tp():
     return finish(f, 0, 0, 27.9, 17.3, "TP4056 USB-C mit Schutz")
 
 
-custom = {"c3": make_c3(), "ina": make_ina(), "tp": make_tp()}
+def make_holder():
+    # 18650-Halter mit Kabeln (ca. 77 x 21 mm), Schraubloch in der Mitte, beide Kabel an einem Ende
+    f = fp_new("18650_Halter_Kabel")
+    npth(f, 0, 0, 3.2)
+    th_pad(f, "+", 41.5, -3.5, drill=1.3, size=2.6, square=True)
+    th_pad(f, "-", 41.5, 3.5, drill=1.3, size=2.6)
+    fp_text(f, "+", 44.6, -3.5, 1.4)
+    fp_text(f, "−", 44.6, 3.5, 1.4)
+    fp_text(f, "18650-Halter, M3 mittig", 0, 6.5, 1.0)
+    return finish(f, -38.5, -10.5, 38.5, 10.5, "18650-Halter mit Kabeln")
+
+
+def make_fuse():
+    # Kabel-Sicherungshalter 5 x 20, Kabel gekürzt in die Lötaugen
+    f = fp_new("Sicherungshalter_Kabel_5x20")
+    th_pad(f, "1", -24.0, 0, drill=1.3, size=2.6, square=True)
+    th_pad(f, "2", 24.0, 0, drill=1.3, size=2.6)
+    fp_text(f, "Sicherung 3 A flink", 0, 0, 1.0)
+    return finish(f, -20.0, -5.0, 20.0, 5.0, "Sicherungshalter 5x20 mit Kabel")
+
+
+def make_rl():
+    # Alu-Lastwiderstand 50 W: Körper 50 x 16, Laschen-Löcher 3,5 mm diagonal (41 mm), Lötfahnen auf Lötaugen
+    f = fp_new("Lastwiderstand_50W_Alu")
+    npth(f, -20.5, 10.5, 3.5)
+    npth(f, 20.5, -10.5, 3.5)
+    oval_pad(f, "1", -33.0, 0, 6.0, 3.5, 1.3)
+    oval_pad(f, "2", 33.0, 0, 6.0, 3.5, 1.3)
+    fp_rect(f, -24.5, 8.0, -16.5, 13.5, P.F_Fab, 0.1)
+    fp_rect(f, 16.5, -13.5, 24.5, -8.0, P.F_Fab, 0.1)
+    fp_text(f, "Lastwiderstand 3 Ω / 50 W", 0, -4.0, 1.4)
+    fp_text(f, "mit 2 Schrauben M3 befestigen", 0, 4.0, 1.0)
+    return finish(f, -25.0, -8.0, 25.0, 8.0, "Lastwiderstand 3R 50W Alu")
+
+
+custom = {"c3": make_c3(), "ina": make_ina(), "tp": make_tp(), "bat": make_holder(), "fuse": make_fuse(), "rl": make_rl()}
 os.makedirs(LIBOUT, exist_ok=True)
 for f in custom.values():
     P.FootprintSave(LIBOUT, f)
@@ -144,33 +198,33 @@ SOT = ("Package_TO_SOT_SMD", "SOT-23")
 # ------------------------------------------------------------------ Bauteile
 # ref, footprint, x, y, rot, wert, {pad: netz}
 parts = [
-    ("BT1", ("Battery", "BatteryHolder_Keystone_1042_1x18650"), 47.5, 13.5, 180, "18650 Keystone 1042", {"1": "BAT+", "2": "GND"}),
-    ("F1", ("Fuse", "Fuseholder_Clip-5x20mm_Littelfuse_111_Inline_P20.00x5.00mm_D1.05mm_Horizontal"), 66.0, 29.5, 0, "3 A flink 5x20", {"1": "BAT_F", "2": "BAT+"}),
-    ("U1", "c3", 13.0, 64.0, 0, "ESP32-C3 SuperMini",
+    ("BT1", "bat", 46.0, 14.0, 0, "18650-Halter", {"+": "BAT+", "-": "GND"}),
+    ("F1", "fuse", 64.0, 31.0, 180, "3 A flink 5x20", {"1": "BAT+", "2": "BAT_F"}),
+    ("U1", "c3", 12.5, 48.5, 270, "ESP32-C3 SuperMini",
      {"5V": "+5V", "GND": "GND", "3V3": "+3V3", "3": "LOAD_PWM", "4": "ONEWIRE", "5": "SDA", "6": "SCL", "7": "CHG", "10": "BUZZER", "20": "SCAN_RX", "21": "SCAN_TX"}),
-    ("U2", "ina", 56.0, 37.0, 0, "INA226 (Shunt R010)",
+    ("U2", "ina", 59.0, 40.0, 0, "INA226 (Shunt R010)",
      {"IN+": "BAT_F", "IN-": "CELL", "VBS": "BAT+", "SDA": "SDA", "SCL": "SCL", "GND": "GND", "VCC": "+3V3"}),
-    ("U3", "tp", 22.5, 27.0, 0, "TP4056 USB-C",
+    ("U3", "tp", 26.5, 39.0, 0, "TP4056 USB-C",
      {"IN+": "TP_IN", "IN-": "GND", "B+": "CELL", "B-": "GND"}),
-    ("J1", ("TerminalBlock_Phoenix", "TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal"), 89.0, 44.5, 90, "Lastwiderstand 3 Ohm", {"1": "LOAD_D", "2": "CELL"}),
-    ("Q3", SOT, 84.0, 53.5, 0, "AO3400", {"1": "LOAD_G", "2": "GND", "3": "LOAD_D"}),
-    ("R3", R_FP, 79.5, 58.5, 0, "1k", {"1": "LOAD_PWM", "2": "LOAD_G"}),
-    ("R5", R_FP, 79.5, 62.0, 0, "10k", {"1": "LOAD_G", "2": "GND"}),
-    ("Q2", SOT, 12.0, 30.0, 270, "AO3401", {"1": "Q2_G", "2": "+5V", "3": "TP_IN"}),
-    ("Q1", SOT, 12.0, 39.5, 0, "AO3400", {"1": "CHG", "2": "GND", "3": "Q2_G"}),
-    ("R1", R_FP, 3.5, 29.0, 90, "10k", {"1": "Q2_G", "2": "+5V"}),
-    ("R2", R_FP, 17.5, 36.0, 90, "10k", {"1": "CHG", "2": "GND"}),
-    ("C1", ("Capacitor_THT", "CP_Radial_D6.3mm_P2.50mm"), 26.5, 50.0, 0, "100uF 10V", {"1": "+5V", "2": "GND"}),
-    ("R4", R_FP, 25.0, 58.0, 0, "4k7", {"1": "+3V3", "2": "ONEWIRE"}),
-    ("R6", R_FP, 25.0, 61.5, 0, "4k7 opt.", {"1": "+3V3", "2": "SDA"}),
-    ("R7", R_FP, 25.0, 65.0, 0, "4k7 opt.", {"1": "+3V3", "2": "SCL"}),
-    ("J2", ("TerminalBlock_Phoenix", "TerminalBlock_Phoenix_PT-1,5-3-3.5-H_1x03_P3.50mm_Horizontal"), 33.0, 70.5, 0, "DS18B20 Zelle", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
-    ("J3", ("TerminalBlock_Phoenix", "TerminalBlock_Phoenix_PT-1,5-3-3.5-H_1x03_P3.50mm_Horizontal"), 44.5, 70.5, 0, "DS18B20 Last opt.", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
-    ("J4", ("Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical"), 36.0, 49.0, 90, "OLED opt.", {"1": "GND", "2": "+3V3", "3": "SCL", "4": "SDA"}),
-    ("J5", ("Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical"), 36.0, 54.0, 90, "QR GM861S opt.", {"1": "+3V3", "2": "GND", "3": "SCAN_RX", "4": "SCAN_TX"}),
-    ("BZ1", ("Buzzer_Beeper", "Buzzer_12x9.5RM7.6"), 56.5, 68.5, 0, "Summer 5V opt.", {"1": "+5V", "2": "BZ_N"}),
-    ("Q4", SOT, 70.0, 64.0, 0, "AO3400 opt.", {"1": "BUZZER", "2": "GND", "3": "BZ_N"}),
-    ("R8", R_FP, 70.0, 60.0, 180, "10k opt.", {"1": "BUZZER", "2": "GND"}),
+    ("RL", "rl", 47.5, 86.5, 0, "3R 50W", {"1": "LOAD_D", "2": "CELL"}),
+    ("Q3", SOT, 7.5, 80.0, 0, "AO3400", {"1": "LOAD_G", "2": "GND", "3": "LOAD_D"}),
+    ("R3", R_FP, 3.0, 75.0, 270, "1k", {"1": "LOAD_PWM", "2": "LOAD_G"}),
+    ("R5", R_FP, 9.5, 84.0, 270, "10k", {"1": "LOAD_G", "2": "GND"}),
+    ("Q2", SOT, 5.0, 63.0, 0, "AO3401", {"1": "Q2_G", "2": "+5V", "3": "TP_IN"}),
+    ("Q1", SOT, 5.0, 69.0, 0, "AO3400", {"1": "CHG", "2": "GND", "3": "Q2_G"}),
+    ("R1", R_FP, 9.0, 62.5, 0, "10k", {"1": "Q2_G", "2": "+5V"}),
+    ("R2", R_FP, 9.0, 66.5, 0, "10k", {"1": "CHG", "2": "GND"}),
+    ("C1", ("Capacitor_THT", "CP_Radial_D6.3mm_P2.50mm"), 16.5, 71.5, 0, "100uF 10V", {"1": "+5V", "2": "GND"}),
+    ("R4", R_FP, 84.0, 39.0, 270, "4k7", {"1": "+3V3", "2": "ONEWIRE"}),
+    ("R6", R_FP, 87.5, 39.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SDA"}),
+    ("R7", R_FP, 91.0, 39.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SCL"}),
+    ("J2", ("TerminalBlock_Phoenix", "TerminalBlock_Phoenix_PT-1,5-3-3.5-H_1x03_P3.50mm_Horizontal"), 26.0, 65.5, 0, "DS18B20 Zelle", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
+    ("J3", ("TerminalBlock_Phoenix", "TerminalBlock_Phoenix_PT-1,5-3-3.5-H_1x03_P3.50mm_Horizontal"), 84.0, 54.0, 0, "DS18B20 Last opt.", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
+    ("J4", ("Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical"), 37.5, 63.0, 90, "OLED opt.", {"1": "GND", "2": "+3V3", "3": "SCL", "4": "SDA"}),
+    ("J5", ("Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical"), 37.5, 68.5, 90, "QR GM861S opt.", {"1": "+3V3", "2": "GND", "3": "SCAN_RX", "4": "SCAN_TX"}),
+    ("BZ1", ("Buzzer_Beeper", "Buzzer_12x9.5RM7.6"), 53.0, 67.0, 0, "Summer 5V", {"1": "+5V", "2": "BZ_N"}),
+    ("Q4", SOT, 70.0, 63.0, 0, "AO3400", {"1": "BUZZER", "2": "GND", "3": "BZ_N"}),
+    ("R8", R_FP, 70.0, 67.0, 0, "10k", {"1": "BUZZER", "2": "GND"}),
 ]
 
 for ref, fpn, x, y, rot, val, padnets in parts:
@@ -191,8 +245,12 @@ for ref, fpn, x, y, rot, val, padnets in parts:
         cx, cy = f.Pads()[0].GetPosition(), f.Pads()[1].GetPosition()
         f.Reference().SetPosition(P.VECTOR2I((cx.x + cy.x) // 2, (cx.y + cy.y) // 2))
         f.Reference().SetTextSize(P.VECTOR2I(mm(0.9), mm(0.9)))
-    if ref in ("J2", "J3", "BT1"):
+    if ref in ("J2", "J3", "J4", "J5"):
         f.Reference().SetVisible(False)
+    if ref == "C1":
+        f.Reference().SetPosition(P.VECTOR2I(mm(x + 1.25), mm(y + 4.6)))
+    if ref == "BZ1":
+        f.Reference().SetPosition(P.VECTOR2I(mm(x + 9.5), mm(y + 5.5)))
     if ref == "Q4":
         f.Reference().SetPosition(P.VECTOR2I(mm(x + 3.2), mm(y)))
     f.Reference().SetTextThickness(mm(0.15))
@@ -220,7 +278,7 @@ for cx, cy, a in [(R, R, 180), (W - R, R, 270), (W - R, H - R, 0), (R, H - R, 90
     s.SetArcAngleAndEnd(P.EDA_ANGLE(90, P.DEGREES_T))
     b.Add(s)
 
-for k, (x, y) in enumerate([(3.5, 48.5), (91.5, 30.0), (91.5, 72.5)]):
+for k, (x, y) in enumerate([(3.5, 3.5), (91.5, 3.5), (3.5, 96.5), (91.5, 96.5)]):
     f = load("MountingHole", "MountingHole_3.2mm_M3")
     f.SetReference("H%d" % (k + 1))
     f.Reference().SetVisible(False)
@@ -241,17 +299,14 @@ def text(s, x, y, size=1.2, layer=P.F_SilkS, bold=False):
     b.Add(t)
 
 
-text("CellDoc Nano", 83, 66.8, 2.0, bold=True)
-text("v1.0 · 2026-10", 83, 69.4, 1.0)
-text("+", 89.5, 7.5, 3.0, bold=True)
-text("−", 5.5, 7.5, 3.0, bold=True)
-text("Zelle nach Aufdruck einlegen", 47.5, 25.9, 1.0)
-text("LAST 3 Ω", 85.5, 36.0, 1.0)
-text("Zelle + D −", 37.0, 66.2, 0.8)
-text("Last + D −", 48.5, 66.2, 0.8)
-text("GND VCC SCL SDA", 39.8, 46.6, 0.8)
-text("3V3 GND RX TX", 39.8, 56.6, 0.8)
-text("github.com/mariofritzer/CellDoc", 74.0, 74.6, 0.9, P.B_SilkS)
+text("CellDoc Nano", 36.0, 75.8, 2.0, bold=True)
+text("v1.1 · 2026-10", 57.5, 76.0, 1.0)
+text("Zelle  + D −", 29.5, 61.0, 0.8)
+text("Last  + D −", 87.5, 49.6, 0.8)
+text("GND VCC SCL SDA", 41.3, 60.6, 0.8)
+text("3V3 GND RX TX", 41.3, 71.4, 0.8)
+text("USB-C 5 V", 3.0, 37.0, 0.9)
+text("github.com/mariofritzer/CellDoc", 47.5, 92.0, 1.2, P.B_SilkS)
 
 # Keine Kupferfläche unter der C3-Antenne
 def keepout(x0, y0, x1, y1, pour=False):
@@ -270,7 +325,7 @@ def keepout(x0, y0, x1, y1, pour=False):
     b.Add(z)
 
 
-keepout(6.6, 52.6, 19.4, 57.0)
+keepout(19.0, 42.8, 24.2, 54.2)
 # Rand frei halten (Leiterbahnen, Vias)
 for r in [(0, 0, W, 1.0), (0, H - 1.0, W, H), (0, 0, 1.0, H), (W - 1.0, 0, W, H)]:
     keepout(*r, pour=True)
