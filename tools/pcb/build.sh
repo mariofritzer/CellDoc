@@ -7,4 +7,5 @@ OUT=../../hardware/nano-pcb
 python3 gen_pcb.py /tmp/nano-unrouted.kicad_pcb $OUT/CellDoc.pretty
 python3 route.py /tmp/nano-unrouted.kicad_pcb /dev/null > /tmp/fr.log 2>&1 || true
 python3 import_ses.py /tmp/nano-unrouted.kicad_pcb /tmp/nano.ses $OUT/CellDoc-Nano.kicad_pcb
+python3 labels.py $OUT/CellDoc-Nano.kicad_pcb
 python3 drc.py $OUT/CellDoc-Nano.kicad_pcb
