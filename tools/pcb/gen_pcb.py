@@ -184,7 +184,7 @@ for ref, fpn, x, y, rot, val, padnets in parts:
         n = padnets.get(p.GetNumber())
         if n:
             p.SetNet(net(n))
-        if ref in ("BT1", "Q3", "J2", "J3", "J4", "J5") and n == "GND":
+        if n == "GND":
             p.SetZoneConnection(P.ZONE_CONNECTION_FULL)
     f.Reference().SetTextSize(P.VECTOR2I(mm(1.0), mm(1.0)))
     if ref.startswith("R") and fpn == R_FP:
