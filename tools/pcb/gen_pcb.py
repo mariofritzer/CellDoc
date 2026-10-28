@@ -305,7 +305,7 @@ text("Zelle  + D −", 29.5, 61.0, 0.8)
 text("Last  + D −", 87.5, 49.6, 0.8)
 text("GND VCC SCL SDA", 41.3, 60.6, 0.8)
 text("3V3 GND RX TX", 41.3, 71.4, 0.8)
-text("USB-C 5 V", 3.0, 37.0, 0.9)
+text("USB-C 5 V", 6.5, 37.0, 0.9)
 text("github.com/mariofritzer/CellDoc", 47.5, 92.0, 1.2, P.B_SilkS)
 
 # Keine Kupferfläche unter der C3-Antenne

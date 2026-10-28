@@ -2167,7 +2167,7 @@
   (gr_text "Zelle  + D −" (at 29.5 61) (layer "F.SilkS") (tstamp 8982d719-22e2-44a8-83b1-a6ee85f413c8)
     (effects (font (size 0.8 0.8) (thickness 0.12)))
   )
-  (gr_text "USB-C 5 V" (at 3 37) (layer "F.SilkS") (tstamp 96d33968-55e0-455b-b8ed-532c435bea49)
+  (gr_text "USB-C 5 V" (at 6.5 37) (layer "F.SilkS") (tstamp 96d33968-55e0-455b-b8ed-532c435bea49)
     (effects (font (size 0.9 0.9) (thickness 0.135)))
   )
   (gr_text "CellDoc Nano" (at 36 75.8) (layer "F.SilkS") (tstamp e81a3b13-6373-4821-a809-89cbb478d6aa)
