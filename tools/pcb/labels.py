@@ -41,8 +41,9 @@ for fp in b.GetFootprints():
         if ref == "C1":
             t.SetPosition(P.VECTOR2I(p.x + mm(1.25), p.y + mm(4.6)))
         else:
-            dy = 2.6 if ref == "Q1" else -2.6
-            t.SetPosition(P.VECTOR2I(p.x, p.y + mm(dy)))
+            dy = {"Q1": 2.6, "Q4": -2.25}.get(ref, -2.6)
+            dx = 1.4 if ref == "Q3" else 0
+            t.SetPosition(P.VECTOR2I(p.x + mm(dx), p.y + mm(dy)))
         fp.Add(t)
         t.SetTextAngleDegrees((0 - fp.GetOrientationDegrees()) % 360)
     if v.GetText() == "3R 50W":
