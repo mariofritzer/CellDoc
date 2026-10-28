@@ -297,6 +297,7 @@ def text(s, x, y, size=1.2, layer=P.F_SilkS, bold=False):
     if layer == P.B_SilkS:
         t.SetMirrored(True)
     b.Add(t)
+    return t
 
 
 text("CellDoc Nano", 36.0, 75.8, 2.0, bold=True)
@@ -304,7 +305,9 @@ text("v1.1 · 2026-10", 57.5, 76.0, 1.0)
 text("Zelle  + D −", 29.5, 61.0, 0.8)
 text("Last  + D −", 87.5, 49.6, 0.8)
 text("GND VCC SCL SDA", 41.3, 60.6, 0.8)
+text("OLED", 48.8, 63.0, 0.9)
 text("3V3 GND RX TX", 41.3, 71.4, 0.8)
+text("QR-Scanner", 47.9, 68.6, 0.8).SetTextAngleDegrees(90)
 text("USB-C 5 V", 6.5, 37.0, 0.9)
 text("github.com/mariofritzer/CellDoc", 47.5, 92.0, 1.2, P.B_SilkS)
 
