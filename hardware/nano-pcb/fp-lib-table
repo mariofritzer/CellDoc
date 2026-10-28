@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "CellDoc")(type "KiCad")(uri "${KIPRJMOD}/CellDoc.pretty")(options "")(descr "CellDoc Nano: C3 SuperMini, INA226, TP4056"))
+)
