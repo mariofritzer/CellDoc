@@ -158,7 +158,7 @@ parts = [
     ("R5", R_FP, 79.5, 62.0, 0, "10k", {"1": "LOAD_G", "2": "GND"}),
     ("Q2", SOT, 12.0, 30.0, 270, "AO3401", {"1": "Q2_G", "2": "+5V", "3": "TP_IN"}),
     ("Q1", SOT, 12.0, 39.5, 0, "AO3400", {"1": "CHG", "2": "GND", "3": "Q2_G"}),
-    ("R1", R_FP, 3.5, 27.0, 90, "10k", {"1": "Q2_G", "2": "+5V"}),
+    ("R1", R_FP, 3.5, 29.0, 90, "10k", {"1": "Q2_G", "2": "+5V"}),
     ("R2", R_FP, 17.5, 36.0, 90, "10k", {"1": "CHG", "2": "GND"}),
     ("C1", ("Capacitor_THT", "CP_Radial_D6.3mm_P2.50mm"), 26.5, 50.0, 0, "100uF 10V", {"1": "+5V", "2": "GND"}),
     ("R4", R_FP, 25.0, 58.0, 0, "4k7", {"1": "+3V3", "2": "ONEWIRE"}),
@@ -184,7 +184,7 @@ for ref, fpn, x, y, rot, val, padnets in parts:
         n = padnets.get(p.GetNumber())
         if n:
             p.SetNet(net(n))
-        if ref in ("BT1", "Q3") and n == "GND":
+        if ref in ("BT1", "Q3", "J2", "J3", "J4", "J5") and n == "GND":
             p.SetZoneConnection(P.ZONE_CONNECTION_FULL)
     f.Reference().SetTextSize(P.VECTOR2I(mm(1.0), mm(1.0)))
     if ref.startswith("R") and fpn == R_FP:
