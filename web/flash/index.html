@@ -130,7 +130,7 @@ esp-web-install-button{--esp-tools-button-color:var(--accent);--esp-tools-button
         <li><div><b>ESP32 per USB anschließen</b><p>Ein Datenkabel verwenden, reine Ladekabel funktionieren nicht.</p></div></li>
         <li><div><b>„Verbinden und installieren“ klicken</b><p>Im Fenster den Port wählen, meist „CP2102“, „CH340“, „CH343“ oder „USB Serial“. Beim ESP32-S3 die Buchse „COM“ benutzen, beim ESP32-C3 SuperMini heißt der Port „USB JTAG/serial debug unit“.</p></div></li>
         <li><div><b>Installieren</b><p>Beim ersten Mal „Gerät löschen“ anhaken. Bei einem Update nicht löschen, dann bleiben Einstellungen und Ergebnisse erhalten.</p></div></li>
-        <li><div><b>WLAN einrichten</b><p>Nach dem Neustart öffnet CellDoc den Hotspot <b>CellDoc-XXXX</b>, Passwort <code>celldoc1</code>. Die Seite öffnet sich von selbst, sonst <code>192.168.4.1</code> aufrufen.</p></div></li>
+        <li><div><b>WLAN einrichten</b><p>Direkt nach der Installation fragt der Webflasher nach dem WLAN („Connect to Wi-Fi“): Netz wählen, Passwort eingeben, „Connect“. Danach öffnet „Visit Device“ die CellDoc-Oberfläche.</p><p>Ohne diesen Schritt öffnet CellDoc nach dem Neustart den Hotspot <b>CellDoc-XXXX</b>, Passwort <code>celldoc1</code>. Die Seite öffnet sich von selbst, sonst <code>192.168.4.1</code> aufrufen.</p></div></li>
       </ol>
     </section>
 
@@ -139,6 +139,7 @@ esp-web-install-button{--esp-tools-button-color:var(--accent);--esp-tools-button
       <ul class="plain">
         <li><b>Kein Port in der Liste:</b> USB-Treiber installieren, <a href="https://www.silabs.com/developer-tools/usb-to-uart-bridge-vcp-drivers">CP210x</a> oder <a href="https://www.wch-ic.com/downloads/CH341SER_EXE.html">CH340</a>, und ein anderes Kabel probieren.</li>
         <li><b>„Failed to connect“:</b> Während des Verbindens die <b>BOOT</b>-Taste am ESP32 gedrückt halten, bis der Fortschritt startet.</li>
+        <li><b>WLAN ändern:</b> Gerät per USB anschließen, „Verbinden und installieren“ klicken und im Menü „Change Wi-Fi“ wählen. Neu flashen ist dafür nicht nötig.</li>
         <li><b>Port belegt:</b> Arduino IDE, PlatformIO-Monitor oder andere serielle Programme schließen.</li>
         <li><b>Spätere Updates</b> gehen ohne Kabel: in der CellDoc-Oberfläche unter Einstellungen → Firmware-Update die <code>…-firmware.bin</code> aus den <a href="https://github.com/mariofritzer/CellDoc/releases/tag/latest">Releases</a> hochladen.</li>
         <li><b>Vorsicht:</b> Während des Flashens keine Akkus eingesetzt lassen.</li>

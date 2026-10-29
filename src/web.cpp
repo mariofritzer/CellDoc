@@ -7,6 +7,7 @@
 #include <WebServer.h>
 #include <WiFi.h>
 #include "config.h"
+#include "improv.h"
 #include "mqtt.h"
 #include "scanner.h"
 #include "sync.h"
@@ -59,6 +60,11 @@ bool readBody(JsonDocument& d) {
 static void scheduleRestart() {
   restartPending = true;
   restartAt = millis() + 1500;
+}
+
+void restartSoon(uint32_t ms) {
+  restartPending = true;
+  restartAt = millis() + ms;
 }
 
 // ---------------------------------------------------------------------------
@@ -231,6 +237,7 @@ void begin() {
     uint32_t t0 = millis();
     while (WiFi.status() != WL_CONNECTED && millis() - t0 < 15000) {
       device::idle();  // Messungen laufen weiter, Last ist ohnehin aus
+      improv::update();
       delay(50);
     }
   }
@@ -289,6 +296,7 @@ void update() {
   statusLed();
   if (ap) dns.processNextRequest();
   server.handleClient();
+  improv::update();
   mqtt::update();
   scanner::update();
   peersync::update();

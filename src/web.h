@@ -8,6 +8,7 @@ namespace web {
 void begin();
 void update();
 bool apMode();
+void restartSoon(uint32_t ms);  // Neustart nach ms (Antworten können noch rausgehen)
 
 // Hilfen für die gerätespezifischen Routen
 WebServer& http();

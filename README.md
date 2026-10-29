@@ -28,7 +28,7 @@
 - **Home Assistant** über MQTT mit automatischer Erkennung, **Datensicherung** und CSV-Export
 - **Handbuch** direkt im Gerät: Akkutypen, Bauformen, Stecker, Messwerte, Sicherheit, Lagerung und Entsorgung
 - **Display und Taster** (optional, wie bei der Mini): Messwerte, Temperaturen, Balancer, IP-Adresse; Test starten und stoppen direkt am Gerät
-- **Firmware-Updates** über den Browser, WLAN-Einrichtung über einen eigenen Hotspot
+- **Firmware-Updates** über den Browser, WLAN-Einrichtung direkt im Webflasher oder über einen eigenen Hotspot
 
 ## Bilder
 
@@ -126,8 +126,9 @@ Unter **Einstellungen → Firmware-Update** die Datei **`celldoc-firmware.bin`**
 
 ## Erste Schritte
 
-1. Ohne gespeichertes WLAN öffnet CellDoc den Hotspot **CellDoc-XXXX** mit dem Passwort **`celldoc1`**. Verbinden, die Seite öffnet sich automatisch, sonst `http://192.168.4.1` aufrufen.
-2. **Einstellungen → WLAN**: Heimnetz wählen und speichern. Danach ist CellDoc unter **http://celldoc.local** oder seiner IP erreichbar.
+1. **WLAN direkt im Webflasher:** Nach der Installation fragt der [Webflasher](https://mariofritzer.github.io/CellDoc/flash/) nach dem WLAN („Connect to Wi-Fi“). Netz wählen, Passwort eingeben, fertig, „Visit Device“ öffnet die Oberfläche. Das geht auch später ohne neu zu flashen: verbinden und „Change Wi-Fi“ wählen.
+   Ohne diesen Schritt öffnet CellDoc den Hotspot **CellDoc-XXXX** mit dem Passwort **`celldoc1`**. Verbinden, die Seite öffnet sich automatisch, sonst `http://192.168.4.1` aufrufen.
+2. Im Hotspot unter **Einstellungen → WLAN** das Heimnetz wählen und speichern. Danach ist CellDoc unter **http://celldoc.local** oder seiner IP erreichbar.
 3. **Einstellungen → Temperaturfühler**: prüfen, dass Zelle, Pack und Kühlkörper richtig zugeordnet sind.
 4. **Einstellungen → Kalibrierung**: Spannung und Strom einmal mit dem Multimeter abgleichen.
 5. **Live → Starten**: Zelltyp wählen, Strom einstellen, los.
