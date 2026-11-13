@@ -107,14 +107,15 @@ def finish(f, x0, y0, x1, y1, label):
 
 
 def make_c3():
-    # ESP32-C3 SuperMini von oben, Antenne nach -y, USB-C nach +y
+    # ESP32-C3 SuperMini, Chip nach oben, Antenne nach -y, USB-C nach +y
+    # (v1.1 hatte die beiden Reihen vertauscht, am echten Modul geprüft)
     f = fp_new("ESP32-C3_SuperMini")
-    left = ["21", "20", "10", "9", "8", "7", "6", "5"]
-    right = ["0", "1", "2", "3", "4", "3V3", "GND", "5V"]
+    left = ["0", "1", "2", "3", "4", "3V3", "GND", "5V"]
+    right = ["21", "20", "10", "9", "8", "7", "6", "5"]
     for k in range(8):
         y = -8.89 + k * 2.54
-        th_pad(f, left[k], -7.62, y)
-        th_pad(f, right[k], 7.62, y, square=(right[k] == "5V"))
+        th_pad(f, left[k], -7.62, y, square=(left[k] == "5V"))
+        th_pad(f, right[k], 7.62, y)
     for k in range(8):
         y = -8.89 + k * 2.54
         fp_text(f, "IO" + left[k] if left[k].isdigit() else left[k], -4.9, y, 0.8)
@@ -127,7 +128,8 @@ def make_c3():
 def make_ina():
     # CJMCU-226: 8 Pins im Raster 2,54, Platine rechts der Leiste
     f = fp_new("INA226_CJMCU-226")
-    names = ["IN+", "IN-", "VBS", "ALE", "SDA", "SCL", "GND", "VCC"]
+    # Reihenfolge laut Aufdruck am verbauten Modul (SCL vor SDA)
+    names = ["IN+", "IN-", "VBS", "ALE", "SCL", "SDA", "GND", "VCC"]
     for k, n in enumerate(names):
         th_pad(f, n, 0, k * 2.54, square=(n == "VCC"))
         fp_text(f, n, 3.4, k * 2.54, 0.8)
@@ -301,7 +303,7 @@ def text(s, x, y, size=1.2, layer=P.F_SilkS, bold=False):
 
 
 text("CellDoc Nano", 36.0, 75.8, 2.0, bold=True)
-text("v1.1 · 2026-10", 57.5, 76.0, 1.0)
+text("v1.2 · 2026-11", 57.5, 76.0, 1.0)
 text("Zelle  + D −", 29.5, 61.0, 0.8)
 text("Last  + D −", 87.5, 49.6, 0.8)
 text("GND VCC SCL SDA", 41.3, 60.6, 0.8)
