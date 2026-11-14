@@ -257,7 +257,7 @@ parts = [
     # VBS misst am Zellpol; 2,2 kOhm begrenzen den Strom in den INA226, falls die Zelle verpolt ist
     ("R9", R_FP, 78.0, 26.5, 270, "2k2", {"1": "BAT+", "2": "VBS_IN"}),
     # Anschluss für externe Akkus, parallel zum Zellhalter (immer nur eine Zelle)
-    ("J6", "term2", 88.5, 30.5, 90, "Ext. Zelle", {"1": "BAT+", "2": "GND"}),
+    ("J6", "term2", 88.5, 33.5, 90, "Ext. Zelle", {"1": "BAT+", "2": "GND"}),
     ("U1", "c3", 12.5, 48.5, 270, "ESP32-C3 SuperMini",
      {"5V": "+5V", "GND": "GND", "3V3": "+3V3", "3": "LOAD_PWM", "4": "ONEWIRE", "5": "SDA", "6": "SCL", "7": "CHG", "10": "BUZZER", "20": "SCAN_RX", "21": "SCAN_TX"}),
     ("U2", "ina", 59.0, 40.0, 0, "INA226 (Shunt R010)",
@@ -273,9 +273,9 @@ parts = [
     ("R1", R_FP, 9.0, 62.5, 0, "10k", {"1": "Q2_G", "2": "+5V"}),
     ("R2", R_FP, 9.0, 66.5, 0, "10k", {"1": "CHG", "2": "GND"}),
     ("C1", ("Capacitor_THT", "CP_Radial_D6.3mm_P2.50mm"), 16.5, 71.5, 0, "100uF 10V", {"1": "+5V", "2": "GND"}),
-    ("R4", R_FP, 84.0, 39.0, 270, "4k7", {"1": "+3V3", "2": "ONEWIRE"}),
-    ("R6", R_FP, 87.5, 39.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SDA"}),
-    ("R7", R_FP, 91.0, 39.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SCL"}),
+    ("R4", R_FP, 84.0, 42.0, 270, "4k7", {"1": "+3V3", "2": "ONEWIRE"}),
+    ("R6", R_FP, 87.5, 42.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SDA"}),
+    ("R7", R_FP, 91.0, 42.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SCL"}),
     ("J2", "term", 21.0, 30.2, 180, "DS18B20 Zelle", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
     ("J3", "term", 58.5, 72.0, 0, "DS18B20 Last opt.", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
     ("J4", ("Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical"), 37.5, 63.0, 90, "OLED opt.", {"1": "GND", "2": "+3V3", "3": "SCL", "4": "SDA"}),
@@ -373,10 +373,10 @@ def term_labels(x0, y0, rot, caption, cap_x):
 term_labels(21.0, 30.2, 180, "J2 Zelle", 0)
 term_labels(58.5, 72.0, 0, "J3 Last", 0)
 # J6: Pins senkrecht, Öffnung zum rechten Rand
-text("+", 82.0, 32.6, 1.2)
-text("−", 82.0, 28.4, 1.2)
-text("J6 Ext. Zelle", 89.0, 23.6, 0.8)
-text("nur 1 Zelle", 89.0, 37.0, 0.7)
+text("+", 82.0, 35.6, 1.2)
+text("−", 82.0, 31.4, 1.2)
+text("J6 Ext. Zelle", 89.0, 26.6, 0.8)
+text("nur 1 Zelle", 89.0, 40.0, 0.7)
 text("GND VCC SCL SDA", 41.3, 60.6, 0.8)
 text("OLED", 48.8, 63.0, 0.9)
 text("3V3 GND RX TX", 41.3, 71.4, 0.8)
