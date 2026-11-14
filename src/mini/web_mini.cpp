@@ -310,6 +310,10 @@ void mqttEntities(std::vector<MqttEntity>& e) {
     e.push_back({o + "temp", n + "Temperatur", "{{ " + p + ".temps.cell | default(None) }}", "°C", "temperature"});
     e.push_back({o + "kapazitaet", n + "Letzte Kapazität", "{{ " + p + ".last.cap | default(None) }}", "mAh", ""});
     e.push_back({o + "lebenszahl", n + "Letzte Lebenszahl", "{{ " + p + ".last.score | default(None) }}", "%", ""});
+    // Restzeit (Schätzung): aktuelle Phase, ganzer Test und Uhrzeit des Testendes
+    e.push_back({o + "restzeit_phase", n + "Restzeit Phase", "{{ (" + p + ".eta / 60) | round(0) if " + p + ".eta is defined else None }}", "min", "duration"});
+    e.push_back({o + "restzeit_test", n + "Restzeit Test", "{{ (" + p + ".etaTotal / 60) | round(0) if " + p + ".etaTotal is defined else None }}", "min", "duration"});
+    e.push_back({o + "testende", n + "Testende", "{{ (now() + timedelta(seconds=" + p + ".etaTotal)).isoformat() if " + p + ".etaTotal is defined else None }}", "", "timestamp"});
     e.push_back(MqttEntity(o + "stopp", n + "stoppen", "stop" + k, "", "", true));
   }
   e.push_back({"temp_kuehlkoerper", NANO_MODE ? "Temperatur Lastwiderstand" : "Temperatur Kühlkörper", "{{ value_json.slots[0].temps.sink | default(None) }}", "°C", "temperature"});
