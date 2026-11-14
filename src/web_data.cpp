@@ -1,6 +1,8 @@
 // CellDoc – Zellenbestand, Selbstentladung, Uhrzeit, Datensicherung (gemeinsam für CellDoc und Mini)
 #include <LittleFS.h>
 #include <WebServer.h>
+
+#include "evlog.h"
 #include <sys/time.h>
 #include <algorithm>
 #include <vector>
@@ -482,6 +484,7 @@ void handleWipe() {
   wipeDir("/c");
   settings.nextCellNo = 1;
   settings.nextResultId = 1;
+  evlog::warn(0, "Zellenbestand komplett gelöscht, Nummerierung beginnt wieder bei 1");
   settings.save();
   mqtt::reconfigure();
   sendOk();

@@ -5,6 +5,7 @@
 #include "settings.h"
 #include "soh.h"
 #include "storage.h"
+#include "evlog.h"
 
 using namespace mcfg;
 
@@ -198,6 +199,14 @@ String Slot::startTest(const SlotJob& jIn) {
   float ref = job_.nomCapMah > 0 ? job_.nomCapMah : 2600;
   riStep_ = max(50.0f, ref * 0.05f);
   startMs_ = millis();
+  {
+    const char* aft = job_.after == After::Full ? "voll laden" : job_.after == After::Storage ? "auf Lagerspannung laden" : "nichts";
+    log('i', "Test gestartet: " + job_.cellId + (job_.name.length() && job_.name != job_.cellId ? " " + job_.name : "") +
+                 ", entladen mit " + evlog::num(job_.currentA, 2) + " A bis " + evlog::num(job_.cutoffV, 2) + " V, Ruhe " +
+                 String(job_.restMin) + " min, " + String(job_.cycles) + (job_.cycles > 1 ? " Zyklen" : " Zyklus") +
+                 ", danach " + aft + (job_.preCharge ? "" : ", ohne Vorladen") +
+                 (job_.noTemp ? ", ohne Zellfühler (bestätigt, Strom auf " + evlog::num(NO_TEMP_MAX_A, 1) + " A begrenzt)" : ""));
+  }
   enter(job_.preCharge ? Phase::PreCharge : Phase::Rest);
   return "";
 }
@@ -216,6 +225,7 @@ String Slot::startCharge(const SlotJob& jIn) {
   ptInterval_ = 10;
   lastPtSec_ = 0;
   startMs_ = millis();
+  log('i', "Laden gestartet" + (job_.cellId.length() ? ": " + job_.cellId : String("")));
   enter(Phase::ManualCharge);
   return "";
 }
@@ -238,13 +248,51 @@ String Slot::startDischarge(const SlotJob& jIn) {
   riCount_ = riStage_ = 0;
   riStep_ = 1e9;
   startMs_ = millis();
+  log('i', "Entladen gestartet" + (job_.cellId.length() ? ": " + job_.cellId : String("")) + ", mit " +
+               evlog::num(job_.currentA, 2) + " A bis " + evlog::num(job_.cutoffV, 2) + " V");
   disSoc0_ = vSoc(hal.m(s_).v, 0);
   enter(Phase::ManualDischarge);
   return "";
 }
 
+// ---------------------------------------------------------------------------
+// Ereignisprotokoll
+
+static const char* phaseTxt(Phase p) {
+  switch (p) {
+    case Phase::PreCharge: return "Vorladen";
+    case Phase::Rest: return "Ruhen vor dem Entladen";
+    case Phase::Discharge: return "Entladen";
+    case Phase::RestAfter: return "Erholen nach dem Entladen";
+    case Phase::Recharge: return "Nachladen";
+    case Phase::ManualCharge: return "Laden";
+    case Phase::ManualDischarge: return "Entladen";
+    case Phase::Done: return "Fertig";
+    case Phase::Error: return "Abbruch";
+    default: return "Bereit";
+  }
+}
+
+static String dur(uint32_t ms) {
+  uint32_t s = ms / 1000;
+  if (s < 120) return String(s) + " s";
+  uint32_t m = (s + 30) / 60;
+  if (m < 60) return String(m) + " min";
+  return String(m / 60) + " h " + String(m % 60) + " min";
+}
+
+void Slot::log(char level, const String& text) const { evlog::add(level, s_ + 1, text); }
+
+String Slot::snap() const {
+  const SlotMeas& m = hal.m(s_);
+  String s = "U " + evlog::num(m.v, 3) + " V, I " + evlog::num(m.i, 3) + " A";
+  if (!isnan(m.tCell)) s += ", Zelle " + evlog::num(m.tCell, 1) + " °C";
+  return s;
+}
+
 void Slot::stop(const char* reason) {
   if (!active()) return;
+  log('w', String("Gestoppt: ") + (reason ? reason : "Abgebrochen") + " (während " + phaseTxt(phase_) + ", " + snap() + ")");
   hal.kill(s_);
   error_ = reason ? reason : "Abgebrochen";
   enter(Phase::Error);
@@ -255,6 +303,7 @@ void Slot::acknowledge() {
 }
 
 void Slot::fail(const String& why) {
+  log('e', "Abbruch: " + why + " (während " + phaseTxt(phase_) + ", " + snap() + ")");
   hal.kill(s_);
   error_ = why;
   enter(Phase::Error);
@@ -266,6 +315,9 @@ void Slot::enter(Phase p) {
   phaseMs_ = millis();
   cutoffSince_ = fullSince_ = ovSince_ = ocSince_ = 0;
   loadF_ = chgF_ = 1;
+  thrLog_ = false;
+  if (p == Phase::Done) log('i', "Fertig");
+  else if (p != Phase::Idle && p != Phase::Error) log('i', String("Phase: ") + phaseTxt(p) + " (" + snap() + ")");
   if (isCharge(p)) {
     hal.setLoad(s_, 0);
     hal.resetCounters(s_);
@@ -329,6 +381,7 @@ void Slot::update(uint32_t now) {
       break;
     case Phase::Rest:
       if (now - phaseMs_ >= uint32_t(job_.restMin) * 60000UL) {
+        log('i', "Ruhezeit vorbei (" + String(job_.restMin) + " min), Ruhespannung " + evlog::num(m.v, 3) + " V");
         startOcv_ = m.v;
         disSoc0_ = vSoc(m.v, 0);
         enter(Phase::Discharge);
@@ -340,6 +393,11 @@ void Slot::update(uint32_t now) {
       break;
     case Phase::RestAfter:
       if (now - phaseMs_ >= REST_AFTER_MS) {
+        log('i', "Erholt: Ruhespannung " + evlog::num(m.v, 3) + " V nach " + dur(now - phaseMs_) +
+                     (cycleIdx_ + 1 < job_.cycles ? ", weiter mit Zyklus " + String(cycleIdx_ + 2) + " von " + String(job_.cycles)
+                      : job_.after == After::None ? String(", Test wird abgeschlossen")
+                      : job_.after == After::Storage ? ", lade auf Lagerspannung (" + evlog::num(capMah_ * 0.5f, 0) + " mAh)"
+                                                     : String(", lade wieder voll")));
         restOcv_ = m.v;
         if (nCyc_ < 10) {
           cycCap_[nCyc_] = capMah_;
@@ -413,6 +471,17 @@ void Slot::safety(uint32_t now) {
     loadF_ = min(thermal(t, settings.dischargeWarnC, settings.dischargeStopC), thermal(ts, settings.sinkWarnC, sinkStop));
     if (loadF_ < 0.99f) throttled_ = true;
   }
+  // Beginn und Ende einer Drosselung protokollieren
+  float f = isCharge(phase_) ? chgF_ : isDischarge(phase_) ? loadF_ : 1;
+  bool thr = f < 0.99f;
+  if (thr != thrLog_) {
+    thrLog_ = thr;
+    float ts = hal.tSink();
+    String temps = "Zelle " + (isnan(t) ? String("?") : evlog::num(t, 1)) + " °C" +
+                   (isDischarge(phase_) && !isnan(ts) ? ", Last " + evlog::num(ts, 1) + " °C" : "");
+    if (thr) log('w', String(isCharge(phase_) ? "Laden" : "Entladen") + " gedrosselt auf " + evlog::num(f * 100, 0) + " % wegen Wärme (" + temps + ")");
+    else log('i', "Drosselung aufgehoben (" + temps + ")");
+  }
 }
 
 void Slot::handleCharge(uint32_t now) {
@@ -438,8 +507,16 @@ void Slot::handleCharge(uint32_t now) {
   } else {
     fullSince_ = 0;
   }
-  if (phase_ == Phase::Recharge && storageMah_ > 0 && mah >= storageMah_) full = true;
+  bool storageHit = phase_ == Phase::Recharge && storageMah_ > 0 && mah >= storageMah_;
+  if (storageHit) full = true;
   if (!full) return;
+  {
+    String why = storageHit ? "Lagerladung erreicht (" + evlog::num(mah, 0) + " von " + evlog::num(storageMah_, 0) + " mAh)"
+                 : m.v >= 4.15f ? "Zelle voll, Ladestrom seit 30 s unter 0,12 A bei " + evlog::num(m.v, 3) + " V"
+                                : "Lader hat abgeschaltet (" + evlog::num(m.i * 1000, 0) + " mA) bei " + evlog::num(m.v, 3) +
+                                      " V, Zelle gilt als voll";
+    log('i', String(phaseTxt(phase_)) + " beendet: " + why + ". Geladen " + evlog::num(mah, 0) + " mAh in " + dur(t));
+  }
   hal.setCharger(s_, false);
   if (phase_ == Phase::PreCharge) {
     preMah_ = mah;
@@ -475,6 +552,9 @@ void Slot::handleDischarge(uint32_t now) {
     cutoffSince_ = 0;
   }
   if (cutoffSince_ && now - cutoffSince_ > 2000) {
+    log('i', String(phaseTxt(phase_)) + " beendet: Abschaltspannung " + evlog::num(job_.cutoffV, 2) + " V erreicht (" +
+                 evlog::num(m.v, 3) + " V seit 2 s). Entnommen " + evlog::num(capMah_, 0) + " mAh, " +
+                 evlog::num(energyWh_, 2) + " Wh in " + dur(now - phaseMs_));
     hal.setLoad(s_, 0);
     logPoint(now, true);
     if (phase_ == Phase::ManualDischarge) {
@@ -632,6 +712,10 @@ void Slot::finish() {
   }
   JsonObject so = d["soh"].to<JsonObject>();
   so["score"] = r.score;
+  log('i', "Test fertig: " + evlog::num(capMah_, 0) + " mAh" +
+               (job_.nomCapMah > 0 ? " (" + evlog::num(capMah_ / job_.nomCapMah * 100, 0) + " % der Nennkapazität)" : "") +
+               ", Ri " + evlog::num(ri50 > 0 ? ri50 : ri100, 0) + " mΩ, Lebenszahl " + String(r.score) + ", Dauer " +
+               dur(millis() - startMs_));
   so["low"] = r.low;
   so["high"] = r.high;
   so["estimated"] = r.estimated;

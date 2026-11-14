@@ -1,4 +1,5 @@
 #include "tester.h"
+#include "evlog.h"
 #include "cells.h"
 #include <time.h>
 #include "config.h"
@@ -207,6 +208,7 @@ String Tester::startManualDischarge(const JobConfig& cIn) {
 
 void Tester::stop(const char* reason) {
   if (!isActive(phase_)) return;
+  evlog::warn(1, String("Gestoppt: ") + (reason ? reason : "Abgebrochen"));
   hal.killAll();
   error_ = reason ? reason : "Abgebrochen";
   enter(Phase::Error);
@@ -217,6 +219,7 @@ void Tester::acknowledge() {
 }
 
 void Tester::fail(const String& reason) {
+  evlog::err(1, "Abbruch: " + reason);
   hal.killAll();
   error_ = reason;
   enter(Phase::Error);

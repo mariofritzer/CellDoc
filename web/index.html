@@ -68,6 +68,14 @@ h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0;line-height:1.1
 .banner.ok{background:color-mix(in srgb,var(--charge) 14%,var(--card))}
 .banner.info{background:var(--fill)}
 .banner b{display:block}
+.loglist{display:flex;flex-direction:column;gap:2px;font-size:13.5px;line-height:1.4}
+.loglist .le{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:7px 10px;border-radius:10px;background:var(--fill)}
+.loglist .le time{color:var(--muted);white-space:nowrap;font-size:12.5px}
+.loglist .le .tx{grid-column:1/-1;overflow-wrap:anywhere}
+.loglist .le.w{box-shadow:inset 3px 0 0 var(--warn)}
+.loglist .le.e{box-shadow:inset 3px 0 0 var(--danger);background:color-mix(in srgb,var(--danger) 10%,var(--card))}
+.loglist .le .tag{font-size:12px;color:var(--muted);justify-self:end}
+.loglist .day{font-size:12px;font-weight:700;color:var(--muted);margin:10px 2px 2px;text-transform:uppercase;letter-spacing:.04em}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--line)}
 .row:first-child{border-top:0}
 .row .l{display:flex;flex-direction:column;min-width:0}
@@ -719,6 +727,14 @@ tr:last-child td{border-bottom:0}
           <div class="actions"><button class="btn" id="kGo" type="button">Abgleichen</button></div>
         </section>
 
+        <section class="card" id="logCard">
+          <h2>Ereignisprotokoll <span class="sub" id="logCount" style="text-transform:none;letter-spacing:0"></span></h2>
+          <p class="note">Was wann und warum passiert ist: Start und Ende jeder Phase mit Grund, Abbrüche mit Messwerten, Drosselung, Neustarts, WLAN und Updates. Neueste Einträge oben.</p>
+          <div class="seg" id="logF" role="group" aria-label="Filter" style="margin:10px 0"><button type="button" data-f="all" aria-pressed="true">Alles</button><button type="button" data-f="we" aria-pressed="false">Warnungen und Fehler</button></div>
+          <div id="logList" class="loglist num"></div>
+          <div class="actions"><button class="btn" id="logMore" type="button" hidden>Ältere anzeigen</button><button class="btn" id="logReload" type="button">Aktualisieren</button><button class="btn" id="logDl" type="button">Als Textdatei</button><button class="btn danger" id="logClr" type="button">Löschen</button></div>
+        </section>
+
         <section class="card">
           <h2>Diagnose</h2>
           <div id="diag" class="num"></div>
@@ -829,7 +845,7 @@ function showView(v) {
   document.querySelectorAll(".view").forEach(m => m.hidden = m.id !== "v-" + v);
   if (v === "results") loadResults();
   if (v === "cells") loadCells();
-  if (v === "settings") loadSettings();
+  if (v === "settings") { loadSettings(); loadLog(); }
   try { localStorage.setItem("celldoc-tab", v); } catch (e) {}
   window.scrollTo(0, 0);
 }
@@ -938,7 +954,7 @@ function renderLive() {
 
   // Banner
   let bn = "";
-  if (ph === "error") bn = `<div class="banner err" role="alert"><div><b>${esc(s.error || "Gestoppt")}</b>Last und Lader sind getrennt.</div></div>`;
+  if (ph === "error") bn = `<div class="banner err" role="alert"><div><b>${esc(s.error || "Gestoppt")}</b>Last und Lader sind getrennt. <a href="#" onclick="openLog();return false">Ereignisprotokoll ansehen</a></div></div>`;
   else if (ph === "done") bn = `<div class="banner ok"><div style="flex:1"><b>${job.cellId ? esc(job.cellId) + " ist fertig" : job.name ? esc(job.name) + " ist fertig" : "Fertig"}${s.last?.grade && s.lastResult ? ` · Note ${esc(s.last.grade)}` : ""}</b>${s.lastResult ? "Das Ergebnis steht rechts und unter Ergebnisse." : ""}</div>${job.cell ? `<button class="btn small" id="bnLabel" type="button">Etikett</button>` : ""}</div>`;
   else if (s.saturated) bn = `<div class="banner info"><div><b>Strom wird nicht erreicht</b>Die Akkuspannung ist für diesen Strom zu niedrig. Der Test läuft mit dem maximal möglichen Strom weiter.</div></div>`;
   if ($("banner").dataset.k !== bn) {
@@ -1515,6 +1531,66 @@ async function loadSettings() {
     kUpd();
   } catch (e) { toast(e.message); }
 }
+// ---------------------------------------------------------------------------
+// Ereignisprotokoll
+let LOG = [], logFilter = "all", logShow = 60;
+function parseLog(txt) {
+  return txt.split("\n").filter(Boolean).map(l => {
+    const [t, sl, lv, ...rest] = l.split("\t");
+    const up = t.startsWith("u");
+    return {t: up ? 0 : +t, up: up ? +t.slice(1) : 0, slot: +sl || 0, lv: lv || "i", tx: rest.join(" ")};
+  }).reverse();
+}
+const logDay = e => e.t ? new Date(e.t * 1000).toLocaleDateString("de-AT", {weekday: "short", day: "2-digit", month: "2-digit", year: "2-digit"}) : "";
+const logTime = e => e.t ? new Date(e.t * 1000).toLocaleTimeString("de-AT", {hour: "2-digit", minute: "2-digit", second: "2-digit"}) : `${nf(e.up)} s nach Start, Uhrzeit noch unbekannt`;
+function renderLog() {
+  const list = LOG.filter(e => logFilter === "all" || e.lv !== "i");
+  const multi = isMini() && !isNano() && (INFO?.slots || 1) > 1;
+  let day = "", html = "";
+  for (const e of list.slice(0, logShow)) {
+    const d = logDay(e);
+    if (d && d !== day) { day = d; html += `<div class="day">${esc(d)}</div>`; }
+    const tag = e.slot === 0 ? "System" : multi ? "Schacht " + e.slot : "";
+    html += `<div class="le ${e.lv}"><time>${esc(logTime(e))}</time><span class="tag">${tag}</span><span class="tx">${esc(e.tx)}</span></div>`;
+  }
+  $("logList").innerHTML = html || `<div class="empty">Noch keine Einträge.</div>`;
+  $("logMore").hidden = list.length <= logShow;
+  $("logCount").textContent = LOG.length ? LOG.length + " Einträge" : "";
+}
+async function loadLog() {
+  try {
+    const txt = DEMO ? demoLog() : await (await fetch("/api/log", {cache: "no-store"})).text();
+    LOG = parseLog(txt); renderLog();
+  } catch (e) { $("logList").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+function demoLog() {
+  const n = Date.now() / 1000 | 0, L = (dt, sl, lv, t) => `${n - dt}\t${sl}\t${lv}\t${t}`;
+  return [L(30000, 0, "i", "Gestartet, Firmware dev-demo. Grund: eingeschaltet"), L(29990, 0, "i", "WLAN „Zuhause“ verbunden, Adresse 192.168.1.47"),
+    L(29000, 1, "i", "Test gestartet: CD-0001 RH Power YG18650, entladen mit 0,80 A bis 3,00 V, Ruhe 30 min, 1 Zyklus, danach auf Lagerspannung laden"),
+    L(28999, 1, "i", "Phase: Vorladen (U 3,865 V, I 0,000 A, Zelle 19,6 °C)"),
+    L(17000, 1, "i", "Vorladen beendet: Lader hat abgeschaltet (4 mA) bei 4,138 V, Zelle gilt als voll. Geladen 1180 mAh in 3 h 20 min"),
+    L(16999, 1, "i", "Phase: Ruhen vor dem Entladen (U 4,121 V, I 0,000 A, Zelle 20,1 °C)"),
+    L(15200, 1, "i", "Ruhezeit vorbei (30 min), Ruhespannung 4,105 V"), L(15199, 1, "i", "Phase: Entladen (U 4,105 V, I 0,000 A, Zelle 20,0 °C)"),
+    L(9000, 1, "w", "Entladen gedrosselt auf 86 % wegen Wärme (Zelle 46,9 °C, Last 61,2 °C)"), L(8400, 1, "i", "Drosselung aufgehoben (Zelle 44,8 °C, Last 58,0 °C)"),
+    L(4000, 1, "i", "Entladen beendet: Abschaltspannung 3,00 V erreicht (2,998 V seit 2 s). Entnommen 2120 mAh, 7,62 Wh in 3 h 1 min"),
+    L(2000, 1, "e", "Abbruch: Überstrom 2,23 A (während Nachladen, U 3,540 V, I 2,231 A, Zelle 24,0 °C)")].join("\n");
+}
+$("logF").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; logFilter = b.dataset.f; $("logF").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); renderLog(); });
+$("logMore").addEventListener("click", () => { logShow += 100; renderLog(); });
+$("logReload").addEventListener("click", loadLog);
+$("logDl").addEventListener("click", () => {
+  const txt = [...LOG].reverse().map(e => `${e.t ? new Date(e.t * 1000).toLocaleString("de-AT") : "+" + e.up + " s"}\t${e.slot ? "Schacht " + e.slot : "System"}\t${{i: "Info", w: "Warnung", e: "Fehler"}[e.lv] || e.lv}\t${e.tx}`).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["\ufeff" + txt], {type: "text/plain;charset=utf-8"}));
+  a.download = `celldoc-protokoll-${new Date().toISOString().slice(0, 10)}.txt`; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+$("logClr").addEventListener("click", () => confirmInline($("logClr").parentElement, "Ganzes Ereignisprotokoll löschen?", async () => {
+  if (!DEMO) await api("/api/log/clear", {});
+  await loadLog(); toast("Protokoll gelöscht");
+}));
+function openLog() { showView("settings"); setTimeout(() => $("logCard").scrollIntoView({behavior: "smooth", block: "start"}), 300); }
+
 async function loadDiag() {
   const d = await api("/api/diag");
   const role = isMini()

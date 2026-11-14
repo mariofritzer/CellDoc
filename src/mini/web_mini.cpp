@@ -1,6 +1,8 @@
 // CellDoc Mini – gerätespezifische Web-API (mehrere Schächte)
 #include <ArduinoJson.h>
 #include <WebServer.h>
+
+#include "evlog.h"
 #include "assign.h"
 #include "cells.h"
 #include "display.h"
@@ -242,6 +244,12 @@ void handleCalibrate() {
   settings.toJson(tmp.to<JsonObject>(), true);
   settings.fromJson(tmp.as<JsonObjectConst>());
   settings.save();
+  if (what == "reset") evlog::warn(0, "Kalibrierung zurückgesetzt");
+  else
+    evlog::info(0, "Kalibrierung „" + what + "“" + (what == "zero" ? String("") : ", Istwert " + evlog::num(actual, 3)) +
+                       ": Spannung ×" + evlog::num(settings.vGain[s], 4) + ", Strom ×" + evlog::num(settings.iGain[s], 4) +
+                       ", Nullpunkt " + evlog::num(settings.iOffset[s] * 1000, 1) + " mA, Leitung " +
+                       evlog::num(settings.rLead[s] * 1000, 0) + " mΩ");
   sendOk();
 }
 

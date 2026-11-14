@@ -50,6 +50,8 @@ class Slot {
   String precheck(const SlotJob& j, bool charge, bool discharge) const;
   void enter(Phase p);
   void fail(const String& why);
+  void log(char level, const String& text) const;  // Ereignisprotokoll dieses Schachts
+  String snap() const;                              // aktuelle Messwerte als Text
   void safety(uint32_t now);
   void handleCharge(uint32_t now);
   void handleDischarge(uint32_t now);
@@ -72,6 +74,7 @@ class Slot {
   uint32_t startMs_ = 0, phaseMs_ = 0;
   float loadF_ = 1, chgF_ = 1;
   bool throttled_ = false, saturatedSeen_ = false;
+  bool thrLog_ = false;  // Drosselung bereits protokolliert
   uint32_t cutoffSince_ = 0, fullSince_ = 0, ovSince_ = 0, ocSince_ = 0;
   float preMah_ = 0, startOcv_ = 0, restOcv_ = 0, capMah_ = 0, energyWh_ = 0;
   float reMah_ = 0, reWh_ = 0, storageMah_ = 0;

@@ -6,6 +6,7 @@
 #include "hal_mini.h"
 #include "settings.h"
 #include "slot.h"
+#include "evlog.h"
 #include "storage.h"
 #include "web.h"
 #include "web_device.h"
@@ -15,6 +16,7 @@ void setup() {
   hal.begin();  // Last und Lader zuerst sicher aus
   Serial.printf("\n%s · %s\n", device::model(), CELLDOC_VERSION);
   if (!storage::begin()) Serial.println("LittleFS konnte nicht eingebunden werden");
+  evlog::begin();
   settings.load();
   hal.rescanTempSensors();
   for (int s = 0; s < mcfg::NSLOTS; s++) slots[s].begin(s);

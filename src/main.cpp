@@ -5,6 +5,7 @@
 #include "display_full.h"
 #include "hal.h"
 #include "settings.h"
+#include "evlog.h"
 #include "storage.h"
 #include "tester.h"
 #include "web.h"
@@ -15,6 +16,7 @@ void setup() {
   hal.begin();
   Serial.printf("\nCellDoc %s\n", CELLDOC_VERSION);
   if (!storage::begin()) Serial.println("LittleFS konnte nicht eingebunden werden");
+  evlog::begin();
   settings.load();
   hal.rescanTempSensors();
   tester.begin();

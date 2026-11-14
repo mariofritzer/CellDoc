@@ -1,4 +1,5 @@
 #include "web.h"
+#include "evlog.h"
 #include <ArduinoJson.h>
 #include <DNSServer.h>
 #include <HTTPClient.h>
@@ -173,7 +174,11 @@ void addCommon(JsonObject o) {
 }
 
 static void handleUpdateDone() {
-  if (!otaOk) return sendError(otaError.length() ? otaError : "Update fehlgeschlagen", 500);
+  if (!otaOk) {
+    evlog::err(0, "Firmware-Update aus Datei fehlgeschlagen: " + (otaError.length() ? otaError : String("unbekannt")));
+    return sendError(otaError.length() ? otaError : "Update fehlgeschlagen", 500);
+  }
+  evlog::info(0, "Firmware-Update aus Datei eingespielt, starte neu");
   sendOk();
   scheduleRestart();
 }
@@ -187,6 +192,7 @@ static void handleUpdateUpload() {
       otaError = "Während eines Tests ist kein Update möglich";
       return;
     }
+    evlog::info(0, "Firmware-Update aus Datei gestartet, Laden und Last aus");
     device::killAll();
     if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) otaError = Update.errorString();
   } else if (up.status == UPLOAD_FILE_WRITE) {
@@ -268,6 +274,13 @@ static void handleGhStatus() {
   r["running"] = (bool)ghRunning;
   r["install"] = ghInstall;
   r["pct"] = (int)ghPct;
+  static bool ghLogged = true;
+  if (ghRunning) ghLogged = false;
+  if (!ghRunning && !ghLogged && ghInstall) {
+    ghLogged = true;
+    if (ghState == "fertig") evlog::info(0, "Firmware-Update von GitHub geladen, starte neu");
+    else if (ghState == "fehler") evlog::err(0, "Firmware-Update von GitHub fehlgeschlagen: " + ghErr);
+  }
   if (!ghRunning) {
     r["state"] = ghState;
     if (ghErr.length()) r["error"] = ghErr;
@@ -287,6 +300,7 @@ static void handleGhStart() {
   bool install = String(b["action"] | "") == "install";
   if (install) {
     if (device::busy()) return sendError("Während eines Tests ist kein Update möglich", 409);
+    evlog::info(0, "Firmware-Update von GitHub gestartet, Laden und Last aus");
     device::killAll();
   }
   ghInstall = install;
@@ -347,10 +361,14 @@ void begin() {
     }
   }
   if (WiFi.status() == WL_CONNECTED) {
+    evlog::info(0, "WLAN „" + settings.wifiSsid + "“ verbunden, Adresse " + WiFi.localIP().toString());
     Serial.printf("WLAN verbunden: http://%s  (http://%s.local)\n", WiFi.localIP().toString().c_str(),
                   settings.hostname.c_str());
     configTzTime("CET-1CEST,M3.5.0,M10.5.0/3", "pool.ntp.org", "time.google.com");
   } else {
+    evlog::add(settings.wifiSsid.length() ? 'w' : 'i', 0,
+               settings.wifiSsid.length() ? "WLAN „" + settings.wifiSsid + "“ nicht erreichbar, Hotspot geöffnet"
+                                          : String("Kein WLAN eingerichtet, Hotspot geöffnet"));
     startAp();
   }
   if (MDNS.begin(settings.hostname.c_str())) {
@@ -358,6 +376,7 @@ void begin() {
     MDNS.addService("celldoc", "tcp", 80);  // damit Partnergeräte uns finden
   }
 
+  evlog::routes();
   server.on("/", HTTP_GET, handleIndex);
   server.on("/api/result", HTTP_GET, handleResult);
   server.on("/api/result/delete", HTTP_POST, handleResultDelete);
@@ -407,6 +426,19 @@ void update() {
   mqtt::update();
   scanner::update();
   peersync::update();
+  // WLAN-Abbrüche festhalten (nicht im Hotspot-Modus)
+  static bool wasUp = true;
+  static uint32_t downSince = 0;
+  if (!ap) {
+    bool up = WiFi.status() == WL_CONNECTED;
+    if (wasUp && !up) {
+      downSince = millis();
+      evlog::warn(0, "WLAN-Verbindung verloren");
+    } else if (!wasUp && up) {
+      evlog::info(0, "WLAN wieder verbunden nach " + String((millis() - downSince) / 1000) + " s");
+    }
+    wasUp = up;
+  }
   if (restartPending && millis() > restartAt) {
     device::killAll();
     delay(100);
