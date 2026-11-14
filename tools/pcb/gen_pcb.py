@@ -283,7 +283,7 @@ parts = [
     ("R6", R_FP, 87.5, 42.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SDA"}),
     ("R7", R_FP, 91.0, 42.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SCL"}),
     ("J2", "term", 21.0, 31.7, 180, "DS18B20 Zelle", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
-    ("J3", "term", 58.5, 72.0, 0, "DS18B20 Last opt.", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
+    ("J3", "term", 56.0, 72.0, 0, "DS18B20 Last opt.", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
     ("J4", ("Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical"), 37.5, 63.0, 90, "OLED opt.", {"1": "GND", "2": "+3V3", "3": "SCL", "4": "SDA"}),
     ("J5", ("Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical"), 37.5, 68.5, 90, "QR GM861S opt.", {"1": "+3V3", "2": "GND", "3": "SCAN_RX", "4": "SCAN_TX"}),
     ("BZ1", ("Buzzer_Beeper", "Buzzer_12x9.5RM7.6"), 23.5, 66.5, 0, "Summer 5V", {"1": "+5V", "2": "BZ_N"}),
@@ -380,7 +380,7 @@ def term_labels(x0, y0, rot, caption, cap_x):
 
 
 term_labels(21.0, 31.7, 180, "J2 Zelle", 12.2)
-term_labels(58.5, 72.0, 0, "J3 Last", 0)
+term_labels(56.0, 72.0, 0, "J3 Last", 0)
 # J6: Pins senkrecht, Öffnung zum rechten Rand
 text("+", 82.0, 35.6, 1.2)
 text("−", 82.0, 31.4, 1.2)
@@ -389,7 +389,7 @@ text("nur 1 Zelle", 89.0, 40.0, 0.8)
 text("GND VCC SCL SDA", 41.3, 60.6, 0.8)
 text("OLED", 48.8, 63.0, 0.9)
 text("3V3 GND RX TX", 41.3, 71.4, 0.8)
-text("QR-Scanner", 47.9, 68.6, 0.8).SetTextAngleDegrees(90)
+text("QR-Scanner", 47.2, 68.6, 0.8).SetTextAngleDegrees(90)
 text("github.com/mariofritzer/CellDoc", 47.5, 92.0, 1.2, P.B_SilkS)
 
 # Keine Kupferfläche unter der C3-Antenne
