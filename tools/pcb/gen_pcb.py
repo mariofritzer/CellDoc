@@ -199,14 +199,20 @@ def make_term2_35_50():
 
 
 def make_holder():
-    # 18650-Halter mit Kabeln (ca. 77 x 21 mm), Schraubloch in der Mitte, beide Kabel an einem Ende
+    # 18650-Halter mit Kabeln (ca. 77 x 21 mm), Schraubloch in der Mitte, Lötaugen für die Kabel an beiden Enden
     f = fp_new("18650_Halter_Kabel")
     npth(f, 0, 0, 3.2)
     th_pad(f, "+", 41.5, -3.5, drill=1.3, size=2.6, square=True)
     th_pad(f, "-", 41.5, 3.5, drill=1.3, size=2.6)
     fp_text(f, "+", 44.6, -3.5, 1.4)
     fp_text(f, "−", 44.6, 3.5, 1.4)
+    # zweites Paar links: für Halter mit je einem Kabel an jedem Ende (z. B. + rechts, − links)
+    th_pad(f, "+", -41.5, -3.5, drill=1.3, size=2.6, square=True)
+    th_pad(f, "-", -41.5, 3.5, drill=1.3, size=2.6)
+    fp_text(f, "+", -41.5, -6.0, 1.2)
+    fp_text(f, "−", -41.5, 6.0, 1.2)
     fp_text(f, "18650-Halter, M3 mittig", 0, 6.5, 1.0)
+    fp_text(f, "Kabel an + und − links oder rechts anlöten", 0, 8.3, 0.8)
     return finish(f, -38.5, -10.5, 38.5, 10.5, "18650-Halter mit Kabeln")
 
 
@@ -272,7 +278,7 @@ parts = [
     ("Q1", SOT, 5.0, 69.0, 0, "AO3400", {"1": "CHG", "2": "GND", "3": "Q2_G"}),
     ("R1", R_FP, 9.0, 62.5, 0, "10k", {"1": "Q2_G", "2": "+5V"}),
     ("R2", R_FP, 9.0, 66.5, 0, "10k", {"1": "CHG", "2": "GND"}),
-    ("C1", ("Capacitor_THT", "CP_Radial_D6.3mm_P2.50mm"), 16.5, 71.5, 0, "100uF 10V", {"1": "+5V", "2": "GND"}),
+    ("C1", ("Capacitor_THT", "CP_Radial_D6.3mm_P2.50mm"), 16.5, 73.8, 0, "100uF 10V", {"1": "+5V", "2": "GND"}),
     ("R4", R_FP, 84.0, 42.0, 270, "4k7", {"1": "+3V3", "2": "ONEWIRE"}),
     ("R6", R_FP, 87.5, 42.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SDA"}),
     ("R7", R_FP, 91.0, 42.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SCL"}),
@@ -308,7 +314,7 @@ for ref, fpn, x, y, rot, val, padnets in parts:
     if ref == "C1":
         f.Reference().SetPosition(P.VECTOR2I(mm(x + 1.25), mm(y + 4.6)))
     if ref == "BZ1":
-        f.Reference().SetPosition(P.VECTOR2I(mm(x - 2.6), mm(y + 6.6)))
+        f.Reference().SetPosition(P.VECTOR2I(mm(x + 3.8), mm(y - 7.0)))
     if ref == "Q4":
         f.Reference().SetPosition(P.VECTOR2I(mm(x + 3.2), mm(y)))
     f.Reference().SetTextThickness(mm(0.15))
