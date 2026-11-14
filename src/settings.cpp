@@ -78,7 +78,7 @@ void Settings::fromJson(JsonObjectConst o) {
   sinkStopC = clampf(o["sinkStopC"] | sinkStopC, sinkWarnC + 1, cfg::SINK_STOP_C);
   for (int i = 0; i < 4; i++) {
     vGain[i] = clampf(o["vGain"][i] | vGain[i], 0.9f, 1.1f);
-    iGain[i] = clampf(o["iGain"][i] | iGain[i], 0.8f, 1.2f);
+    iGain[i] = clampf(o["iGain"][i] | iGain[i], 0.2f, 3.0f);
     iOffset[i] = clampf(o["iOffset"][i] | iOffset[i], -0.1f, 0.1f);
   }
   for (int i = 0; i < 6; i++) balGain[i] = clampf(o["balGain"][i] | balGain[i], 0.9f, 1.1f);
