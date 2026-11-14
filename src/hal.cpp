@@ -111,9 +111,9 @@ void Hal::readIna(uint32_t now) {
       continue;
     }
     pm.ok = true;
-    pm.v = bus * settings.vGain[p];
     // IN+ liegt am Akku: Strom aus dem Akku heraus ergibt positive Shuntspannung
     pm.i = -(sh / cfg::SHUNT_OHM) * settings.iGain[p] - settings.iOffset[p];
+    pm.v = bus * settings.vGain[p] - pm.i * settings.rLead[p];  // Abfall über Kabel und Kontakte abziehen
     pm.p = pm.v * pm.i;
     pm.chargeAs += pm.i * dt;
     pm.energyWs += pm.p * dt;

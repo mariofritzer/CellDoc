@@ -168,11 +168,16 @@ static void handleCalibrate() {
     for (int i = 0; i < 4; i++) {
       settings.vGain[i] = settings.iGain[i] = 1;
       settings.iOffset[i] = 0;
+      settings.rLead[i] = 0;
     }
     for (float& g : settings.balGain) g = 1;
   } else if (what == "voltage") {
     if (pm.v < 1 || actual < 1) return sendError("Für den Spannungsabgleich muss ein Akku angeschlossen sein");
-    settings.vGain[port] *= actual / pm.v;
+    {
+      // Abgleich auf die unkompensierte Messspannung, damit der Leitungswiderstand erhalten bleibt
+      float drop = pm.i * settings.rLead[port];
+      settings.vGain[port] *= (actual + drop) / (pm.v + drop);
+    }
   } else if (what == "current") {
     float shown = fabsf(pm.i);
     if (shown < 0.2f || actual < 0.2f) return sendError("Für den Stromabgleich mindestens 0,2 A fließen lassen");
@@ -187,6 +192,14 @@ static void handleCalibrate() {
     float shown = hal.m().tap[tap];
     if (shown < 1 || actual < 1) return sendError("Am Abgriff liegt keine Spannung an");
     settings.balGain[tap] *= actual / shown;
+  } else if (what == "lead") {
+    // Zellspannung direkt an den Polen gemessen, während Strom fließt
+    if (fabsf(pm.i) < 0.1f) return sendError("Für diesen Abgleich muss mindestens 0,1 A fließen (Laden oder Entladen)");
+    if (pm.v < 1 || actual < 1) return sendError("Zuerst die Zellspannung eingeben");
+    float r = settings.rLead[port] + (pm.v - actual) / pm.i;
+    if (r < -0.05f) return sendError("Das passt nicht: Der Wert müsste beim Laden kleiner, beim Entladen größer als die Anzeige sein");
+    if (r > 2.0f) return sendError("Über 2 Ω: Hier stimmt etwas mit den Kontakten nicht");
+    settings.rLead[port] = r < 0 ? 0 : r;
   } else {
     return sendError("Unbekannte Kalibrierung");
   }

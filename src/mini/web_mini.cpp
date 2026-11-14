@@ -211,10 +211,15 @@ void handleCalibrate() {
     for (int i = 0; i < 4; i++) {
       settings.vGain[i] = settings.iGain[i] = 1;
       settings.iOffset[i] = 0;
+      settings.rLead[i] = 0;
     }
   } else if (what == "voltage") {
     if (m.v < 1 || actual < 1) return sendError("Für den Spannungsabgleich muss eine Zelle eingesetzt sein");
-    settings.vGain[s] *= actual / m.v;
+    {
+      // Abgleich auf die unkompensierte Messspannung, damit der Leitungswiderstand erhalten bleibt
+      float drop = m.i * settings.rLead[s];
+      settings.vGain[s] *= (actual + drop) / (m.v + drop);
+    }
   } else if (what == "current") {
     float shown = fabsf(m.i);
     if (shown < 0.2f || actual < 0.2f) return sendError("Für den Stromabgleich mindestens 0,2 A fließen lassen");
@@ -222,6 +227,14 @@ void handleCalibrate() {
   } else if (what == "zero") {
     if (slots[s].active()) return sendError("Nullabgleich nur ohne laufenden Vorgang");
     settings.iOffset[s] += m.i;
+  } else if (what == "lead") {
+    // Zellspannung direkt an den Polen gemessen, während Strom fließt
+    if (fabsf(m.i) < 0.1f) return sendError("Für diesen Abgleich muss mindestens 0,1 A fließen (Laden oder Entladen)");
+    if (m.v < 1 || actual < 1) return sendError("Zuerst die Zellspannung eingeben");
+    float r = settings.rLead[s] + (m.v - actual) / m.i;
+    if (r < -0.05f) return sendError("Das passt nicht: Der Wert müsste beim Laden kleiner, beim Entladen größer als die Anzeige sein");
+    if (r > 2.0f) return sendError("Über 2 Ω: Hier stimmt etwas mit den Kontakten nicht");
+    settings.rLead[s] = r < 0 ? 0 : r;
   } else {
     return sendError("Unbekannte Kalibrierung");
   }

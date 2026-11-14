@@ -103,8 +103,9 @@ void HalMini::readIna(uint32_t now) {
     return;
   }
   m.ok = true;
-  m.v = bus * settings.vGain[0];
   m.i = -(sh / SHUNT_OHM) * settings.iGain[0] - settings.iOffset[0];
+  // Spannung an der Zelle: Abfall über Kabel und Kontakte abziehen (Laden: i > 0, Messpunkt liegt höher)
+  m.v = bus * settings.vGain[0] - m.i * settings.rLead[0];
   m.p = m.v * m.i;
   m.chargeAs += m.i * dt;
   m.energyWs += m.p * dt;

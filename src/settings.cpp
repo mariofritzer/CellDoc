@@ -37,10 +37,12 @@ void Settings::toJson(JsonObject o, bool withSecrets) const {
   JsonArray vg = o["vGain"].to<JsonArray>();
   JsonArray ig = o["iGain"].to<JsonArray>();
   JsonArray io = o["iOffset"].to<JsonArray>();
+  JsonArray rl = o["rLead"].to<JsonArray>();
   for (int i = 0; i < 4; i++) {
     vg.add(vGain[i]);
     ig.add(iGain[i]);
     io.add(iOffset[i]);
+    rl.add(rLead[i]);
   }
   JsonArray bg = o["balGain"].to<JsonArray>();
   for (int i = 0; i < 6; i++) bg.add(balGain[i]);
@@ -80,6 +82,7 @@ void Settings::fromJson(JsonObjectConst o) {
     vGain[i] = clampf(o["vGain"][i] | vGain[i], 0.9f, 1.1f);
     iGain[i] = clampf(o["iGain"][i] | iGain[i], 0.2f, 3.0f);
     iOffset[i] = clampf(o["iOffset"][i] | iOffset[i], -0.1f, 0.1f);
+    rLead[i] = clampf(o["rLead"][i] | rLead[i], 0.0f, 2.0f);
   }
   for (int i = 0; i < 6; i++) balGain[i] = clampf(o["balGain"][i] | balGain[i], 0.9f, 1.1f);
   JsonObjectConst sn = o["sensors"];

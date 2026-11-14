@@ -24,6 +24,7 @@ struct Settings {
   float vGain[4] = {1, 1, 1, 1};
   float iGain[4] = {1, 1, 1, 1};
   float iOffset[4] = {0, 0, 0, 0};  // A
+  float rLead[4] = {0, 0, 0, 0};    // Ω zwischen Spannungsmesspunkt und Zelle (Kabel, Federn, Kontakte)
   float balGain[6] = {1, 1, 1, 1, 1, 1};
 
   // DS18B20-Zuordnung

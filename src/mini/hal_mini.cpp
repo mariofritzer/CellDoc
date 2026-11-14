@@ -84,8 +84,8 @@ void HalMini::readIna(uint32_t now) {
       continue;
     }
     m.ok = true;
-    m.v = bus * settings.vGain[s];
     m.i = -(sh / SHUNT_OHM) * settings.iGain[s] - settings.iOffset[s];
+    m.v = bus * settings.vGain[s] - m.i * settings.rLead[s];  // Abfall über Kabel und Kontakte abziehen
     m.p = m.v * m.i;
     m.chargeAs += m.i * dt;
     m.energyWs += m.p * dt;

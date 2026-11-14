@@ -710,7 +710,7 @@ tr:last-child td{border-bottom:0}
           <p class="note">Mit dem Multimeter am Akku messen und den Istwert eintragen. Für den Strom eine Entladung von Hand mit mindestens 0,5 A laufen lassen.</p>
           <div class="form num">
             <div class="field"><label for="kWhat">Was</label>
-              <select id="kWhat"><option value="voltage">Spannung</option><option value="current">Strom</option><option value="zero">Strom-Nullpunkt (ohne Last)</option><option value="balancer">Balancer-Abgriff</option><option value="reset">Alles zurücksetzen</option></select></div>
+              <select id="kWhat"><option value="voltage">Spannung</option><option value="current">Strom</option><option value="zero">Strom-Nullpunkt (ohne Last)</option><option value="lead">Leitungswiderstand (Zellspannung unter Strom)</option><option value="balancer">Balancer-Abgriff</option><option value="reset">Alles zurücksetzen</option></select></div>
             <div class="field"><label for="kPort">Anschluss</label><select id="kPort"><option>A</option><option>B</option></select></div>
             <div class="field" id="kTapF" hidden><label for="kTap">Abgriff (1 = erste Zelle)</label><input type="number" id="kTap" min="1" max="6" value="1"></div>
             <div class="field" id="kValF"><label for="kVal">Istwert (V bzw. A)</label><input type="number" id="kVal" step="0.001"></div>
@@ -1577,11 +1577,13 @@ const kUpd = () => {
   $("kTapF").hidden = w !== "balancer"; $("kValF").hidden = w === "zero" || w === "reset";
   $("kPort").parentElement.hidden = w === "balancer" || w === "reset";
   const p = isMini() ? RAW.slots[(+$("kPort").value || 1) - 1]?.ports[0] : S?.ports[$("kPort").value === "B" ? 1 : 0];
-  $("kShown").textContent = w === "voltage" && p ? `Angezeigt: ${nf(p.v, 3)} V` : w === "current" && p ? `Angezeigt: ${nf(Math.abs(p.i), 3)} A` : "";
+  const rl = (SETTINGS?.rLead || [])[isMini() ? (+$("kPort").value || 1) - 1 : $("kPort").value === "B" ? 1 : 0] || 0;
+  $("kShown").textContent = w === "voltage" && p ? `Angezeigt: ${nf(p.v, 3)} V` : w === "current" && p ? `Angezeigt: ${nf(Math.abs(p.i), 3)} A`
+    : w === "lead" ? `${p ? `Angezeigt: ${nf(p.v, 3)} V bei ${nf(p.i, 3)} A. ` : ""}Derzeit ${nf(rl * 1000)} mΩ. Während geladen oder entladen wird (mindestens 0,1 A), die Spannung mit dem Multimeter direkt an den Polen der Zelle messen und als Istwert in V eingeben.` : "";
 };
 ["kWhat", "kPort"].forEach(id => $(id).addEventListener("input", kUpd));
 $("kGo").addEventListener("click", async () => {
-  try { await api("/api/calibrate", {what: $("kWhat").value, port: $("kPort").value, slot: +$("kPort").value || 1, tap: (+$("kTap").value || 1) - 1, actual: +$("kVal").value}); toast("Abgeglichen"); } catch (e) { toast(e.message); }
+  try { await api("/api/calibrate", {what: $("kWhat").value, port: $("kPort").value, slot: +$("kPort").value || 1, tap: (+$("kTap").value || 1) - 1, actual: +$("kVal").value}); toast("Abgeglichen"); if ($("kWhat").value === "lead") { await loadSettings(); kUpd(); } } catch (e) { toast(e.message); }
 });
 $("fwFile").addEventListener("change", () => $("fwGo").disabled = !$("fwFile").files.length);
 $("fwGo").addEventListener("click", () => {
