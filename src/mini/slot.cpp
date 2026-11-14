@@ -342,8 +342,10 @@ void Slot::handleCharge(uint32_t now) {
   if (t > CHARGE_TIMEOUT_MS) { fail("Laden dauert zu lange (über 8 h)"); return; }
   if (t > 120000 && mah < 5 && m.v < 4.1f) { fail("Lader liefert keinen Strom"); return; }
   bool full = false;
-  // TP4056 beendet bei ca. 1/10 des Ladestroms
-  if (t > 60000 && m.v >= 4.15f && m.i < 0.12f && chgF_ > 0.99f) {
+  // TP4056 beendet bei ca. 1/10 des Ladestroms. Danach sinkt die Spannung oft unter 4,15 V,
+  // deshalb gilt auch "Lader liefert praktisch nichts mehr" bei nahezu voller Zelle als fertig.
+  bool chgDone = m.i < 0.12f && (m.v >= 4.15f || (m.i < 0.02f && m.v >= 4.0f));
+  if (t > 60000 && chgDone && chgF_ > 0.99f) {
     if (!fullSince_) fullSince_ = now;
     if (now - fullSince_ > 30000) full = true;
   } else {
