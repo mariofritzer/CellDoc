@@ -745,6 +745,9 @@ tr:last-child td{border-bottom:0}
           <div class="actions"><button class="btn" id="bkRestore" type="button" disabled>Einspielen</button></div>
           <div class="lbl">Für Excel</div>
           <div class="actions"><button class="btn" id="bkCellsCsv" type="button">Zellen als CSV</button><button class="btn" id="bkResCsv" type="button">Ergebnisse als CSV</button></div>
+          <div class="lbl">Neu anfangen</div>
+          <p class="note">Löscht alle Zellen, Testergebnisse und Kurven. Die Nummerierung beginnt wieder bei 1. Einstellungen, WLAN und Kalibrierung bleiben erhalten. Vorher am besten eine Sicherung herunterladen.</p>
+          <div class="actions"><button class="btn danger" id="bkWipe" type="button">Bestand komplett löschen</button></div>
         </section>
 
         <section class="card">
@@ -2193,6 +2196,11 @@ $("bkRestore").addEventListener("click", () => confirmInline($("bkRestore").pare
 }));
 $("bkCellsCsv").addEventListener("click", async () => { try { exportCellsCsv(await loadCellsData(true)); } catch (e) { toast(e.message); } });
 $("bkResCsv").addEventListener("click", exportResultsCsv);
+$("bkWipe").addEventListener("click", () => confirmInline($("bkWipe").parentElement, "Wirklich ALLE Zellen und Ergebnisse endgültig löschen? Das lässt sich nicht rückgängig machen.", async () => {
+  if (DEMO) return toast("Im Demo-Modus nicht möglich");
+  await api("/api/wipe", {confirm: "LOESCHEN"});
+  toast("Bestand gelöscht, nächste Zelle ist Nr. 1"); setTimeout(() => location.reload(), 1200);
+}));
 $("mqSave").addEventListener("click", async () => {
   const b = {mqttOn: $("mqOn").checked, mqttHost: $("mqHost").value.trim(), mqttPort: +$("mqPort").value || 1883, mqttUser: $("mqUser").value.trim(), mqttBase: $("mqBase").value.trim() || "celldoc"};
   if ($("mqPass").value) b.mqttPass = $("mqPass").value;

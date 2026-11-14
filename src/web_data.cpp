@@ -438,6 +438,31 @@ void handleRestoreDone() {
   sendJson(r);
 }
 
+// Zellenbestand, Ergebnisse und Kurven komplett löschen, Nummern beginnen wieder bei 1
+void wipeDir(const char* dir) {
+  std::vector<String> names;
+  File d = LittleFS.open(dir);
+  for (File f = d.openNextFile(); f; f = d.openNextFile()) names.push_back(String(dir) + "/" + f.name());
+  d.close();
+  for (auto& n : names) LittleFS.remove(n);
+}
+
+void handleWipe() {
+  JsonDocument b;
+  if (!readBody(b)) return sendError("Ungültige Anfrage");
+  if (String(b["confirm"] | "") != "LOESCHEN") return sendError("Bestätigung fehlt");
+  if (device::busy()) return sendError("Während eines Vorgangs nicht möglich", 409);
+  if (settings.peers.length()) return sendError("Zuerst die Partnergeräte entfernen, sonst holt der Abgleich die Zellen zurück", 409);
+  wipeDir("/z");
+  wipeDir("/r");
+  wipeDir("/c");
+  settings.nextCellNo = 1;
+  settings.nextResultId = 1;
+  settings.save();
+  mqtt::reconfigure();
+  sendOk();
+}
+
 }  // namespace
 
 namespace webdata {
@@ -466,6 +491,7 @@ void routes() {
   server.on("/api/time", HTTP_POST, handleTime);
   server.on("/api/backup", HTTP_GET, handleBackup);
   server.on("/api/restore", HTTP_POST, handleRestoreDone, handleRestoreUpload);
+  server.on("/api/wipe", HTTP_POST, handleWipe);
 }
 
 }  // namespace webdata
