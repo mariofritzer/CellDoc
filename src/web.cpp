@@ -140,6 +140,12 @@ static void handleWifiSave() {
   settings.wifiPass = String(b["pass"] | "");
   settings.save();
   sendOk();
+  // leeres Netzwerk = WLAN löschen: auch die im Funkchip gespeicherten Zugangsdaten verwerfen,
+  // damit CellDoc nach dem Neustart nur den Hotspot öffnet
+  if (!settings.wifiSsid.length()) {
+    delay(200);
+    WiFi.disconnect(true, true);
+  }
   scheduleRestart();
 }
 

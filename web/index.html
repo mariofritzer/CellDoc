@@ -656,7 +656,7 @@ tr:last-child td{border-bottom:0}
               <select id="wList" hidden aria-label="Gefundene Netzwerke"></select></div>
             <div class="field full"><label for="wPass">Passwort</label><input type="password" id="wPass" autocomplete="new-password"></div>
           </div>
-          <div class="actions"><button class="btn primary" id="wSave" type="button">Speichern und neu starten</button></div>
+          <div class="actions"><button class="btn primary" id="wSave" type="button">Speichern und neu starten</button><button class="btn danger" id="wDel" type="button">WLAN löschen</button></div>
         </section>
 
         <section class="card">
@@ -1560,6 +1560,11 @@ $("wList").addEventListener("change", e => { if (e.target.value) $("wSsid").valu
 $("wSave").addEventListener("click", async () => {
   try { await api("/api/wifi", {ssid: $("wSsid").value.trim(), pass: $("wPass").value}); toast("Gespeichert. CellDoc startet neu und verbindet sich mit dem WLAN."); } catch (e) { toast(e.message); }
 });
+$("wDel").addEventListener("click", () => confirmInline($("wDel").parentElement, "WLAN-Zugangsdaten löschen? CellDoc startet neu und öffnet nur noch seinen Hotspot „CellDoc-…“ (Adresse 192.168.4.1).", async () => {
+  if (DEMO) return toast("Im Demo-Modus nicht möglich");
+  await api("/api/wifi", {ssid: "", pass: ""});
+  toast("WLAN gelöscht. Mit dem Hotspot „CellDoc-…“ verbinden und 192.168.4.1 öffnen.");
+}));
 function kPorts() {
   const sel = $("kPort");
   const want = isMini() ? RAW.slots.map((_, k) => `<option value="${k + 1}">Schacht ${k + 1}</option>`).join("") : `<option>A</option><option>B</option>`;
