@@ -62,4 +62,8 @@ main()
 if env is not None:
     v = version()
     env.Append(CPPDEFINES=[("CELLDOC_VERSION", env.StringifyMacro(v))])
+    # Dateiname der Firmware im GitHub-Release, für das Update direkt von GitHub
+    pe = env["PIOENV"]
+    asset = {"esp32dev": "celldoc", "esp32s3": "celldoc-s3"}.get(pe, "celldoc-" + pe)
+    env.Append(CPPDEFINES=[("CELLDOC_ASSET", env.StringifyMacro(asset))])
     print("Version:", v)

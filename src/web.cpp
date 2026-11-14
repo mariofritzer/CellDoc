@@ -1,6 +1,9 @@
 #include "web.h"
 #include <ArduinoJson.h>
 #include <DNSServer.h>
+#include <HTTPClient.h>
+#include <HTTPUpdate.h>
+#include <WiFiClientSecure.h>
 #include <ESPmDNS.h>
 #include <LittleFS.h>
 #include <Update.h>
@@ -196,6 +199,102 @@ static void handleUpdateUpload() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Update direkt von GitHub: neueste Vorabversion „latest“ des Repos.
+// Läuft in einer eigenen Task, damit Messung und Weboberfläche weiterlaufen.
+
+#ifndef CELLDOC_ASSET
+#define CELLDOC_ASSET "celldoc"
+#endif
+static const char* GH_BASE = "https://github.com/mariofritzer/CellDoc/releases/download/latest/";
+static volatile bool ghRunning = false;
+static volatile int ghPct = 0;
+static bool ghInstall = false;
+static String ghState;  // "", "geprueft", "fertig", "fehler"
+static String ghErr, ghLatest;
+
+static void ghTask(void*) {
+  WiFiClientSecure cl;
+  cl.setInsecure();
+  String state, err, latest;
+  if (!ghInstall) {
+    HTTPClient http;
+    http.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+    http.setTimeout(10000);
+    if (http.begin(cl, String(GH_BASE) + "version.txt")) {
+      int code = http.GET();
+      if (code == 200) {
+        latest = http.getString();
+        latest.trim();
+        state = "geprueft";
+      } else {
+        err = "GitHub antwortet nicht (" + String(code) + ")";
+      }
+      http.end();
+    } else {
+      err = "GitHub nicht erreichbar";
+    }
+  } else {
+    httpUpdate.rebootOnUpdate(false);
+    httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+    httpUpdate.onProgress([](int cur, int total) { ghPct = total > 0 ? int(int64_t(cur) * 100 / total) : 0; });
+    t_httpUpdate_return r = httpUpdate.update(cl, String(GH_BASE) + CELLDOC_ASSET "-firmware.bin");
+    if (r == HTTP_UPDATE_OK) {
+      state = "fertig";
+      ghPct = 100;
+    } else {
+      err = httpUpdate.getLastErrorString();
+    }
+  }
+  if (err.length()) state = "fehler";
+  ghState = state;
+  ghErr = err;
+  if (latest.length()) ghLatest = latest;
+  if (state == "fertig") scheduleRestart();
+  ghRunning = false;
+  vTaskDelete(nullptr);
+}
+
+static void handleGhStatus() {
+  JsonDocument r;
+  r["current"] = CELLDOC_VERSION;
+  r["asset"] = CELLDOC_ASSET "-firmware.bin";
+  r["running"] = (bool)ghRunning;
+  r["install"] = ghInstall;
+  r["pct"] = (int)ghPct;
+  if (!ghRunning) {
+    r["state"] = ghState;
+    if (ghErr.length()) r["error"] = ghErr;
+    if (ghLatest.length()) {
+      r["latest"] = ghLatest;
+      r["newer"] = ghLatest != CELLDOC_VERSION;
+    }
+  }
+  sendJson(r);
+}
+
+static void handleGhStart() {
+  JsonDocument b;
+  if (!readBody(b)) return sendError("Ungültige Anfrage");
+  if (ghRunning) return sendError("Läuft bereits", 409);
+  if (ap || WiFi.status() != WL_CONNECTED) return sendError("Kein Internet: CellDoc ist nicht mit dem WLAN verbunden", 409);
+  bool install = String(b["action"] | "") == "install";
+  if (install) {
+    if (device::busy()) return sendError("Während eines Tests ist kein Update möglich", 409);
+    device::killAll();
+  }
+  ghInstall = install;
+  ghState = "";
+  ghErr = "";
+  ghPct = 0;
+  ghRunning = true;
+  if (xTaskCreate(ghTask, "ghupd", 12288, nullptr, 1, nullptr) != pdPASS) {
+    ghRunning = false;
+    return sendError("Zu wenig Speicher frei", 500);
+  }
+  sendOk();
+}
+
 static void handleNotFound() {
   if (ap) {
     // Captive Portal: alles auf die Startseite umleiten
@@ -264,6 +363,8 @@ void begin() {
   server.on("/api/wifi", HTTP_POST, handleWifiSave);
   server.on("/api/restart", HTTP_POST, handleRestart);
   server.on("/update", HTTP_POST, handleUpdateDone, handleUpdateUpload);
+  server.on("/api/ghupdate", HTTP_GET, handleGhStatus);
+  server.on("/api/ghupdate", HTTP_POST, handleGhStart);
   server.onNotFound(handleNotFound);
   server.begin();
 }

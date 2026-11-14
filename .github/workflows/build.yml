@@ -78,6 +78,7 @@ jobs:
           B=.pio/build/${{ matrix.env }}
           mkdir -p out
           cp $B/firmware.bin out/${{ matrix.name }}-firmware.bin
+          echo "$CELLDOC_VERSION" > out/version.txt
           BOOT_APP0=$(find ~/.platformio/packages/framework-arduinoespressif32 -name boot_app0.bin | head -1)
           pio pkg exec -p tool-esptoolpy -- esptool.py --chip ${{ matrix.chip }} merge_bin -o out/${{ matrix.name }}-factory.bin \
             ${{ matrix.boot }} $B/bootloader.bin 0x8000 $B/partitions.bin 0xe000 "$BOOT_APP0" 0x10000 $B/firmware.bin
@@ -88,7 +89,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
-          path: out/*.bin
+          path: |
+            out/*.bin
+            out/version.txt
 
   release:
     needs: build
@@ -124,7 +127,10 @@ jobs:
             | CellDoc Nano (ESP32-C3) | celldoc-nano-firmware.bin | celldoc-nano-factory.bin |
 
             Der Webflasher erkennt ESP32 und ESP32-S3 selbst und spielt die passende Datei auf.
-          files: out/*.bin
+            `version.txt` nutzt das Update direkt von GitHub in der Weboberfläche.
+          files: |
+            out/*.bin
+            out/version.txt
 
       - name: Release veröffentlichen
         if: startsWith(github.ref, 'refs/tags/v')

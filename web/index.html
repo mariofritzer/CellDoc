@@ -752,6 +752,11 @@ tr:last-child td{border-bottom:0}
 
         <section class="card">
           <h2>Firmware-Update</h2>
+          <div class="lbl">Direkt von GitHub</div>
+          <p class="note" id="ghInfo">Lädt die neueste Firmware für dieses Gerät direkt von GitHub. CellDoc braucht dafür Internet über das WLAN.</p>
+          <div class="bar" id="ghBar" hidden><i></i></div>
+          <div class="actions"><button class="btn" id="ghCheck" type="button">Nach Update suchen</button><button class="btn primary" id="ghGo" type="button" hidden>Installieren</button></div>
+          <div class="lbl">Aus Datei</div>
           <p class="note">Datei <b>celldoc-firmware.bin</b> aus den GitHub-Releases wählen. Während eines Tests ist kein Update möglich.</p>
           <input type="file" id="fwFile" accept=".bin" aria-label="Firmware-Datei">
           <div class="bar" id="fwBar" hidden><i></i></div>
@@ -1584,6 +1589,37 @@ $("fwGo").addEventListener("click", () => {
   x.onerror = () => toast("Verbindung abgebrochen");
   x.open("POST", "/update"); x.send(fd);
 });
+async function ghPoll() {
+  for (;;) {
+    await new Promise(r => setTimeout(r, 700));
+    const st = await api("/api/ghupdate");
+    if (st.running) { if (st.install) $("ghBar").firstElementChild.style.width = st.pct + "%"; continue; }
+    return st;
+  }
+}
+$("ghCheck").addEventListener("click", async () => {
+  if (DEMO) return toast("Im Demo-Modus nicht möglich");
+  const b = $("ghCheck"); b.disabled = true; $("ghInfo").textContent = "Frage GitHub …";
+  try {
+    await api("/api/ghupdate", {action: "check"});
+    const st = await ghPoll();
+    if (st.state === "fehler") throw new Error(st.error);
+    $("ghInfo").innerHTML = st.newer
+      ? `Neue Version verfügbar: <b>${esc(st.latest)}</b> (installiert: ${esc(st.current)})`
+      : `Aktuell: ${esc(st.current)} ist die neueste Version.`;
+    $("ghGo").hidden = !st.newer;
+  } catch (e) { $("ghInfo").textContent = e.message; }
+  b.disabled = false;
+});
+$("ghGo").addEventListener("click", () => confirmInline($("ghGo").parentElement, "Update von GitHub installieren? CellDoc startet danach neu.", async () => {
+  $("ghGo").disabled = $("ghCheck").disabled = true; $("ghBar").hidden = false; $("ghInfo").textContent = "Lade Firmware …";
+  try {
+    await api("/api/ghupdate", {action: "install"});
+    const st = await ghPoll();
+    if (st.state !== "fertig") throw new Error(st.error || "Update fehlgeschlagen");
+    $("ghInfo").textContent = "Update erfolgreich, CellDoc startet neu …"; setTimeout(() => location.reload(), 10000);
+  } catch (e) { $("ghInfo").textContent = "Fehler: " + e.message; $("ghGo").disabled = $("ghCheck").disabled = false; }
+}));
 $("rst").addEventListener("click", () => confirmInline($("rst").parentElement, "CellDoc neu starten? Ein laufender Test wird abgebrochen.", async () => { await api("/api/restart", {}); toast("Startet neu …"); }));
 
 // ======================================================================
