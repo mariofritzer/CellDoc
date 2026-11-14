@@ -288,7 +288,7 @@ tr:last-child td{border-bottom:0}
       <div class="toolbar">
         <input type="search" id="cSearch" class="grow" placeholder="Nummer, Name, Ort …" aria-label="Zellen durchsuchen" autocomplete="off">
         <button class="btn" id="cScan" type="button"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3M8 12h8"/></svg>Scannen</button>
-        <select id="cSort" aria-label="Sortierung" style="width:auto"><option value="no">Neueste zuerst</option><option value="score">Lebenszahl</option><option value="cap">Kapazität</option><option value="ri">Innenwiderstand</option><option value="date">Zuletzt geprüft</option></select>
+        <select id="cSort" aria-label="Sortierung" style="width:auto"><option value="no">Neueste zuerst</option><option value="noAsc">Nummer aufsteigend</option><option value="name">Name A–Z</option><option value="maker">Hersteller</option><option value="loc">Lagerort</option><option value="status">Status</option><option value="score">Lebenszahl</option><option value="cap">Kapazität</option><option value="ri">Innenwiderstand</option><option value="date">Zuletzt geprüft</option><option value="del">Zuletzt gelöscht</option></select>
       </div>
       <div class="fchips" id="cFilter" role="group" aria-label="Filter"></div>
       <div id="cellList"><div class="empty">Lädt …</div></div>
@@ -1630,7 +1630,7 @@ $("rst").addEventListener("click", () => confirmInline($("rst").parentElement, "
 // ======================================================================
 // Zellenbestand
 // ======================================================================
-let CELLS = [], CELLS_AT = 0, cellFilter = "all";
+let CELLS = [], CELLS_DEL = [], CELLS_AT = 0, cellFilter = "all";
 const gradeOf = s => s >= 85 ? "A" : s >= 70 ? "B" : s >= 50 ? "C" : "D";
 const gradeCol = g => ({A: "--charge", B: "--charge", C: "--warn", D: "--danger"}[g] || "--muted");
 const STATUS_TXT = {ok: "Im Bestand", verbaut: "Verbaut", defekt: "Defekt", entsorgt: "Entsorgt"};
@@ -1651,14 +1651,15 @@ function gradeBadge(c, big) {
 }
 async function loadCellsData(force) {
   if (!force && CELLS.length && Date.now() - CELLS_AT < 5000) return CELLS;
-  CELLS = await api("/api/cells"); CELLS_AT = Date.now();
+  const all = await api("/api/cells?deleted=1"); CELLS_AT = Date.now();
+  CELLS = all.filter(c => !c.deleted); CELLS_DEL = all.filter(c => c.deleted);
   return CELLS;
 }
 // Suche: jedes Wort muss irgendwo vorkommen; Zahlen treffen auch die Zellnummer
 function cellMatches(c, q) {
   const words = q.toLowerCase().split(/\s+/).filter(Boolean);
   if (!words.length) return true;
-  const hay = [c.id, "#" + c.no, c.name, c.loc, c.note, c.pack, c.presetName, STATUS_TXT[c.status], c.last ? "note " + (c.last.grade || "") : "", c.sd?.grade].join(" ").toLowerCase();
+  const hay = [c.id, "#" + c.no, c.name, c.loc, c.note, c.pack, c.presetName, c.maker, c.model, c.format, c.origin, c.made, STATUS_TXT[c.status], c.last ? "note " + (c.last.grade || "") : "", c.sd?.grade].join(" ").toLowerCase();
   return words.every(w => /^#?\d+$/.test(w) ? (c.no === +w.replace("#", "") || hay.includes(w)) : hay.includes(w));
 }
 const FILTERS = [
@@ -1668,31 +1669,37 @@ const FILTERS = [
   ["check", "Prüfen", c => c.status === "ok" && (!c.last || c.sd?.state === "run" || ["auffällig", "schlecht"].includes(c.sd?.grade))],
   ["used", "Verbaut", c => c.status === "verbaut"],
   ["out", "Ausgemustert", c => c.status === "defekt" || c.status === "entsorgt"],
+  ["del", "Gelöscht", () => true],
 ];
+const cellName = c => (c.name && c.name !== c.id ? c.name : "") || [c.maker, c.model].filter(Boolean).join(" ") || c.presetName || "";
+const byText = f => (a, b) => (f(a) || "\uffff").localeCompare(f(b) || "\uffff", "de", {numeric: true}) || a.no - b.no;
 const SORTS = {
   no: (a, b) => b.no - a.no, score: (a, b) => (b.last?.score ?? -1) - (a.last?.score ?? -1), cap: (a, b) => (b.last?.cap ?? 0) - (a.last?.cap ?? 0),
   ri: (a, b) => (a.last?.ri || 1e9) - (b.last?.ri || 1e9), date: (a, b) => (b.last?.time ?? 0) - (a.last?.time ?? 0),
+  noAsc: (a, b) => a.no - b.no, name: byText(cellName), maker: byText(c => [c.maker, c.model].filter(Boolean).join(" ")), loc: byText(c => c.loc),
+  status: byText(c => STATUS_TXT[c.status]), del: (a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0) || b.no - a.no,
 };
 function filteredCells() {
   const q = $("cSearch").value.trim(), f = FILTERS.find(x => x[0] === cellFilter) || FILTERS[0];
-  let list = CELLS.filter(f[2]).filter(c => cellMatches(c, q)).sort(SORTS[$("cSort").value] || SORTS.no);
+  let list = (cellFilter === "del" ? CELLS_DEL : CELLS).filter(f[2]).filter(c => cellMatches(c, q)).sort(SORTS[$("cSort").value] || SORTS.no);
   const n = /^#?\d+$/.test(q) ? +q.replace("#", "") : 0;
   if (n) list.sort((a, b) => (b.no === n) - (a.no === n));  // genaue Nummer zuerst
   return list;
 }
 function cellRow(c) {
   const l = c.last || {};
-  const name = c.name && c.name !== c.id ? c.name : (c.presetName || "");
-  const bits = [l.cap ? nf(l.cap) + " mAh" : "noch nicht geprüft", l.ri ? riFmt(l.ri) : "", c.loc ? "Ort: " + c.loc : "", c.status !== "ok" ? STATUS_TXT[c.status] + (c.pack ? " in " + c.pack : "") : "", sdShort(c)].filter(Boolean);
-  return `<div class="row tap" data-no="${c.no}" tabindex="0" role="button"><div class="crow"><span class="cid">${esc(c.id)}</span><div class="l"><b>${esc(name) || "&nbsp;"}</b><small class="num">${bits.map(esc).join(" · ")}</small></div></div>${gradeBadge(c)}</div>`;
+  const name = cellName(c);
+  const bits = [c.deleted ? "gelöscht" + (c.deletedAt ? " am " + dateStr(c.deletedAt).split(",")[0] : "") : "", c.format || "", l.cap ? nf(l.cap) + " mAh" : c.nomCapMah ? "Nenn " + nf(c.nomCapMah) + " mAh" : "noch nicht geprüft", l.ri ? riFmt(l.ri) : "", c.loc ? "Ort: " + c.loc : "", c.status && c.status !== "ok" ? STATUS_TXT[c.status] + (c.pack ? " in " + c.pack : "") : "", sdShort(c)].filter(Boolean);
+  return `<div class="row tap" data-no="${c.no}" tabindex="0" role="button"${c.deleted ? ' style="opacity:.6"' : ""}><div class="crow"><span class="cid">${esc(c.id)}</span><div class="l"><b>${esc(name) || "&nbsp;"}</b><small class="num">${bits.map(esc).join(" · ")}</small></div></div>${gradeBadge(c)}</div>`;
 }
 function renderCells() {
   const list = filteredCells();
-  $("cFilter").innerHTML = FILTERS.map(([id, n, fn]) => `<button type="button" aria-pressed="${id === cellFilter}" data-f="${id}">${n} <span class="num">${CELLS.filter(fn).length}</span></button>`).join("");
+  $("cFilter").innerHTML = FILTERS.filter(([id]) => id !== "del" || CELLS_DEL.length || cellFilter === "del").map(([id, n, fn]) => `<button type="button" aria-pressed="${id === cellFilter}" data-f="${id}">${n} <span class="num">${(id === "del" ? CELLS_DEL : CELLS).filter(fn).length}</span></button>`).join("");
   $("cFilter").querySelectorAll("button").forEach(b => b.addEventListener("click", () => { cellFilter = b.dataset.f; renderCells(); }));
   $("cellCount").textContent = CELLS.length ? `${CELLS.length} ${CELLS.length === 1 ? "Zelle" : "Zellen"}` : "";
   const q = $("cSearch").value.trim();
   $("cellList").innerHTML = list.length ? list.slice(0, 300).map(cellRow).join("") + (list.length > 300 ? `<div class="note">… und ${list.length - 300} weitere. Suche verfeinern.</div>` : "")
+    : cellFilter === "del" ? `<div class="empty">Keine gelöschten Zellen.</div>`
     : CELLS.length ? `<div class="empty">Nichts gefunden${q ? ` für „${esc(q)}“` : ""}.</div>`
     : `<div class="empty">Noch keine Zellen. Jeder Kapazitätstest legt automatisch eine Zelle mit eigener Nummer an.<br>Du kannst Zellen auch vorab anlegen und gleich beschriften.</div>`;
   $("cellList").querySelectorAll("[data-no]").forEach(e => {
@@ -1716,6 +1723,29 @@ $("cPack").addEventListener("click", () => openPack());
 $("cLabels").addEventListener("click", () => { const l = filteredCells(); if (!l.length) return toast("Keine Zellen in der Auswahl"); openLabel(l); });
 $("cCsv").addEventListener("click", () => exportCellsCsv(filteredCells()));
 
+// Freiwillige Datenblatt-Angaben, beim Anlegen und Bearbeiten gleich
+const MORE_TXT = [["maker", "Hersteller", 30, "z. B. Samsung, Sony, LG"], ["model", "Modell / Aufdruck", 40, "z. B. INR18650-30Q"], ["format", "Bauform", 20, "z. B. 18650"], ["made", "Herstelldatum", 20, "z. B. 09/2010"], ["origin", "Herkunft", 60, "z. B. Laptop-Akku Dell, neu gekauft"]];
+const MORE_NUM = [["nomCapMah", "Nennkapazität (mAh)", 1], ["vNom", "Nennspannung (V)", .1], ["maxA", "Max. Entladestrom (A)", .1], ["weight", "Gewicht (g)", .1], ["vIn", "Spannung beim Eingang (V)", .001]];
+function moreFields(pre, c = {}, open = false) {
+  const has = [...MORE_TXT, ...MORE_NUM].some(([k]) => c[k]);
+  return `<details class="chem" style="margin-top:12px"${open || has ? " open" : ""}><summary>Mehr Angaben <span class="sub" style="font-weight:400">freiwillig</span></summary><div class="body"><div class="form">
+    ${MORE_TXT.map(([k, l, n, ph]) => `<div class="field"><label for="${pre}${k}">${l}</label><input type="text" id="${pre}${k}" maxlength="${n}" value="${esc(c[k] || "")}" placeholder="${esc(ph)}"${k === "format" ? ` list="fmtList"` : ""}></div>`).join("")}
+    ${MORE_NUM.map(([k, l, st]) => `<div class="field"><label for="${pre}${k}">${l}</label><input type="number" inputmode="decimal" id="${pre}${k}" min="0" step="${st}" value="${c[k] || ""}"></div>`).join("")}
+    <datalist id="fmtList">${["18650", "21700", "26650", "14500", "18350", "16340", "32700", "Pouch", "Prismatisch", "Rundzelle"].map(x => `<option value="${x}">`).join("")}</datalist>
+  </div><p class="note">Was du nicht weißt, einfach leer lassen.</p></div></details>`;
+}
+function readMore(q, pre) {
+  const o = {};
+  MORE_TXT.forEach(([k]) => o[k] = q("#" + pre + k).value.trim());
+  MORE_NUM.forEach(([k]) => o[k] = +String(q("#" + pre + k).value).replace(",", ".") || 0);
+  return o;
+}
+function moreSummary(c) {
+  const rows = [["Hersteller", c.maker], ["Modell", c.model], ["Bauform", c.format], ["Nennkapazität", c.nomCapMah ? nf(c.nomCapMah) + " mAh" : ""], ["Nennspannung", c.vNom ? nf(c.vNom, 2) + " V" : ""],
+    ["Max. Strom", c.maxA ? nf(c.maxA, 1) + " A" : ""], ["Herstelldatum", c.made], ["Herkunft", c.origin], ["Gewicht", c.weight ? nf(c.weight, 1) + " g" : ""], ["Eingangsspannung", c.vIn ? nf(c.vIn, 3) + " V" : ""]].filter(r => r[1]);
+  return rows.length ? `<div class="kv num" style="margin-top:12px">${rows.map(([l, v]) => `<div><span>${l}</span><b>${esc(String(v))}</b></div>`).join("")}</div>` : "";
+}
+
 function openNewCell() {
   const presetOpts = INFO.presets.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
   const {el, close} = openSheet(`
@@ -1728,15 +1758,17 @@ function openNewCell() {
       <div class="field"><label for="ncN">Anzahl</label><input type="number" id="ncN" min="1" max="50" value="1"><span class="hint">Mehrere gleiche Zellen auf einmal</span></div>
       <div class="field full"><label for="ncNote">Notiz</label><input type="text" id="ncNote" maxlength="200"></div>
     </div>
+    ${moreFields("nc")}
     <div class="actions"><button class="btn primary" id="ncGo" type="button" style="flex:1">Anlegen</button></div>`);
   const q = s => el.querySelector(s);
+  q("#ncType").addEventListener("input", () => { const p = INFO.presets.find(x => x.id === q("#ncType").value); q("#ncnomCapMah").placeholder = p?.capMah ? `${p.capMah} laut Zelltyp` : ""; });
   q("#ncGo").addEventListener("click", async () => {
     const n = clamp(+q("#ncN").value || 1, 1, 50), made = [];
-    const p = INFO.presets.find(x => x.id === q("#ncType").value);
+    const p = INFO.presets.find(x => x.id === q("#ncType").value), more = readMore(q, "nc");
     for (let k = 0; k < n; k++) {
       const name = q("#ncName").value.trim();
       try {
-        const r = await api("/api/cell", {no: 0, name: n > 1 && name ? `${name} ${k + 1}` : name, preset: p?.id || "", chem: p?.chem || "liion", nomCapMah: p?.capMah || 0, riNew: p?.riNew || 0, loc: q("#ncLoc").value.trim(), note: q("#ncNote").value.trim()});
+        const r = await api("/api/cell", {no: 0, name: n > 1 && name ? `${name} ${k + 1}` : name, preset: p?.id || "", chem: p?.chem || "liion", riNew: p?.riNew || 0, loc: q("#ncLoc").value.trim(), note: q("#ncNote").value.trim(), ...more, nomCapMah: more.nomCapMah || p?.capMah || 0});
         made.push(r.no);
       } catch (e) { toast(e.message); break; }
     }
@@ -1758,10 +1790,11 @@ function portSelect(id) {
 
 async function openCell(no) {
   let c, results = [];
-  try { c = await api("/api/cell?no=" + no); } catch (e) { return toast(e.message); }
+  try { c = await api("/api/cell?deleted=1&no=" + no); } catch (e) { return toast(e.message); }
   try { results = (await api("/api/results")).filter(r => r.cell === c.no); } catch (e) {}
   const l = c.last || {};
   const name = c.name && c.name !== c.id ? c.name : "";
+  const del = !!c.deleted;
   const first = c.first?.cap && l.cap && c.first.id !== l.id ? `<div class="note">Seit dem ersten Test (${dateStr(c.first.time).split(",")[0]}): ${nf((l.cap / c.first.cap - 1) * 100, 1)} % Kapazität (${nf(c.first.cap)} → ${nf(l.cap)} mAh)</div>` : "";
   const sd = c.sd || null;
   let sdHtml;
@@ -1777,13 +1810,15 @@ async function openCell(no) {
   }
   const {el, close} = openSheet(`
     <div class="sheet-head"><h3 class="cell-h"><span class="cid big">${esc(c.id)}</span></h3><button class="btn small" data-close type="button">Schließen</button></div>
+    ${del ? `<div class="banner err" role="alert"><div><b>Gelöscht${c.deletedAt ? " am " + dateStr(c.deletedAt) : ""}</b>Die Zelle ist nicht mehr im Bestand. Mit „Wiederherstellen“ kommt sie samt Nummer und Angaben zurück.</div></div>` : ""}
     ${c.conflict ? `<div class="banner err" role="alert"><div><b>Nummer doppelt vergeben</b>Auf ${esc(c.conflict)} gibt es eine andere Zelle mit derselben Nummer, weil die Geräte beim Anlegen keine Verbindung hatten. Eine der beiden Zellen neu anlegen und neu beschriften.</div></div>` : ""}
     <section class="card">
-      <div class="cellsum">${gradeBadge(c, true)}<div class="l"><b>${esc(name || c.presetName || "Ohne Namen")}</b>
-        <small class="num">${[c.presetName && name ? c.presetName : "", STATUS_TXT[c.status] + (c.pack ? " in " + c.pack : ""), c.loc ? "Ort: " + c.loc : "", c.created ? "angelegt " + dateStr(c.created).split(",")[0] : ""].filter(Boolean).map(esc).join(" · ")}</small></div></div>
+      <div class="cellsum">${gradeBadge(c, true)}<div class="l"><b>${esc(cellName(c) || "Ohne Namen")}</b>
+        <small class="num">${[c.presetName && name ? c.presetName : "", (STATUS_TXT[c.status] || "") + (c.pack ? " in " + c.pack : ""), c.loc ? "Ort: " + c.loc : "", c.created ? "angelegt " + dateStr(c.created).split(",")[0] : ""].filter(Boolean).map(esc).join(" · ")}</small></div></div>
       ${l.cap ? `<div class="kv num"><div><span>Kapazität</span><b>${nf(l.cap)} mAh</b></div><div><span>Innenwiderstand</span><b>${riFmt(l.ri)}</b></div><div><span>Lebenszahl</span><b>${l.est ? `${l.low}–${l.high}` : l.score} %</b></div><div><span>Energie</span><b>${nf(l.wh, 2)} Wh</b></div></div>${first}` : `<div class="note">Noch nicht geprüft. Starte einen Kapazitätstest und wähle diese Zelle aus dem Bestand.</div>`}
+      ${del ? moreSummary(c) : ""}
     </section>
-    <section class="card"><h2>Angaben</h2>
+    ${del ? "" : `<section class="card"><h2>Angaben</h2>
       <div class="form">
         <div class="field full"><label for="ceName">Name</label><input type="text" id="ceName" maxlength="40" value="${esc(name)}" placeholder="${esc(c.id)}"></div>
         <div class="field"><label for="ceLoc">Lagerort</label><input type="text" id="ceLoc" maxlength="40" value="${esc(c.loc || "")}" placeholder="z. B. Kiste 2"></div>
@@ -1791,28 +1826,39 @@ async function openCell(no) {
         <div class="field full" id="cePackF"><label for="cePack">Pack</label><input type="text" id="cePack" maxlength="40" value="${esc(c.pack || "")}" placeholder="z. B. E-Bike 10S4P"></div>
         <div class="field full"><label for="ceNote">Notiz</label><input type="text" id="ceNote" maxlength="200" value="${esc(c.note || "")}" placeholder="z. B. aus Laptop Dell, leicht verbeult"></div>
       </div>
+      ${moreFields("ce", c)}
       <div class="actions"><button class="btn primary" id="ceSave" type="button">Speichern</button></div>
     </section>
     <section class="card"><h2>Spannungscheck</h2>
       ${c.check ? `<div class="banner ${(c.check.mvDay ?? 0) >= 8 ? "err" : "info"} num"><div><b>${c.check.dv > 0 ? "+" : ""}${nf(c.check.dv)} mV in ${nf(c.check.days, 1)} Tagen${c.check.mvDay != null ? ` · ${nf(c.check.mvDay, 1)} mV/Tag` : ""}</b>Geprüft am ${dateStr(c.check.t)}: ${nf(c.check.prevV, 3)} V → ${nf(c.check.v, 3)} V</div></div>` : ""}
       <p class="note num">${c.rest ? `Letzte Ruhespannung ${nf(c.rest.v, 3)} V am ${dateStr(c.rest.t)} (${({test: "nach dem Test", check: "beim Prüfen", sd: "Selbstentladung"})[c.rest.src] || c.rest.src}). ` : "Noch keine Ruhespannung gespeichert. "}Steckt die Zelle wieder im Gerät, zeigt der Vergleich, wie viel Spannung sie in der Zwischenzeit verloren hat. Nach dem Scannen prüft CellDoc das automatisch.</p>
       <div class="toolbar">${portSelect("vcPort")}<button class="btn" id="vcGo" type="button">Jetzt prüfen</button></div></section>
-    <section class="card"><h2>Selbstentladung</h2><div id="sdBox">${sdHtml}</div></section>
+    <section class="card"><h2>Selbstentladung</h2><div id="sdBox">${sdHtml}</div></section>`}
     <section class="card"><h2>Tests <span class="sub" style="text-transform:none;letter-spacing:0">${(c.hist?.length || results.length) || ""}</span></h2>
       ${c.hist?.length ? c.hist.slice().reverse().map(h => { const here = !h.dev || h.dev === S?.host; return `<div class="row tap" data-hid="${h.id}" data-dev="${esc(here ? "" : h.dev)}" tabindex="0" role="button"><div class="l"><b>${dateStr(h.t)}</b><small class="num">${nf(h.cap)} mAh · ${riFmt(h.ri)}${here ? "" : " · auf " + esc(h.dev)}</small></div><span class="tag" style="color:var(${gradeCol(gradeOf(h.score))})">${h.score} %</span></div>`; }).join("")
         : results.length ? results.map(r => `<div class="row tap" data-hid="${r.id}" data-dev="" tabindex="0" role="button"><div class="l"><b>${dateStr(r.time)}</b><small class="num">${nf(r.capMah)} mAh · ${riFmt(r.ri50 || r.ri100)} · ${nf(r.currentA, 2)} A</small></div>${sohTag(r)}</div>`).join("") : `<div class="note">Keine gespeicherten Tests.</div>`}
     </section>
-    <div class="actions" id="ceAct">
+    <div class="actions" id="ceAct">${del ? `<button class="btn primary" id="ceRestore" type="button">Wiederherstellen</button>` : `
       <button class="btn primary" id="ceLabel" type="button">Etikett drucken</button>
       <button class="btn" id="ceTest" type="button">Test starten</button>
-      <button class="btn danger" id="ceDel" type="button">Aus dem Bestand löschen</button>
+      <button class="btn danger" id="ceDel" type="button">Aus dem Bestand löschen</button>`}
     </div>`);
   const q = s => el.querySelector(s);
+  el.querySelectorAll("[data-hid]").forEach(e => e.addEventListener("click", () => {
+    if (e.dataset.dev) return window.open(`http://${e.dataset.dev}.local/?result=${e.dataset.hid}`, "_blank");
+    close(); openResult(+e.dataset.hid);
+  }));
+  if (del) {
+    q("#ceRestore").addEventListener("click", async () => {
+      try { await api("/api/cell/restore", {no: c.no}); close(); await loadCellsData(true); renderCells(); toast("Wiederhergestellt"); openCell(c.no); } catch (e) { toast(e.message); }
+    });
+    return;
+  }
   const packVis = () => q("#cePackF").hidden = q("#ceStatus").value !== "verbaut" && !q("#cePack").value;
   q("#ceStatus").addEventListener("input", packVis); packVis();
   q("#ceSave").addEventListener("click", async () => {
     try {
-      await api("/api/cell", {no: c.no, name: q("#ceName").value.trim(), loc: q("#ceLoc").value.trim(), status: q("#ceStatus").value, pack: q("#cePack").value.trim(), note: q("#ceNote").value.trim()});
+      await api("/api/cell", {no: c.no, name: q("#ceName").value.trim(), loc: q("#ceLoc").value.trim(), status: q("#ceStatus").value, pack: q("#cePack").value.trim(), note: q("#ceNote").value.trim(), ...readMore(q, "ce")});
       toast("Gespeichert"); await loadCellsData(true); if (!$("v-cells").hidden) renderCells();
     } catch (e) { toast(e.message); }
   });
@@ -1824,10 +1870,6 @@ async function openCell(no) {
       toast(b.dataset.sd === "measure" ? "Gemessen" : b.dataset.sd === "start" ? "Startspannung gespeichert" : "Abgebrochen");
     } catch (e) { toast(e.message); }
   }));
-  el.querySelectorAll("[data-hid]").forEach(e => e.addEventListener("click", () => {
-    if (e.dataset.dev) return window.open(`http://${e.dataset.dev}.local/?result=${e.dataset.hid}`, "_blank");
-    close(); openResult(+e.dataset.hid);
-  }));
   q("#vcGo").addEventListener("click", async () => {
     const p = q("#vcPort").value;
     try {
@@ -1838,8 +1880,8 @@ async function openCell(no) {
   });
   q("#ceLabel").addEventListener("click", () => openLabel([c]));
   q("#ceTest").addEventListener("click", () => { close(); showView("live"); openStart(c); });
-  q("#ceDel").addEventListener("click", () => confirmInline(q("#ceAct"), `${c.id} aus dem Bestand löschen? Die Testergebnisse bleiben erhalten. Die Nummer wird nicht neu vergeben.`, async () => {
-    await api("/api/cell/delete", {no: c.no}); close(); await loadCellsData(true); renderCells(); toast("Gelöscht");
+  q("#ceDel").addEventListener("click", () => confirmInline(q("#ceAct"), `${c.id} aus dem Bestand löschen? Sie bleibt unter „Gelöscht“ sichtbar und lässt sich wiederherstellen. Die Nummer wird nicht neu vergeben.`, async () => {
+    await api("/api/cell/delete", {no: c.no}); close(); await loadCellsData(true); renderCells(); toast("Gelöscht. Unter „Gelöscht“ wiederherstellbar.");
   }));
 }
 
@@ -2046,8 +2088,8 @@ const num = (v, d = 0) => v == null || v === "" || isNaN(v) ? "" : Number(v).toF
 const isoDate = t => t ? new Date(t * 1000).toLocaleDateString("de-AT") : "";
 function exportCellsCsv(list, o = labelOpts()) {
   csvDownload(`celldoc-zellen-${new Date().toISOString().slice(0, 10)}.csv`, [
-    ["ID", "Nummer", "Name", "Zelltyp", "Status", "Lagerort", "Pack", "Kapazität mAh", "Innenwiderstand mΩ", "Lebenszahl %", "Note", "Energie Wh", "Letzter Test", "Tests", "Selbstentladung mV/Tag", "Selbstentladung", "Notiz", "Etikett Zeile 2", "Etikett Zeile 3", "QR-Code"],
-    ...list.map(c => { const l = c.last || {}, lines = labelLines(c, {...o, name: false}); return [c.id, c.no, c.name !== c.id ? c.name : "", c.presetName || "", STATUS_TXT[c.status] || c.status, c.loc || "", c.pack || "", num(l.cap), num(l.ri, 1), l.score ?? "", l.cap ? l.grade || gradeOf(l.score) : "", num(l.wh, 2), isoDate(l.time), (c.tests || []).length, c.sd?.mvDay != null ? num(c.sd.mvDay, 1) : "", c.sd ? (c.sd.state === "run" ? "läuft" : c.sd.grade) : "", c.note || "", lines[0] || "", lines[1] || "", qrText(c, o)]; }),
+    ["ID", "Nummer", "Name", "Zelltyp", "Status", "Lagerort", "Pack", "Kapazität mAh", "Innenwiderstand mΩ", "Lebenszahl %", "Note", "Energie Wh", "Letzter Test", "Tests", "Selbstentladung mV/Tag", "Selbstentladung", "Notiz", "Hersteller", "Modell", "Bauform", "Nennkapazität mAh", "Nennspannung V", "Max. Strom A", "Herstelldatum", "Herkunft", "Gewicht g", "Eingangsspannung V", "Gelöscht am", "Etikett Zeile 2", "Etikett Zeile 3", "QR-Code"],
+    ...list.map(c => { const l = c.last || {}, lines = labelLines(c, {...o, name: false}); return [c.id, c.no, c.name !== c.id ? c.name : "", c.presetName || "", STATUS_TXT[c.status] || c.status, c.loc || "", c.pack || "", num(l.cap), num(l.ri, 1), l.score ?? "", l.cap ? l.grade || gradeOf(l.score) : "", num(l.wh, 2), isoDate(l.time), (c.tests || []).length, c.sd?.mvDay != null ? num(c.sd.mvDay, 1) : "", c.sd ? (c.sd.state === "run" ? "läuft" : c.sd.grade) : "", c.note || "", c.maker || "", c.model || "", c.format || "", num(c.nomCapMah), num(c.vNom, 2), num(c.maxA, 1), c.made || "", c.origin || "", num(c.weight, 1), num(c.vIn, 3), c.deleted ? isoDate(c.deletedAt) : "", lines[0] || "", lines[1] || "", qrText(c, o)]; }),
   ]);
 }
 async function exportResultsCsv() {
@@ -2588,7 +2630,8 @@ async function demoApi(path, body) {
     return out;
   }
   if (path.startsWith("/api/result/delete")) { demo.results = demo.results.filter(x => x.id !== id); return {ok: true}; }
-  if (path === "/api/cells") return demo.cells;
+  if (path.startsWith("/api/cells?") || path === "/api/cells") return path.includes("deleted") ? demo.cells : demo.cells.filter(c => !c.deleted);
+  if (path === "/api/cell/restore") { const c = demo.cells.find(x => x.no === body.no); delete c.deleted; delete c.deletedAt; return {ok: true}; }
   if (path === "/api/sync/status") return {host: MINI_N ? "celldoc-mini" : "celldoc", time: true, peers: [{host: MINI_N ? "celldoc" : "celldoc-mini", ok: true, ago: 84, err: "", merged: 7}]};
   if (path === "/api/sync/discover") return [{host: MINI_N ? "celldoc" : "celldoc-mini", ip: "192.168.1.48"}, {host: "celldoc-werkstatt", ip: "192.168.1.61"}];
   if (path === "/api/cell/check") { const c = demo.cells.find(x => x.no === body.no), now = Date.now() / 1000 | 0, v = 4.153; const r = c.rest ? {v, prevV: c.rest.v, days: +((now - c.rest.t) / 86400).toFixed(1), dv: Math.round((v - c.rest.v) * 1000)} : {v}; if (c.rest) { r.mvDay = +(-r.dv / Math.max(.5, r.days)).toFixed(1); c.check = {...r, t: now}; } c.rest = {v, t: now, src: "check"}; return {ok: true, ...r}; }
@@ -2596,12 +2639,12 @@ async function demoApi(path, body) {
   if (path === "/api/cell") {
     let c = demo.cells.find(x => x.no === body.no);
     if (!c) { const no = Math.max(...demo.cells.map(x => x.no)) + 1; c = {no, id: "CD-" + String(no).padStart(4, "0"), status: "ok", tests: [], created: Date.now() / 1000 | 0, chem: body.chem || "liion", preset: body.preset || "", presetName: (DEMO_INFO.presets.find(p => p.id === body.preset) || {}).name || "", nomCapMah: body.nomCapMah || 0}; demo.cells.push(c); }
-    ["name", "loc", "note", "status", "pack"].forEach(k => { if (body[k] !== undefined) c[k] = body[k]; });
+    ["name", "loc", "note", "status", "pack", "maker", "model", "format", "made", "origin", "nomCapMah", "vNom", "maxA", "weight", "vIn"].forEach(k => { if (body[k] !== undefined) c[k] = body[k]; });
     if (!c.name) c.name = c.id;
     return {ok: true, no: c.no, id: c.id};
   }
   if (path === "/api/cells/batch") { demo.cells.filter(c => body.nos.includes(c.no)).forEach(c => ["status", "pack", "loc"].forEach(k => { if (body[k] !== undefined) c[k] = body[k]; })); return {ok: true}; }
-  if (path === "/api/cell/delete") { demo.cells = demo.cells.filter(c => c.no !== body.no); return {ok: true}; }
+  if (path === "/api/cell/delete") { const c = demo.cells.find(x => x.no === body.no); c.deleted = true; c.deletedAt = Date.now() / 1000 | 0; return {ok: true}; }
   if (path === "/api/cell/sd") {
     const c = demo.cells.find(x => x.no === body.no), now = Date.now() / 1000 | 0;
     if (body.action === "reset") delete c.sd;

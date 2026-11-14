@@ -81,6 +81,7 @@ uint32_t cellArg(JsonDocument* b) {
 // Mit ?since=t: alle seit t hier eingegangenen Änderungen inklusive Grabsteinen (für Partnergeräte).
 void handleCells() {
   bool forSync = server.hasArg("since");
+  bool withDeleted = server.hasArg("deleted");
   uint32_t since = server.arg("since").toInt();
   std::vector<uint32_t> ids = idsIn("/z");
   std::sort(ids.begin(), ids.end());
@@ -104,7 +105,7 @@ void handleCells() {
       sendRaw(f);
     } else {
       String c = f.readString();
-      if (c.indexOf("\"deleted\":true") < 0) {
+      if (withDeleted || c.indexOf("\"deleted\":true") < 0) {
         if (!first) server.sendContent(",");
         first = false;
         server.sendContent(c);
@@ -122,7 +123,7 @@ void handleCell() {
   if (!no || !f) return sendError("Zelle nicht gefunden", 404);
   String c = f.readString();
   f.close();
-  if (c.indexOf("\"deleted\":true") >= 0) return sendError("Zelle wurde gelöscht", 404);
+  if (!server.hasArg("deleted") && c.indexOf("\"deleted\":true") >= 0) return sendError("Zelle wurde gelöscht", 404);
   server.sendHeader("Cache-Control", "no-store");
   server.send(200, "application/json", c);
 }
@@ -195,6 +196,21 @@ void applyFields(JsonDocument& d, JsonDocument& b) {
   if (b["note"].is<const char*>()) d["note"] = clip(b["note"].as<const char*>(), 200);
   if (b["pack"].is<const char*>()) d["pack"] = clip(b["pack"].as<const char*>(), 40);
   if (b["status"].is<const char*>() && validStatus(b["status"].as<const char*>())) d["status"] = b["status"];
+  // freiwillige Datenblatt-Angaben: leer = entfernen
+  static const struct { const char* k; size_t n; } TXT[] = {{"maker", 30}, {"model", 40}, {"format", 20}, {"made", 20}, {"origin", 60}};
+  for (auto& t : TXT) {
+    if (!b[t.k].is<const char*>()) continue;
+    String v = clip(b[t.k].as<const char*>(), t.n);
+    if (v.length()) d[t.k] = v;
+    else d.remove(t.k);
+  }
+  static const struct { const char* k; float mx; } NUM[] = {{"nomCapMah", 100000}, {"maxA", 200}, {"weight", 5000}, {"vIn", 60}, {"vNom", 60}};
+  for (auto& t : NUM) {
+    if (b[t.k].isNull()) continue;
+    float v = b[t.k] | 0.0f;
+    if (v > 0 && v <= t.mx) d[t.k] = v;
+    else d.remove(t.k);
+  }
 }
 
 void handleCellSave() {
@@ -218,6 +234,14 @@ void handleCellSave() {
   r["no"] = no;
   r["id"] = cells::makeId(no);
   sendJson(r);
+}
+
+void handleCellRestore() {
+  JsonDocument b;
+  readBody(b);
+  uint32_t no = cellArg(&b);
+  if (!cells::restore(no)) return sendError("Zelle nicht gefunden", 404);
+  sendOk();
 }
 
 void handleCellsBatch() {
@@ -474,6 +498,7 @@ void routes() {
   server.on("/api/cell", HTTP_POST, handleCellSave);
   server.on("/api/cells/batch", HTTP_POST, handleCellsBatch);
   server.on("/api/cell/delete", HTTP_POST, handleCellDelete);
+  server.on("/api/cell/restore", HTTP_POST, handleCellRestore);
   server.on("/api/cell/sd", HTTP_POST, handleSelfDischarge);
   server.on("/api/cell/check", HTTP_POST, handleCellCheck);
   server.on("/api/sync/next", HTTP_GET, handleSyncNextGet);

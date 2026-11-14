@@ -26,7 +26,8 @@ bool exists(uint32_t no);                 // vorhanden und nicht gelöscht
 bool load(uint32_t no, JsonDocument& d);  // auch gelöschte (Grabstein: deleted = true)
 bool save(uint32_t no, JsonDocument& d);  // setzt Änderungszeit und Gerät, stößt den Abgleich an
 bool saveRaw(uint32_t no, JsonDocument& d);  // unverändert speichern (Abgleich)
-bool remove(uint32_t no);                 // hinterlässt einen Grabstein, damit Partnergeräte mitlöschen
+bool remove(uint32_t no);   // markiert als gelöscht (Angaben bleiben), Partnergeräte löschen mit
+bool restore(uint32_t no);  // gelöschte Zelle zurück in den Bestand
 uint32_t allocate();                      // nächste freie Nummer, mit Partnergeräten abgestimmt
 uint32_t create(JsonObjectConst info);  // neue Zelle ohne Test (z. B. zum Vorab-Etikettieren)
 

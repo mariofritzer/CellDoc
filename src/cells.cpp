@@ -70,14 +70,23 @@ bool save(uint32_t no, JsonDocument& d) {
 }
 
 bool remove(uint32_t no) {
+  // Angaben bleiben erhalten, damit gelöschte Zellen sichtbar und wiederherstellbar sind
   JsonDocument d;
   if (!load(no, d) || (d["deleted"] | false)) return false;
-  JsonDocument t;
-  t["no"] = no;
-  t["id"] = d["id"];
-  t["uid"] = d["uid"];
-  t["deleted"] = true;
-  return save(no, t);
+  d["deleted"] = true;
+  d["deletedAt"] = nowEpoch();
+  return save(no, d);
+}
+
+bool restore(uint32_t no) {
+  JsonDocument d;
+  if (!load(no, d) || !(d["deleted"] | false)) return false;
+  d.remove("deleted");
+  d.remove("deletedAt");
+  if (!d["status"].is<const char*>()) d["status"] = "ok";
+  if (!d["name"].is<const char*>()) d["name"] = d["id"] | makeId(no);
+  if (!d["tests"].is<JsonArray>()) d["tests"].to<JsonArray>();
+  return save(no, d);
 }
 
 uint32_t allocate() {
