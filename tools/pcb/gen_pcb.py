@@ -255,7 +255,7 @@ SOT = ("Package_TO_SOT_SMD", "SOT-23")
 # ------------------------------------------------------------------ Bauteile
 # ref, footprint, x, y, rot, wert, {pad: netz}
 parts = [
-    ("BT1", "bat", 46.0, 14.0, 0, "18650-Halter", {"+": "BAT+", "-": "GND"}),
+    ("BT1", "bat", 47.5, 14.0, 0, "18650-Halter", {"+": "BAT+", "-": "GND"}),
     # Leiterplatten-Sicherungshalter 5x20, Pins an den Enden, 22,6 mm Abstand (v1.2)
     ("F1", ("Fuse", "Fuseholder_Cylinder-5x20mm_Stelvio-Kontek_PTF78_Horizontal_Open"), 68.6, 31.0, 180, "F3A 5x20", {"1": "BAT_P", "2": "BAT_F"}),
     # Verpolungsschutz: P-Kanal hinter dem Zell-Pluspol, Gate an GND. Verpolt sperrt er.
