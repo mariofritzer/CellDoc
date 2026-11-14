@@ -304,8 +304,12 @@ def text(s, x, y, size=1.2, layer=P.F_SilkS, bold=False):
 
 text("CellDoc Nano", 36.0, 75.8, 2.0, bold=True)
 text("v1.2 · 2026-11", 57.5, 76.0, 1.0)
-text("Zelle  + D −", 29.5, 61.0, 0.8)
-text("Last  + D −", 87.5, 49.6, 0.8)
+text("Zelle", 29.5, 59.7, 0.8)
+for _x, _l in ((26.0, "+"), (29.5, "D"), (33.0, "−")):
+    text(_l, _x, 61.3, 1.0)
+text("Last", 87.5, 48.5, 0.8)
+for _x, _l in ((84.0, "+"), (87.5, "D"), (91.0, "−")):
+    text(_l, _x, 50.1, 1.0)
 text("GND VCC SCL SDA", 41.3, 60.6, 0.8)
 text("OLED", 48.8, 63.0, 0.9)
 text("3V3 GND RX TX", 41.3, 71.4, 0.8)
