@@ -222,10 +222,10 @@ parts = [
     ("R6", R_FP, 87.5, 39.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SDA"}),
     ("R7", R_FP, 91.0, 39.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SCL"}),
     ("J2", ("TerminalBlock_Phoenix", "TerminalBlock_Phoenix_PT-1,5-3-3.5-H_1x03_P3.50mm_Horizontal"), 18.0, 30.2, 180, "DS18B20 Zelle", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
-    ("J3", ("TerminalBlock_Phoenix", "TerminalBlock_Phoenix_PT-1,5-3-3.5-H_1x03_P3.50mm_Horizontal"), 80.0, 73.0, 0, "DS18B20 Last opt.", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
+    ("J3", ("TerminalBlock_Phoenix", "TerminalBlock_Phoenix_PT-1,5-3-3.5-H_1x03_P3.50mm_Horizontal"), 53.3, 69.0, 0, "DS18B20 Last opt.", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
     ("J4", ("Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical"), 37.5, 63.0, 90, "OLED opt.", {"1": "GND", "2": "+3V3", "3": "SCL", "4": "SDA"}),
     ("J5", ("Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical"), 37.5, 68.5, 90, "QR GM861S opt.", {"1": "+3V3", "2": "GND", "3": "SCAN_RX", "4": "SCAN_TX"}),
-    ("BZ1", ("Buzzer_Beeper", "Buzzer_12x9.5RM7.6"), 53.0, 67.0, 0, "Summer 5V", {"1": "+5V", "2": "BZ_N"}),
+    ("BZ1", ("Buzzer_Beeper", "Buzzer_12x9.5RM7.6"), 25.5, 66.5, 0, "Summer 5V", {"1": "+5V", "2": "BZ_N"}),
     ("Q4", SOT, 70.0, 63.0, 0, "AO3400", {"1": "BUZZER", "2": "GND", "3": "BZ_N"}),
     ("R8", R_FP, 70.0, 67.0, 0, "10k", {"1": "BUZZER", "2": "GND"}),
 ]
@@ -253,7 +253,7 @@ for ref, fpn, x, y, rot, val, padnets in parts:
     if ref == "C1":
         f.Reference().SetPosition(P.VECTOR2I(mm(x + 1.25), mm(y + 4.6)))
     if ref == "BZ1":
-        f.Reference().SetPosition(P.VECTOR2I(mm(x + 9.5), mm(y + 5.5)))
+        f.Reference().SetPosition(P.VECTOR2I(mm(x - 2.6), mm(y + 6.6)))
     if ref == "Q4":
         f.Reference().SetPosition(P.VECTOR2I(mm(x + 3.2), mm(y)))
     f.Reference().SetTextThickness(mm(0.15))
@@ -315,7 +315,7 @@ def term_labels(x0, y0, rot, caption, cap_x):
 
 
 term_labels(18.0, 30.2, 180, "Zelle", 23.6)
-term_labels(80.0, 73.0, 0, "Last", 91.6)
+term_labels(53.3, 69.0, 0, "Last", 64.6)
 text("GND VCC SCL SDA", 41.3, 60.6, 0.8)
 text("OLED", 48.8, 63.0, 0.9)
 text("3V3 GND RX TX", 41.3, 71.4, 0.8)

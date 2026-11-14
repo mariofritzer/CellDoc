@@ -92,14 +92,14 @@ Zweilagig, 95 × 100 mm, beidseitig GND-Fläche. Alles sitzt auf der Platine: di
 | 3 | Schraube M3 + Mutter | Halter (1) und Lastwiderstand (2) |
 | opt. | Stift- oder Buchsenleiste 1 × 4 | J4 OLED, J5 QR-Scanner |
 
-**Änderungen v1.2:** In v1.1 waren beim ESP32-C3 SuperMini die beiden Pinreihen vertauscht (5V lag auf einem GPIO-Pin), und beim INA226 SDA/SCL. Platinen v1.1 nicht mit eingestecktem C3 einschalten. In v1.2 ist beides am echten Modul geprüft und korrigiert. Außerdem in v1.2: Leiterplatten-Sicherungshalter statt Kabelhalter, Fühlerklemmen direkt neben Zelle und Lastwiderstand, Aufdruck „+ D −“ je Pin.
+**Änderungen v1.2:** In v1.1 waren beim ESP32-C3 SuperMini die beiden Pinreihen vertauscht (5V lag auf einem GPIO-Pin), und beim INA226 SDA/SCL. Platinen v1.1 nicht mit eingestecktem C3 einschalten. In v1.2 ist beides am echten Modul geprüft und korrigiert. Außerdem in v1.2: Leiterplatten-Sicherungshalter statt Kabelhalter, Fühlerklemme „Zelle“ direkt am Zellhalter, „Last“ vor dem Lastwiderstand, Summer zwischen C1 und den Steckleisten, Aufdruck „+ D −“ je Pin.
 
 **Aufbau**
 
 - **18650-Halter:** mit einer M3-Schraube durch das Loch in der Mitte befestigen. Die Kabel kürzen und in die Lötaugen rechts löten: rot an +, schwarz an −.
 - **Sicherungshalter:** Leiterplatten-Halter 5 × 20 mm unter dem Zellhalter einlöten, Sicherung F3A einsetzen, Abdeckung aufstecken.
 - **Lastwiderstand:** mit zwei M3-Schrauben durch die Laschen festschrauben, die Lötfahnen auf die beiden ovalen Lötaugen biegen und anlöten. Er wird bei 0,8 A etwa handwarm, bei 1,2 A deutlich warm.
-- **Temperaturfühler:** Klemme „Zelle“ sitzt direkt unter dem Zellhalter, „Last“ direkt über dem Lastwiderstand, jeweils mit der Öffnung zum Bauteil. + = rot (3,3 V), D = gelb/weiß (Daten), − = schwarz (GND), der Aufdruck steht hinter jedem Anschluss. Ohne Zellfühler startet ein Test erst nach Bestätigung in der Weboberfläche.
+- **Temperaturfühler:** Klemme „Zelle“ sitzt direkt unter dem Zellhalter, „Last“ in der Mitte vor dem Lastwiderstand, jeweils mit der Öffnung zum Bauteil. + = rot (3,3 V), D = gelb/weiß (Daten), − = schwarz (GND), der Aufdruck steht hinter jedem Anschluss. Ohne Zellfühler startet ein Test erst nach Bestätigung in der Weboberfläche.
 - **INA226:** Pinfolge IN+, IN−, VBS, ALE, SCL, SDA, GND, VCC (wie am verbauten Modul). Es gibt Module mit SDA vor SCL, dann vor dem Aufstecken den Aufdruck vergleichen. R100-Shunt gegen R010 tauschen, bevor das Modul aufgesteckt wird. R6/R7 (I²C-Pull-ups) weglassen, das Modul hat eigene.
 - **TP4056:** Die USB-Buchse am Modul bleibt frei, Strom kommt über die USB-C-Buchse des C3 links an der Kante. Die Lochpositionen stammen aus der Maßzeichnung (27,9 × 17,3 mm), vor der Bestellung am eigenen Modul nachmessen.
 - **C3 SuperMini:** Chip nach oben, USB-C zeigt nach links über die Kante. Obere Reihe 5V, GND, 3V3, IO4 … IO0, untere Reihe IO5 … IO21, Reihenabstand 15,24 mm. Unter der Antenne liegt kein Kupfer.
