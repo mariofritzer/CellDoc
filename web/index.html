@@ -952,7 +952,13 @@ function renderLive() {
   socTarget = (s.soc != null && s.soc >= 0 && port.v > .3) ? s.soc : -1;
   let socL = socTarget >= 0 ? `Ladezustand <b style="color:var(--fg)">${nf(socTarget)} %</b>` : "";
   if (socTarget >= 0) socL += (ph === "discharge" && job.preCharge && job.nomCapMah) ? " · aus gezählter Ladung" : ph === "recharge" ? " · aus gezählter Ladung" : " · aus der Spannung geschätzt";
-  if (s.eta) socL += ` · noch ca. ${dur(s.eta)}`;
+  const etaTxt = sec => sec < 60 ? "unter 1 min" : dur(Math.round(sec / 60) * 60).replace(/ 0 s$/, "");
+  const PH_NAME = {precharge: "Laden", rest: "Ruhen", discharge: "Entladen", restafter: "Erholen", recharge: "Laden", charge: "Laden", manualdischarge: "Entladen"};
+  if (s.eta && active(ph)) socL += `<br>${PH_NAME[ph] || "Phase"} noch ca. <b style="color:var(--fg)">${etaTxt(s.eta)}</b>`;
+  if (s.etaTotal && active(ph) && TEST_STEPS.some(x => x[0] === ph)) {
+    const end = new Date(Date.now() + s.etaTotal * 1000);
+    socL += ` · Test fertig in ca. <b style="color:var(--fg)">${etaTxt(s.etaTotal)}</b>, gegen ${end.toLocaleTimeString("de-AT", {hour: "2-digit", minute: "2-digit"})} Uhr`;
+  }
   $("socLine").innerHTML = socL;
 
   $("kI").textContent = nf(port.i, 3) + " A";
@@ -972,6 +978,7 @@ function renderLive() {
     if (s.phaseTotal) frac = s.phaseElapsed / s.phaseTotal;
     else if (ph === "discharge" && job.nomCapMah) frac = s.mah / job.nomCapMah;
     else if (ph === "recharge" && s.capMah) frac = s.mah / (job.after === "storage" ? s.capMah * .5 : s.capMah);
+    else if (s.eta && s.phaseElapsed) frac = s.phaseElapsed / (s.phaseElapsed + s.eta);
     st.innerHTML = steps.map(([id, n], k) => `<div class="step ${k < cur ? "done" : k === cur ? "now" : ""}"><div class="bar"><i style="${k === cur ? `width:${clamp(frac * 100, 3, 100)}%;background:var(${PHASE[id][1]})` : ""}"></i></div><span>${n}</span></div>`).join("");
     st.hidden = false;
   } else st.hidden = true;

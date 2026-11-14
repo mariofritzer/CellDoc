@@ -61,6 +61,91 @@ float Slot::thermal(float t, float warn, float stop) const {
 }
 
 // ---------------------------------------------------------------------------
+// Restzeit (Schätzung)
+
+float Slot::vSoc(float v, float iDis) const {
+  if (lastRi_ > 0) v += iDis * lastRi_ / 1000;
+  return ocv::socFromCellV(*findChemistry("liion"), v);
+}
+
+// Kapazität der Zelle: gemessen, hochgerechnet, Nennwert oder 2500 mAh
+float Slot::capEstimate() const {
+  bool measured = phase_ == Phase::RestAfter || phase_ == Phase::Recharge;
+  if (measured && capMah_ > 50) return capMah_;
+  if ((phase_ == Phase::Discharge || phase_ == Phase::ManualDischarge) && capMah_ > 150) {
+    const SlotMeas& m = hal.m(s_);
+    float d = disSoc0_ - vSoc(m.v, -m.i);
+    if (d >= 15) {
+      float est = capMah_ / (d / 100);
+      if (est > capMah_ && est < 10000) return est;
+    }
+  }
+  return job_.nomCapMah > 0 ? job_.nomCapMah : 2500;
+}
+
+static uint32_t chgSec(float mah, bool tail) {
+  // Konstantstrom mit ca. 90 % des Ladestroms, danach Konstantspannung (TP4056) ca. 25 min
+  return uint32_t(max(0.0f, mah) / (CHG_MAX_A * 900) * 3600) + (tail ? 1500 : 0);
+}
+
+uint32_t Slot::phaseEta(uint32_t now) const {
+  const SlotMeas& m = hal.m(s_);
+  uint32_t el = (now - phaseMs_) / 1000;
+  float cap = capEstimate();
+  switch (phase_) {
+    case Phase::PreCharge:
+    case Phase::ManualCharge:
+    case Phase::Recharge: {
+      if (phase_ == Phase::Recharge && storageMah_ > 0) return chgSec(storageMah_ - mah(), false);
+      if (m.v >= 4.15f) return uint32_t(1500 * constrain((m.i - 0.1f) / (CHG_MAX_A - 0.1f), 0.04f, 1.0f));
+      return chgSec(cap * max(0.0f, 85 - vSoc(m.v, -m.i)) / 100, true);
+    }
+    case Phase::Rest: {
+      uint32_t T = uint32_t(job_.restMin) * 60;
+      return el < T ? T - el : 1;
+    }
+    case Phase::Discharge:
+    case Phase::ManualDischarge: {
+      float a = job_.currentA > 0.05f ? job_.currentA : 0.5f;
+      return uint32_t(max(0.0f, cap - capMah_) / (a * 1000) * 3600);
+    }
+    case Phase::RestAfter: {
+      uint32_t T = REST_AFTER_MS / 1000;
+      return el < T ? T - el : 1;
+    }
+    default:
+      return 0;
+  }
+}
+
+// Restzeit bis zum Ende des ganzen Tests (alle Phasen und Zyklen)
+uint32_t Slot::totalEta(uint32_t now) const {
+  uint32_t t = phaseEta(now);
+  float cap = capEstimate();
+  float a = job_.currentA > 0.05f ? job_.currentA : 0.5f;
+  uint32_t rest = uint32_t(job_.restMin) * 60, ra = REST_AFTER_MS / 1000;
+  uint32_t dis = uint32_t(cap / (a * 1000) * 3600);
+  uint32_t full = chgSec(cap, true);
+  uint32_t after = job_.after == After::Full ? full : job_.after == After::Storage ? chgSec(cap * 0.5f, false) : 0;
+  int cur = cycleIdx_ + ((phase_ == Phase::Recharge && midRe_) ? 1 : 0);
+  int left = int(job_.cycles) - cur - 1;
+  switch (phase_) {
+    case Phase::PreCharge: t += rest + dis + ra; break;
+    case Phase::Rest: t += dis + ra; break;
+    case Phase::Discharge: t += ra; break;
+    case Phase::RestAfter: break;
+    case Phase::Recharge:
+      if (!midRe_) return t;
+      t += rest + dis + ra;
+      break;
+    default:
+      return 0;
+  }
+  if (left > 0) t += left * (full + rest + dis + ra);
+  return t + after;
+}
+
+// ---------------------------------------------------------------------------
 
 String Slot::precheck(const SlotJob& j, bool charge, bool discharge) const {
   if (active()) return "In diesem Schacht läuft bereits ein Vorgang";
@@ -153,6 +238,7 @@ String Slot::startDischarge(const SlotJob& jIn) {
   riCount_ = riStage_ = 0;
   riStep_ = 1e9;
   startMs_ = millis();
+  disSoc0_ = vSoc(hal.m(s_).v, 0);
   enter(Phase::ManualDischarge);
   return "";
 }
@@ -244,6 +330,7 @@ void Slot::update(uint32_t now) {
     case Phase::Rest:
       if (now - phaseMs_ >= uint32_t(job_.restMin) * 60000UL) {
         startOcv_ = m.v;
+        disSoc0_ = vSoc(m.v, 0);
         enter(Phase::Discharge);
       }
       break;
@@ -605,10 +692,10 @@ void Slot::stateJson(JsonObject o) const {
     o["throttle"] = isCharge(phase_) ? chgF_ : loadF_;
     o["throttled"] = throttled_;
     o["saturated"] = hal.loadSaturated(s_);
-    if (phase_ == Phase::Discharge && job_.nomCapMah > 0 && job_.currentA > 0) {
-      float rest = job_.nomCapMah - capMah_;
-      if (rest > 0) o["eta"] = uint32_t(rest / (job_.currentA * 1000) * 3600);
-    }
+    uint32_t pe = phaseEta(now);
+    if (pe) o["eta"] = pe;
+    uint32_t te = totalEta(now);
+    if (te) o["etaTotal"] = te;
   }
   o["soc"] = roundf(socPercent());
   if (active() && job_.noTemp) o["noTemp"] = true;

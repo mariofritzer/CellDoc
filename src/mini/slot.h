@@ -58,6 +58,12 @@ class Slot {
   void logPoint(uint32_t now, bool force = false);
   void finish();
   float thermal(float t, float warn, float stop) const;
+  // Restzeit
+  float vSoc(float v, float iDis) const;
+  float capEstimate() const;
+  uint32_t phaseEta(uint32_t now) const;
+  uint32_t totalEta(uint32_t now) const;
+  float disSoc0_ = 100;
 
   uint8_t s_ = 0;
   Phase phase_ = Phase::Idle;
