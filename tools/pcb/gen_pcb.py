@@ -314,8 +314,8 @@ def term_labels(x0, y0, rot, caption, cap_x):
     text(caption, cap_x, ly, 0.8)
 
 
-term_labels(18.0, 30.2, 180, "Zelle", 23.6)
-term_labels(53.3, 69.0, 0, "Last", 64.6)
+term_labels(18.0, 30.2, 180, "J2 Zelle", 24.2)
+term_labels(53.3, 69.0, 0, "J3 Last", 65.0)
 text("GND VCC SCL SDA", 41.3, 60.6, 0.8)
 text("OLED", 48.8, 63.0, 0.9)
 text("3V3 GND RX TX", 41.3, 71.4, 0.8)
