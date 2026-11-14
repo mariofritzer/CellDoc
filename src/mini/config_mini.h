@@ -79,6 +79,7 @@ constexpr float MAX_TOTAL_W = 16.0f;
 constexpr float CHG_MAX_A = 1.2f;  // TP4056 mit 1,2 kΩ
 constexpr float MAX_CELL_V = 4.30f;
 constexpr float OVERCURRENT_FACTOR = 1.25f;
+constexpr float NO_TEMP_MAX_A = 1.0f;  // Entladestrom-Grenze ohne Zellfühler
 constexpr uint32_t OVERCURRENT_MS = 300;
 constexpr float SINK_STOP_C = 85.0f;  // Nano: optionaler Fühler am Lastwiderstand
 

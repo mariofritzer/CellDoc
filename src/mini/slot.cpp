@@ -69,7 +69,7 @@ String Slot::precheck(const SlotJob& j, bool charge, bool discharge) const {
   if (m.v < 0.5f) return "In Schacht " + String(s_ + 1) + " steckt keine Zelle";
   if (m.v > MAX_CELL_V) return "Spannung zu hoch (" + String(m.v, 2) + " V). Ist das eine 18650 Li-Ion?";
   if (m.v < 2.5f) return "Zelle ist tiefentladen (" + String(m.v, 2) + " V). Zum Testen ungeeignet, siehe Handbuch";
-  if (isnan(m.tCell)) return "Temperaturfühler an Schacht " + String(s_ + 1) + " fehlt";
+  if (isnan(m.tCell) && !j.noTemp) return "Temperaturfühler an Schacht " + String(s_ + 1) + " fehlt";
   if (discharge) {
     if (!hal.dacOk()) return "Last-Sollwertgeber (MCP4728) antwortet nicht";
 #ifdef CELLDOC_NANO
@@ -87,6 +87,7 @@ String Slot::precheck(const SlotJob& j, bool charge, bool discharge) const {
 String Slot::startTest(const SlotJob& jIn) {
   SlotJob j = jIn;
   j.chem = findChemistry("liion");
+  if (j.noTemp && j.currentA > NO_TEMP_MAX_A) j.currentA = NO_TEMP_MAX_A;
   String e = precheck(j, true, true);
   if (e.length()) return e;
   e = linkCell(j, true);
@@ -136,6 +137,7 @@ String Slot::startCharge(const SlotJob& jIn) {
 
 String Slot::startDischarge(const SlotJob& jIn) {
   SlotJob j = jIn;
+  if (j.noTemp && j.currentA > NO_TEMP_MAX_A) j.currentA = NO_TEMP_MAX_A;
   String e = precheck(j, false, true);
   if (e.length()) return e;
   e = linkCell(j, false);
@@ -283,7 +285,8 @@ void Slot::safety(uint32_t now) {
 #endif
   if (!m.ok) { fail("Strommesser antwortet nicht mehr"); return; }
   float t = m.tCell;
-  if (isnan(t)) { fail("Temperaturfühler an der Zelle ausgefallen"); return; }
+  // Ohne Zellfühler (vom Benutzer bestätigt) entfallen nur die Zelltemperatur-Grenzen
+  if (isnan(t) && !job_.noTemp) { fail("Temperaturfühler an der Zelle ausgefallen"); return; }
   if (isnan(tMax_) || t > tMax_) tMax_ = t;
 
   float dis = -m.i, tgt = hal.loadTarget(s_);
@@ -526,6 +529,7 @@ void Slot::finish() {
   d["tempRise"] = (isnan(tMax_) || isnan(tStart_)) ? 0 : roundf((tMax_ - tStart_) * 10) / 10;
   d["throttled"] = throttled_;
   d["saturated"] = saturatedSeen_;
+  if (job_.noTemp) d["noTemp"] = true;
   d["durationSec"] = (millis() - startMs_) / 1000;
   if (nCyc_ > 1) {
     JsonArray ca = d["cycles"].to<JsonArray>();
@@ -605,6 +609,7 @@ void Slot::stateJson(JsonObject o) const {
     }
   }
   o["soc"] = roundf(socPercent());
+  if (active() && job_.noTemp) o["noTemp"] = true;
   if (lastScore_ >= 0) {
     JsonObject l = o["last"].to<JsonObject>();
     l["cellId"] = lastCellId_;

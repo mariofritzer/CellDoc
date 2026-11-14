@@ -127,6 +127,7 @@ void handleStart() {
   j.preCharge = b["preCharge"] | true;
   j.restMin = b["restMin"] | settings.restMin;
   j.cycles = b["cycles"] | 1;
+  j.noTemp = b["noTemp"] | false;
   String after = b["after"] | "storage";
   j.after = after == "none" ? After::None : after == "full" ? After::Full : After::Storage;
   const CellPreset* p = findPreset(j.presetId.c_str());
@@ -135,6 +136,14 @@ void handleStart() {
     if (j.riNewMilli <= 0) j.riNewMilli = p->riNewMilli;
   }
   String mode = b["mode"] | "test";
+  // Kein Zellfühler: erst nachfragen, die Weboberfläche schickt dann noTemp: true
+  const SlotMeas& m = hal.m(s);
+  if (!j.noTemp && !slots[s].active() && m.ok && m.v >= 0.5f && isnan(m.tCell)) {
+    JsonDocument d;
+    d["error"] = "Kein Temperaturfühler an der Zelle";
+    d["code"] = "noTemp";
+    return sendJson(d, 409);
+  }
   String e = mode == "charge" ? slots[s].startCharge(j) : mode == "discharge" ? slots[s].startDischarge(j) : slots[s].startTest(j);
   if (e.length()) return sendError(e, 409);
   sendOk();

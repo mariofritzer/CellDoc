@@ -20,6 +20,7 @@ struct SlotJob {
   uint16_t restMin = 30;
   After after = After::Storage;
   uint8_t cycles = 1;
+  bool noTemp = false;  // Start ohne Zellfühler vom Benutzer bestätigt
 };
 
 class Slot {

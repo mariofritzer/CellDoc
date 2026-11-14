@@ -805,7 +805,7 @@ async function api(path, body) {
   const opt = body === undefined ? {} : {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)};
   const r = await fetch(path, opt);
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || `Fehler ${r.status}`);
+  if (!r.ok) { const e = new Error(j.error || `Fehler ${r.status}`); e.code = j.code; throw e; }
   return j;
 }
 
@@ -983,6 +983,7 @@ function renderLive() {
   if (pIdx === 0 || t.cell != null) th += tempBox(isMini() ? "Zelle" : "Zelle (A)", t.cell, chg ? L.chargeWarn : L.dischargeWarn, chg ? L.chargeStop : L.dischargeStop);
   if (pIdx === 1 || t.pack != null) th += tempBox("Pack (B)", t.pack, L.dischargeWarn, L.dischargeStop);
   if (!isNano() || t.sink != null) th += tempBox(sinkName(), t.sink, L.sinkWarn, L.sinkStop);
+  if (s.noTemp) th += `<div class="note" style="color:var(--danger)">Läuft ohne Temperaturfühler an der Zelle: keine Überwachung der Zelltemperatur.</div>`;
   $("temps").innerHTML = th;
 
   const thr = $("throttle");
@@ -1132,6 +1133,24 @@ async function refresh() {
 // ======================================================================
 // Start-Dialog
 // ======================================================================
+// Start ohne Zellfühler: ausdrücklich bestätigen lassen
+function confirmNoTemp(mode, currentA) {
+  return new Promise(resolve => {
+    const capped = mode !== "charge" && currentA > 1;
+    const {el, close} = openSheet(`<div class="sheet-head"><h3>Kein Temperaturfühler</h3><button class="btn small" data-close type="button">Abbrechen</button></div>
+      <p>An der Zelle ist kein Temperaturfühler angeschlossen. Ohne Fühler kann CellDoc nicht erkennen, wenn die Zelle heiß wird: <b>keine Drosselung und keine Abschaltung bei Übertemperatur.</b></p>
+      <p>Weiter überwacht werden Spannung, Strom, Überstrom und die Abschaltspannung${isNano() ? ", dazu der Fühler am Lastwiderstand, falls vorhanden" : ""}. ${mode === "charge" ? "" : `Der Entladestrom wird auf höchstens 1,0 A begrenzt${capped ? ` (statt ${nf(currentA, 1)} A)` : ""}.`}</p>
+      <div class="banner err" role="note">Nur unter Aufsicht und auf nicht brennbarer Unterlage. Wird die Zelle spürbar warm, sofort stoppen.</div>
+      <div class="actions"><button class="btn" id="ntNo" type="button" style="flex:1">Abbrechen</button><button class="btn primary" id="ntYes" type="button" style="flex:1">Trotzdem starten</button></div>`);
+    let done = false;
+    const fin = v => { if (done) return; done = true; close(); resolve(v); };
+    el.querySelector("#ntYes").addEventListener("click", () => fin(true));
+    el.querySelector("#ntNo").addEventListener("click", () => fin(false));
+    el.querySelector("[data-close]").addEventListener("click", () => fin(false));
+    el.parentElement.addEventListener("click", e => { if (e.target === el.parentElement) fin(false); });
+  });
+}
+
 function openSheet(html) {
   const bg = document.createElement("div");
   bg.className = "sheet-bg";
@@ -1297,8 +1316,16 @@ function openStart(preCell) {
       after: q("#fAfter").hidden ? "none" : q("#stAfter").value,
       cell: cellSel?.no || 0,
     };
-    try { await api("/api/start", slotBody(body)); close(); curveCache = []; CELLS_AT = 0; if (!cellSel && mode === "test" && INFO) INFO.nextCellNo++; refresh(); toast("Gestartet"); }
-    catch (e) { const er = q("#stErr"); er.hidden = false; er.textContent = e.message; }
+    const go = async () => { await api("/api/start", slotBody(body)); close(); curveCache = []; CELLS_AT = 0; if (!cellSel && mode === "test" && INFO) INFO.nextCellNo++; refresh(); toast("Gestartet"); };
+    try { await go(); }
+    catch (e) {
+      if (e.code === "noTemp") {
+        if (!(await confirmNoTemp(mode, body.currentA))) return;
+        body.noTemp = true;
+        try { await go(); return; } catch (e2) { e = e2; }
+      }
+      const er = q("#stErr"); er.hidden = false; er.textContent = e.message;
+    }
   });
 }
 
@@ -1328,6 +1355,7 @@ function resultSummary(r, compact) {
       ${s.riScore >= 0 ? `<div class="part"><div><span>Innenwiderstand ${riFmt(r.ri50 || r.ri100)}${riRef}</span><b>${s.riScore}</b></div><div class="bar"><i style="width:${s.riScore}%"></i></div></div>` : ""}
       ${r.baselineCapMah ? `<div class="note">Seit dem ersten Test: ${nf((r.capMah / r.baselineCapMah - 1) * 100, 1)} % Kapazität (${nf(r.baselineCapMah)} → ${nf(r.capMah)} mAh)</div>` : ""}
       ${r.throttled ? `<div class="note">Während des Tests wurde wegen Wärme gedrosselt.</div>` : ""}
+      ${r.noTemp ? `<div class="note">Test ohne Temperaturfühler an der Zelle, Temperaturwerte fehlen.</div>` : ""}
     </div></div>`;
   const rows = [
     ["Kapazität", nf(r.capMah) + " mAh"], ["Energie", nf(r.energyWh, 2) + " Wh"], ["Ø Spannung", nf(r.avgV, 3) + " V"],
