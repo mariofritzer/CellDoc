@@ -282,11 +282,11 @@ parts = [
     ("R4", R_FP, 84.0, 42.0, 270, "4k7", {"1": "+3V3", "2": "ONEWIRE"}),
     ("R6", R_FP, 87.5, 42.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SDA"}),
     ("R7", R_FP, 91.0, 42.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SCL"}),
-    ("J2", "term", 21.0, 30.2, 180, "DS18B20 Zelle", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
+    ("J2", "term", 21.0, 31.7, 180, "DS18B20 Zelle", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
     ("J3", "term", 58.5, 72.0, 0, "DS18B20 Last opt.", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
     ("J4", ("Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical"), 37.5, 63.0, 90, "OLED opt.", {"1": "GND", "2": "+3V3", "3": "SCL", "4": "SDA"}),
     ("J5", ("Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical"), 37.5, 68.5, 90, "QR GM861S opt.", {"1": "+3V3", "2": "GND", "3": "SCAN_RX", "4": "SCAN_TX"}),
-    ("BZ1", ("Buzzer_Beeper", "Buzzer_12x9.5RM7.6"), 25.5, 66.5, 0, "Summer 5V", {"1": "+5V", "2": "BZ_N"}),
+    ("BZ1", ("Buzzer_Beeper", "Buzzer_12x9.5RM7.6"), 23.5, 66.5, 0, "Summer 5V", {"1": "+5V", "2": "BZ_N"}),
     ("Q4", SOT, 70.0, 63.0, 0, "AO3400", {"1": "BUZZER", "2": "GND", "3": "BZ_N"}),
     ("R8", R_FP, 70.0, 67.0, 0, "10k", {"1": "BUZZER", "2": "GND"}),
 ]
@@ -373,10 +373,13 @@ def term_labels(x0, y0, rot, caption, cap_x):
     ly = y0 - 6.3 * sgn
     for dx, l in ((-4.25, "+"), (0, "D"), (4.25, "−")):
         text(l, x0 + sgn * dx, ly, 1.0)
-    text(caption, x0, ly - 1.4 * sgn, 0.8)
+    if cap_x:
+        text(caption, cap_x, ly, 0.8)
+    else:
+        text(caption, x0, ly - 1.4 * sgn, 0.8)
 
 
-term_labels(21.0, 30.2, 180, "J2 Zelle", 0)
+term_labels(21.0, 31.7, 180, "J2 Zelle", 29.8)
 term_labels(58.5, 72.0, 0, "J3 Last", 0)
 # J6: Pins senkrecht, Öffnung zum rechten Rand
 text("+", 82.0, 35.6, 1.2)
