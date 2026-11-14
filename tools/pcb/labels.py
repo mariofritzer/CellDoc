@@ -7,8 +7,18 @@ mm = P.FromMM
 for fp in b.GetFootprints():
     ref = fp.GetReference()
     if ref == "F1":
-        c = fp.GetPosition()
-        fp.Reference().SetPosition(P.VECTOR2I(c.x, c.y - mm(2.5)))
+        a, c = [p.GetPosition() for p in fp.Pads()][:2]
+        cx, cy = (a.x + c.x) // 2, (a.y + c.y) // 2
+        fp.Reference().SetPosition(P.VECTOR2I(cx, cy - mm(1.2)))
+        fp.Reference().SetTextAngleDegrees(0)
+        v = fp.Value()
+        v.SetText("Sicherung F3A 5x20")
+        v.SetLayer(P.F_SilkS)
+        v.SetVisible(True)
+        v.SetTextSize(P.VECTOR2I(mm(0.9), mm(0.9)))
+        v.SetTextThickness(mm(0.14))
+        v.SetPosition(P.VECTOR2I(cx, cy + mm(1.2)))
+        v.SetTextAngleDegrees(0)
     if not (ref[0] in "RQC" and ref[1:].isdigit()):
         continue
     v = fp.Value()

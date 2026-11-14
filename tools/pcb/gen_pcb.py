@@ -201,7 +201,8 @@ SOT = ("Package_TO_SOT_SMD", "SOT-23")
 # ref, footprint, x, y, rot, wert, {pad: netz}
 parts = [
     ("BT1", "bat", 46.0, 14.0, 0, "18650-Halter", {"+": "BAT+", "-": "GND"}),
-    ("F1", "fuse", 64.0, 31.0, 180, "3 A flink 5x20", {"1": "BAT+", "2": "BAT_F"}),
+    # Leiterplatten-Sicherungshalter 5x20, Pins an den Enden, 22,6 mm Abstand (v1.2)
+    ("F1", ("Fuse", "Fuseholder_Cylinder-5x20mm_Stelvio-Kontek_PTF78_Horizontal_Open"), 75.3, 31.0, 180, "F3A 5x20", {"1": "BAT+", "2": "BAT_F"}),
     ("U1", "c3", 12.5, 48.5, 270, "ESP32-C3 SuperMini",
      {"5V": "+5V", "GND": "GND", "3V3": "+3V3", "3": "LOAD_PWM", "4": "ONEWIRE", "5": "SDA", "6": "SCL", "7": "CHG", "10": "BUZZER", "20": "SCAN_RX", "21": "SCAN_TX"}),
     ("U2", "ina", 59.0, 40.0, 0, "INA226 (Shunt R010)",
@@ -220,8 +221,8 @@ parts = [
     ("R4", R_FP, 84.0, 39.0, 270, "4k7", {"1": "+3V3", "2": "ONEWIRE"}),
     ("R6", R_FP, 87.5, 39.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SDA"}),
     ("R7", R_FP, 91.0, 39.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SCL"}),
-    ("J2", ("TerminalBlock_Phoenix", "TerminalBlock_Phoenix_PT-1,5-3-3.5-H_1x03_P3.50mm_Horizontal"), 26.0, 65.5, 0, "DS18B20 Zelle", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
-    ("J3", ("TerminalBlock_Phoenix", "TerminalBlock_Phoenix_PT-1,5-3-3.5-H_1x03_P3.50mm_Horizontal"), 84.0, 54.0, 0, "DS18B20 Last opt.", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
+    ("J2", ("TerminalBlock_Phoenix", "TerminalBlock_Phoenix_PT-1,5-3-3.5-H_1x03_P3.50mm_Horizontal"), 18.0, 30.2, 180, "DS18B20 Zelle", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
+    ("J3", ("TerminalBlock_Phoenix", "TerminalBlock_Phoenix_PT-1,5-3-3.5-H_1x03_P3.50mm_Horizontal"), 80.0, 73.0, 0, "DS18B20 Last opt.", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
     ("J4", ("Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical"), 37.5, 63.0, 90, "OLED opt.", {"1": "GND", "2": "+3V3", "3": "SCL", "4": "SDA"}),
     ("J5", ("Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical"), 37.5, 68.5, 90, "QR GM861S opt.", {"1": "+3V3", "2": "GND", "3": "SCAN_RX", "4": "SCAN_TX"}),
     ("BZ1", ("Buzzer_Beeper", "Buzzer_12x9.5RM7.6"), 53.0, 67.0, 0, "Summer 5V", {"1": "+5V", "2": "BZ_N"}),
@@ -304,12 +305,17 @@ def text(s, x, y, size=1.2, layer=P.F_SilkS, bold=False):
 
 text("CellDoc Nano", 36.0, 75.8, 2.0, bold=True)
 text("v1.2 · 2026-11", 57.5, 76.0, 1.0)
-text("Zelle", 29.5, 59.7, 0.8)
-for _x, _l in ((26.0, "+"), (29.5, "D"), (33.0, "−")):
-    text(_l, _x, 61.3, 1.0)
-text("Last", 87.5, 48.5, 0.8)
-for _x, _l in ((84.0, "+"), (87.5, "D"), (91.0, "−")):
-    text(_l, _x, 50.1, 1.0)
+# Fühlerklemmen: Öffnung zur Zelle bzw. zum Lastwiderstand, Aufdruck je Pin auf der Rückseite der Klemme
+def term_labels(x0, y0, rot, caption, cap_x):
+    sgn = 1 if rot == 0 else -1
+    ly = y0 - 4.2 * sgn
+    for k, l in enumerate(("+", "D", "−")):
+        text(l, x0 + sgn * 3.5 * k, ly, 1.0)
+    text(caption, cap_x, ly, 0.8)
+
+
+term_labels(18.0, 30.2, 180, "Zelle", 23.6)
+term_labels(80.0, 73.0, 0, "Last", 91.6)
 text("GND VCC SCL SDA", 41.3, 60.6, 0.8)
 text("OLED", 48.8, 63.0, 0.9)
 text("3V3 GND RX TX", 41.3, 71.4, 0.8)
