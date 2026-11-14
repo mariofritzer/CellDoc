@@ -379,7 +379,7 @@ def term_labels(x0, y0, rot, caption, cap_x):
         text(caption, x0, ly - 1.4 * sgn, 0.8)
 
 
-term_labels(21.0, 31.7, 180, "J2 Zelle", 29.8)
+term_labels(21.0, 31.7, 180, "J2 Zelle", 12.2)
 term_labels(58.5, 72.0, 0, "J3 Last", 0)
 # J6: Pins senkrecht, Öffnung zum rechten Rand
 text("+", 82.0, 35.6, 1.2)
