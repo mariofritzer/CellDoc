@@ -87,16 +87,21 @@ Zweilagig, 95 × 100 mm, beidseitig GND-Fläche. Alles sitzt auf der Platine: di
 |---|---|---|
 | 3 | Buchsenleiste 1 × 8, Raster 2,54 mm | 2 × C3 SuperMini, 1 × INA226 |
 | 6 | einzelne Stifte (von einer Stiftleiste abgebrochen) | TP4056, seine Lötpunkte liegen nicht im 2,54-mm-Raster |
-| 2 | Schraubklemme 3-polig, Raster 3,5 mm (KF350-3P) | J2/J3, DS18B20 |
+| 2 | Schraubklemme 3-polig, Raster 3,5 mm (KF350) oder 5 mm (KF301) | J2/J3, DS18B20, beide Raster passen (Langlöcher) |
+| 1 | Schraubklemme 2-polig, Raster 3,5 oder 5 mm | J6, externe Zelle |
+| 1 | AO3401 (P-Kanal, SOT-23) | Q5 Verpolungsschutz |
+| 1 | Widerstand 2,2 kΩ | R9, Schutz der Spannungsmessung |
 | 1 | Leiterplatten-Sicherungshalter 5 × 20 mm, Pinabstand 22,6 mm, mit Abdeckung | F1, dazu Sicherung F3A (3 A flink) |
 | 3 | Schraube M3 + Mutter | Halter (1) und Lastwiderstand (2) |
 | opt. | Stift- oder Buchsenleiste 1 × 4 | J4 OLED, J5 QR-Scanner |
 
-**Änderungen v1.2:** In v1.1 waren beim ESP32-C3 SuperMini die beiden Pinreihen vertauscht (5V lag auf einem GPIO-Pin), und beim INA226 SDA/SCL. Platinen v1.1 nicht mit eingestecktem C3 einschalten. In v1.2 ist beides am echten Modul geprüft und korrigiert. Außerdem in v1.2: Leiterplatten-Sicherungshalter statt Kabelhalter, Fühlerklemme „Zelle“ direkt am Zellhalter, „Last“ vor dem Lastwiderstand, Summer zwischen C1 und den Steckleisten, Aufdruck „+ D −“ je Pin.
+**Änderungen v1.2:** In v1.1 waren beim ESP32-C3 SuperMini die beiden Pinreihen vertauscht (5V lag auf einem GPIO-Pin), und beim INA226 SDA/SCL. Platinen v1.1 nicht mit eingestecktem C3 einschalten. In v1.2 ist beides am echten Modul geprüft und korrigiert. Außerdem in v1.2: Leiterplatten-Sicherungshalter statt Kabelhalter, Fühlerklemme „Zelle“ direkt am Zellhalter, „Last“ vor dem Lastwiderstand, Summer zwischen C1 und den Steckleisten, Aufdruck „+ D −“ je Pin, Fühlerklemmen für 3,5- und 5-mm-Klemmen, **Verpolungsschutz** (Q5, R9), **Klemme J6 für externe Zellen**, Lötaugen für die Halterkabel an beiden Enden, Zellhalter mittig zwischen den Befestigungslöchern.
 
 **Aufbau**
 
-- **18650-Halter:** mit einer M3-Schraube durch das Loch in der Mitte befestigen. Die Kabel kürzen und in die Lötaugen rechts löten: rot an +, schwarz an −.
+- **18650-Halter:** mit einer M3-Schraube durch das Loch in der Mitte befestigen. Die Kabel kürzen und in die Lötaugen links oder rechts löten, je nachdem wo sie aus dem Halter kommen: rot an +, schwarz an −. Am genauesten misst der Innenwiderstand mit dem **Plus-Kabel rechts**, bei Plus links liest er etwa 25 mΩ zu hoch.
+- **Verpolungsschutz:** Q5 (AO3401) sperrt, wenn eine Zelle verkehrt herum drin ist. INA226, TP4056, Q3 und Lastwiderstand bekommen dann nichts ab. R9 (2,2 kΩ) schützt die Spannungsmessung VBS. Er verfälscht die Spannung um etwa 0,3 %, das einmal unter Einstellungen → Kalibrierung ausgleichen.
+- **Externe Zelle (J6):** Klemme am rechten Rand, parallel zum Zellhalter, hinter Verpolungsschutz und Sicherung. **Immer nur eine Zelle**: entweder im Halter oder an J6.
 - **Sicherungshalter:** Leiterplatten-Halter 5 × 20 mm unter dem Zellhalter einlöten, Sicherung F3A einsetzen, Abdeckung aufstecken.
 - **Lastwiderstand:** mit zwei M3-Schrauben durch die Laschen festschrauben, die Lötfahnen auf die beiden ovalen Lötaugen biegen und anlöten. Er wird bei 0,8 A etwa handwarm, bei 1,2 A deutlich warm.
 - **Temperaturfühler:** Klemme „Zelle“ sitzt direkt unter dem Zellhalter, „Last“ in der Mitte vor dem Lastwiderstand, jeweils mit der Öffnung zum Bauteil. + = rot (3,3 V), D = gelb/weiß (Daten), − = schwarz (GND), der Aufdruck steht hinter jedem Anschluss. Ohne Zellfühler startet ein Test erst nach Bestätigung in der Weboberfläche.

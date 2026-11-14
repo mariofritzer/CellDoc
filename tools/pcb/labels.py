@@ -48,6 +48,20 @@ for fp in b.GetFootprints():
         t.SetText(ref + " " + v.GetText().replace(" opt.", "").replace("uF 10V", "µF"))
         t.SetLayer(P.F_SilkS)
         t.SetTextSize(P.VECTOR2I(mm(0.8), mm(0.8))); t.SetTextThickness(mm(0.13))
+        if ref == "Q5":
+            # Q5: Bezeichnung oben rechts, Typ darunter (neben der Durchkontaktierung ist kein Platz)
+            t.SetText("Q5")
+            t.SetPosition(P.VECTOR2I(p.x + mm(1.6), p.y - mm(2.6)))
+            fp.Add(t)
+            t.SetTextAngleDegrees((0 - fp.GetOrientationDegrees()) % 360)
+            t2 = P.FP_TEXT(fp)
+            t2.SetText("AO3401")
+            t2.SetLayer(P.F_SilkS)
+            t2.SetTextSize(P.VECTOR2I(mm(0.8), mm(0.8))); t2.SetTextThickness(mm(0.13))
+            t2.SetPosition(P.VECTOR2I(p.x, p.y + mm(2.6)))
+            fp.Add(t2)
+            t2.SetTextAngleDegrees((0 - fp.GetOrientationDegrees()) % 360)
+            continue
         if ref == "C1":
             t.SetPosition(P.VECTOR2I(p.x + mm(1.25), p.y + mm(4.6)))
         else:
