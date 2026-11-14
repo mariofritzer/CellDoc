@@ -174,6 +174,30 @@ def make_term35_50():
     return f
 
 
+def make_term2_35_50():
+    # Schraubklemme 2-polig für 3,5 mm UND 5 mm Raster: beide Löcher als Langloch (±1,75 bis ±2,5 mm).
+    # Ursprung = Mitte zwischen den Pins, Öffnung nach +y.
+    f = fp_new("Klemme_2pol_3.5_oder_5mm")
+    for num, x in (("1", -2.125), ("2", 2.125)):
+        p = th_pad(f, num, x, 0, drill=1.3, size=2.6)
+        p.SetShape(P.PAD_SHAPE_ROUNDRECT if num == "1" else P.PAD_SHAPE_OVAL)
+        if num == "1":
+            p.SetRoundRectRadiusRatio(0.25)
+        p.SetSize(P.VECTOR2I(mm(3.35), mm(2.6)))
+        p.SetDrillShape(P.PAD_DRILL_SHAPE_OBLONG)
+        p.SetDrillSize(P.VECTOR2I(mm(2.05), mm(1.3)))
+    fp_rect(f, -5.25, -5.45, 5.25, 4.85, P.F_SilkS, 0.12)
+    s_ = P.FP_SHAPE(f, P.SHAPE_T_SEGMENT)
+    s_.SetStart0(P.VECTOR2I(mm(-5.25), mm(3.6))); s_.SetEnd0(P.VECTOR2I(mm(5.25), mm(3.6)))
+    s_.SetLayer(P.F_SilkS); s_.SetWidth(mm(0.12)); f.Add(s_)
+    fp_rect(f, -5.5, -5.75, 5.5, 5.15, P.F_CrtYd, 0.05)
+    fp_rect(f, -5.25, -5.45, 5.25, 4.85, P.F_Fab, 0.1)
+    f.Value().SetText("Klemme 2pol 3,5/5 mm")
+    f.Value().SetLayer(P.F_Fab)
+    f.Reference().SetLayer(P.F_SilkS)
+    return f
+
+
 def make_holder():
     # 18650-Halter mit Kabeln (ca. 77 x 21 mm), Schraubloch in der Mitte, beide Kabel an einem Ende
     f = fp_new("18650_Halter_Kabel")
@@ -209,7 +233,7 @@ def make_rl():
     return finish(f, -25.0, -8.0, 25.0, 8.0, "Lastwiderstand 3R 50W Alu")
 
 
-custom = {"term": make_term35_50(), "c3": make_c3(), "ina": make_ina(), "tp": make_tp(), "bat": make_holder(), "fuse": make_fuse(), "rl": make_rl()}
+custom = {"term": make_term35_50(), "term2": make_term2_35_50(), "c3": make_c3(), "ina": make_ina(), "tp": make_tp(), "bat": make_holder(), "fuse": make_fuse(), "rl": make_rl()}
 os.makedirs(LIBOUT, exist_ok=True)
 for f in custom.values():
     P.FootprintSave(LIBOUT, f)
@@ -227,11 +251,17 @@ SOT = ("Package_TO_SOT_SMD", "SOT-23")
 parts = [
     ("BT1", "bat", 46.0, 14.0, 0, "18650-Halter", {"+": "BAT+", "-": "GND"}),
     # Leiterplatten-Sicherungshalter 5x20, Pins an den Enden, 22,6 mm Abstand (v1.2)
-    ("F1", ("Fuse", "Fuseholder_Cylinder-5x20mm_Stelvio-Kontek_PTF78_Horizontal_Open"), 75.3, 31.0, 180, "F3A 5x20", {"1": "BAT+", "2": "BAT_F"}),
+    ("F1", ("Fuse", "Fuseholder_Cylinder-5x20mm_Stelvio-Kontek_PTF78_Horizontal_Open"), 68.6, 31.0, 180, "F3A 5x20", {"1": "BAT_P", "2": "BAT_F"}),
+    # Verpolungsschutz: P-Kanal hinter dem Zell-Pluspol, Gate an GND. Verpolt sperrt er.
+    ("Q5", SOT, 74.0, 28.5, 0, "AO3401", {"1": "GND", "2": "BAT_P", "3": "BAT+"}),
+    # VBS misst am Zellpol; 2,2 kOhm begrenzen den Strom in den INA226, falls die Zelle verpolt ist
+    ("R9", R_FP, 78.0, 26.5, 270, "2k2", {"1": "BAT+", "2": "VBS_IN"}),
+    # Anschluss für externe Akkus, parallel zum Zellhalter (immer nur eine Zelle)
+    ("J6", "term2", 88.5, 30.5, 90, "Ext. Zelle", {"1": "BAT+", "2": "GND"}),
     ("U1", "c3", 12.5, 48.5, 270, "ESP32-C3 SuperMini",
      {"5V": "+5V", "GND": "GND", "3V3": "+3V3", "3": "LOAD_PWM", "4": "ONEWIRE", "5": "SDA", "6": "SCL", "7": "CHG", "10": "BUZZER", "20": "SCAN_RX", "21": "SCAN_TX"}),
     ("U2", "ina", 59.0, 40.0, 0, "INA226 (Shunt R010)",
-     {"IN+": "BAT_F", "IN-": "CELL", "VBS": "BAT+", "SDA": "SDA", "SCL": "SCL", "GND": "GND", "VCC": "+3V3"}),
+     {"IN+": "BAT_F", "IN-": "CELL", "VBS": "VBS_IN", "SDA": "SDA", "SCL": "SCL", "GND": "GND", "VCC": "+3V3"}),
     ("U3", "tp", 26.5, 39.0, 0, "TP4056 USB-C",
      {"IN+": "TP_IN", "IN-": "GND", "B+": "CELL", "B-": "GND"}),
     ("RL", "rl", 47.5, 86.5, 0, "3R 50W", {"1": "LOAD_D", "2": "CELL"}),
@@ -247,7 +277,7 @@ parts = [
     ("R6", R_FP, 87.5, 39.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SDA"}),
     ("R7", R_FP, 91.0, 39.0, 270, "4k7 opt.", {"1": "+3V3", "2": "SCL"}),
     ("J2", "term", 21.0, 30.2, 180, "DS18B20 Zelle", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
-    ("J3", "term", 60.5, 72.0, 0, "DS18B20 Last opt.", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
+    ("J3", "term", 58.5, 72.0, 0, "DS18B20 Last opt.", {"1": "+3V3", "2": "ONEWIRE", "3": "GND"}),
     ("J4", ("Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical"), 37.5, 63.0, 90, "OLED opt.", {"1": "GND", "2": "+3V3", "3": "SCL", "4": "SDA"}),
     ("J5", ("Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical"), 37.5, 68.5, 90, "QR GM861S opt.", {"1": "+3V3", "2": "GND", "3": "SCAN_RX", "4": "SCAN_TX"}),
     ("BZ1", ("Buzzer_Beeper", "Buzzer_12x9.5RM7.6"), 25.5, 66.5, 0, "Summer 5V", {"1": "+5V", "2": "BZ_N"}),
@@ -273,7 +303,7 @@ for ref, fpn, x, y, rot, val, padnets in parts:
         cx, cy = f.Pads()[0].GetPosition(), f.Pads()[1].GetPosition()
         f.Reference().SetPosition(P.VECTOR2I((cx.x + cy.x) // 2, (cx.y + cy.y) // 2))
         f.Reference().SetTextSize(P.VECTOR2I(mm(0.9), mm(0.9)))
-    if ref in ("J2", "J3", "J4", "J5"):
+    if ref in ("J2", "J3", "J4", "J5", "J6"):
         f.Reference().SetVisible(False)
     if ref == "C1":
         f.Reference().SetPosition(P.VECTOR2I(mm(x + 1.25), mm(y + 4.6)))
@@ -341,7 +371,12 @@ def term_labels(x0, y0, rot, caption, cap_x):
 
 
 term_labels(21.0, 30.2, 180, "J2 Zelle", 0)
-term_labels(60.5, 72.0, 0, "J3 Last", 0)
+term_labels(58.5, 72.0, 0, "J3 Last", 0)
+# J6: Pins senkrecht, Öffnung zum rechten Rand
+text("+", 82.0, 32.6, 1.2)
+text("−", 82.0, 28.4, 1.2)
+text("J6 Ext. Zelle", 89.0, 23.6, 0.8)
+text("nur 1 Zelle", 89.0, 37.0, 0.7)
 text("GND VCC SCL SDA", 41.3, 60.6, 0.8)
 text("OLED", 48.8, 63.0, 0.9)
 text("3V3 GND RX TX", 41.3, 71.4, 0.8)

@@ -8,7 +8,7 @@ b = P.LoadBoard(src)
 dsn = "/tmp/nano.dsn"; ses = "/tmp/nano.ses"
 P.ExportSpecctraDSN(b, dsn)
 d = open(dsn).read()
-POWER = ["BAT+", "BAT_F", "CELL", "LOAD_D", "TP_IN"]
+POWER = ["BAT+", "BAT_P", "BAT_F", "CELL", "LOAD_D", "TP_IN"]
 SUPPLY = ["GND", "+5V"]
 def cls(name, netsl, w, clr):
     q = " ".join('"%s"' % n if not re.match(r"^[A-Za-z0-9_]+$", n) else n for n in netsl)
