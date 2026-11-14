@@ -1,6 +1,6 @@
 # CellDoc Nano
 
-Die kleinste Variante von CellDoc: **ein Schacht für 18650 Li-Ion**, ein ESP32-C3 SuperMini und so wenig Teile wie möglich. Statt einer geregelten Konstantstromlast mit DAC und Opamp gibt es nur einen festen **Lastwiderstand (3 Ω)**, den ein MOSFET mit 10 kHz taktet. Der INA226 mittelt den Strom, die Firmware regelt das Tastverhältnis und erreicht so trotzdem echten Konstantstrom. Laden, Kapazität, Innenwiderstand, Lebenszahl, Bestand, Etiketten, QR, MQTT und Sync mit den anderen Geräten funktionieren wie bei der Mini.
+Die kleinste Variante von CellDoc: **ein Schacht für 18650 Li-Ion**, ein ESP32-C3 SuperMini und so wenig Teile wie möglich. Statt einer geregelten Konstantstromlast mit DAC und Opamp gibt es nur einen festen **Lastwiderstand (3 Ω)**, den ein MOSFET mit 25 kHz (unhörbar) taktet. Der INA226 mittelt den Strom, die Firmware regelt das Tastverhältnis und erreicht so trotzdem echten Konstantstrom. Laden, Kapazität, Innenwiderstand, Lebenszahl, Bestand, Etiketten, QR, MQTT und Sync mit den anderen Geräten funktionieren wie bei der Mini.
 
 > **Ausprobieren ohne Hardware:** [Demo Nano](https://mariofritzer.github.io/CellDoc/?nano=1)
 

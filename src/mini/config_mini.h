@@ -66,7 +66,7 @@ constexpr float DAC_VREF = 3.3f;
 #ifdef CELLDOC_NANO
 // Nano: fester Lastwiderstand, Strom per PWM (10 kHz) geregelt, INA226 mittelt
 constexpr float LOAD_OHM = 3.0f;          // Lastwiderstand + MOSFET + Leitungen (Schätzwert für die Vorsteuerung)
-constexpr uint32_t LOAD_PWM_HZ = 10000;
+constexpr uint32_t LOAD_PWM_HZ = 25000;  // über dem Hörbereich: bei 10 kHz pfeift der drahtgewickelte Lastwiderstand
 constexpr float MAX_CURRENT_A = 1.2f;     // bei 3 Ω bis ca. 3,6 V konstant, darunter bleibt der Strom unter dem Sollwert
 constexpr float DEFAULT_CURRENT_A = 0.8f; // bis zur Abschaltspannung echter Konstantstrom
 constexpr float MAX_TOTAL_W = 6.0f;
