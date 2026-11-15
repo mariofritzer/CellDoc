@@ -21,8 +21,6 @@ static uint32_t checkAt[4] = {};
 static JsonDocument chk[4];
 static String pendId;
 static uint32_t autoAt[4] = {};              // Scan-Modus 2: Test starten, sobald die Zelle steckt
-static uint32_t lastNo = 0, lastSeq = 0;     // Scan-Modus 0: nur in der Weboberfläche öffnen
-static String lastId;
 
 uint32_t no(int s) { return slotNo[s]; }
 const String& id(int s) { return slotId[s]; }
@@ -57,12 +55,7 @@ void onScan(uint32_t n, const String& i) {
     return;
   }
   hal.beep(60, 's');
-  if (settings.scanMode == 0) {
-    lastNo = n;
-    lastId = i;
-    lastSeq++;
-    return;
-  }
+  if (settings.scanMode == 0) return;  // nur in der Weboberfläche öffnen (scanner::fill meldet den Scan)
   // genau ein freier Schacht mit eingesetzter, noch nicht zugeordneter Zelle: sofort zuordnen
   int cand = -1, count = 0;
   for (int s = 0; s < NSLOTS; s++) {
@@ -122,12 +115,6 @@ void stateJson(JsonObject root, JsonArray arr) {
     a["no"] = slotNo[s];
     a["id"] = slotId[s];
     if (chk[s]["dv"].is<float>()) a["check"] = chk[s].as<JsonObjectConst>();
-  }
-  if (lastSeq) {
-    JsonObject l = root["scan"].to<JsonObject>();
-    l["no"] = lastNo;
-    l["id"] = lastId;
-    l["seq"] = lastSeq;
   }
   if (pendNo) {
     JsonObject p = root["pending"].to<JsonObject>();

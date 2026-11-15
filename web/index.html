@@ -68,6 +68,24 @@ h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0;line-height:1.1
 .banner.ok{background:color-mix(in srgb,var(--charge) 14%,var(--card))}
 .banner.info{background:var(--fill)}
 .banner b{display:block}
+.setcol{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.sgh{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:18px 6px 2px}
+details.acc{padding:0;display:block}
+details.acc>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:16px 18px;border-radius:inherit}
+details.acc>summary::-webkit-details-marker{display:none}
+details.acc>summary h2{margin:0;flex:1;font-size:16.5px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--fg);display:flex;align-items:center;gap:8px}
+details.acc>summary h2 .sub{font-size:13px;font-weight:500}
+details.acc>summary::after{content:"";width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s;margin-right:4px;flex:none}
+details.acc[open]>summary::after{transform:rotate(225deg)}
+details.acc>summary:focus-visible{outline:2px solid var(--accent, var(--charge));outline-offset:-2px}
+details.acc .accb{padding:0 18px 18px;display:flex;flex-direction:column;gap:12px}
+.saved{font-size:12.5px;font-weight:600;white-space:nowrap}
+.saved.ok{color:var(--charge)}
+.saved.err{color:var(--danger);white-space:normal;max-width:55%}
+body.lv-no-i .kv>div:has(#kI),body.lv-no-p .kv>div:has(#kP),body.lv-no-q .kv>div:has(#kQ),body.lv-no-e .kv>div:has(#kE){display:none}
+body.lv-no-steps #steps,body.lv-no-temps #temps,body.lv-no-eta #socLine,body.lv-no-last #lastCard,body.lv-no-chart section:has(#liveChart){display:none!important}
+#rawLine{display:none;font-size:12.5px;color:var(--muted)}
+body.ex-raw #rawLine{display:block}
 .loglist{display:flex;flex-direction:column;gap:2px;font-size:13.5px;line-height:1.4}
 .loglist .le{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:7px 10px;border-radius:10px;background:var(--fill)}
 .loglist .le time{color:var(--muted);white-space:nowrap;font-size:12.5px}
@@ -251,6 +269,7 @@ tr:last-child td{border-bottom:0}
           <div><span id="kQl">Ladung</span><b id="kQ">–</b></div>
           <div><span>Energie</span><b id="kE">–</b></div>
         </div>
+        <div class="num" id="rawLine"></div>
         <div class="steps" id="steps" hidden></div>
         <div class="temps num" id="temps"></div>
         <div class="banner info num" id="throttle" hidden></div>
@@ -642,7 +661,7 @@ tr:last-child td{border-bottom:0}
       <h4>CellDoc Nano</h4>
       <ul>
         <li>Die Nano ist die kleinste Variante: ein Schacht für <b>18650 Li-Ion</b>, ESP32-C3 SuperMini, fester Lastwiderstand (3 Ω). Die Firmware taktet ihn mit 25 kHz (unhörbar) und regelt so auf Konstantstrom, bis 1,2 A. Mit 0,8 A bleibt der Strom bis zur Abschaltspannung konstant.</li>
-        <li><b>BOOT-Taste</b> am Board: kurz = Standardtest starten (0,8 A, danach Lagerspannung) oder Ergebnis bestätigen, lang = stoppen.</li>
+        <li><b>BOOT-Taste</b> am Board: kurz = Test mit den Test-Standardwerten starten (Einstellungen → Test-Standardwerte, ab Werk 0,8 A, danach Lagerspannung) oder Ergebnis bestätigen, lang = stoppen.</li>
         <li><b>Blaue LED</b>: kurzer Blitz alle 3 s = bereit, langsam blinkend = lädt, an = entlädt, Doppelblitz = fertig, schnell blinkend = Fehler, zwei Blitze pro Sekunde = Hotspot.</li>
         <li>Ein zweiter DS18B20 am Lastwiderstand ist optional. Ist er da, drosselt und stoppt die Nano bei zu viel Wärme.</li>
       </ul>
@@ -653,132 +672,343 @@ tr:last-child td{border-bottom:0}
 
   <!-- ===================== EINSTELLUNGEN ===================== -->
   <main id="v-settings" class="view" hidden>
-    <div class="grid">
-      <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
-        <section class="card">
-          <h2>WLAN</h2>
-          <div class="note" id="wifiInfo"></div>
-          <div class="form">
-            <div class="field full"><label for="wSsid">Netzwerk</label>
-              <div style="display:flex;gap:8px"><input type="text" id="wSsid" autocomplete="off"><button class="btn small" id="wScan" type="button">Suchen</button></div>
-              <select id="wList" hidden aria-label="Gefundene Netzwerke"></select></div>
-            <div class="field full"><label for="wPass">Passwort</label><input type="password" id="wPass" autocomplete="new-password"></div>
-          </div>
-          <div class="actions"><button class="btn primary" id="wSave" type="button">Speichern und neu starten</button><button class="btn danger" id="wDel" type="button">WLAN löschen</button></div>
-        </section>
+    <div class="setcol">
+      <p class="note" style="margin:0 4px">Änderungen werden sofort gespeichert. Ausnahmen mit eigenem Knopf: WLAN, Kalibrierung und Fühlerzuordnung.</p>
 
-        <section class="card">
-          <h2>Temperaturgrenzen</h2>
-          <p class="note">Ab „Drosseln“ wird der Strom schrittweise bis auf 30 % reduziert, bei „Stopp“ schaltet CellDoc ab.</p>
-          <div class="form num">
-            <div class="field"><label for="sCw">Laden: drosseln ab °C</label><input type="number" id="sCw" step="1"></div>
-            <div class="field"><label for="sCs">Laden: Stopp ab °C</label><input type="number" id="sCs" step="1"></div>
-            <div class="field"><label for="sDw">Entladen: drosseln ab °C</label><input type="number" id="sDw" step="1"></div>
-            <div class="field"><label for="sDs">Entladen: Stopp ab °C</label><input type="number" id="sDs" step="1"></div>
-            <div class="field"><label for="sKw">Kühlkörper: drosseln ab °C</label><input type="number" id="sKw" step="1"></div>
-            <div class="field"><label for="sKs">Kühlkörper: Stopp ab °C (max. 90)</label><input type="number" id="sKs" step="1"></div>
-          </div>
-        </section>
+      <div class="sgh">Messung &amp; Test</div>
 
-        <section class="card">
-          <h2>Allgemein</h2>
-          <div class="field"><label for="sRest">Ruhezeit vor dem Entladen (Minuten)</label><input type="number" id="sRest" min="0" max="240"></div>
-          <label class="switch"><span>Innenwiderstand in Ω statt mΩ</span><input type="checkbox" id="sOhm"></label>
-          <label class="switch"><span>Summer</span><input type="checkbox" id="sBuzz"></label>
-          <div class="field" id="sChgF" hidden><label for="sChg">Gleichzeitig laden</label><select id="sChg"><option value="0">Alle Schächte</option><option value="1">höchstens 1 Schacht</option><option value="2">höchstens 2 Schächte</option><option value="3">höchstens 3 Schächte</option></select><span class="hint">Jeder Lader zieht 1 A. Weitere Schächte warten, bis ein Platz frei ist. Mini 4 am 5-V/5-A-Regler: 3, direkt an USB-C mit 5 V/3 A: 2.</span></div>
-          <div class="field"><label for="sPrefix">Kürzel für Zellnummern</label><input type="text" id="sPrefix" maxlength="6" placeholder="CD" style="text-transform:uppercase"><span class="hint">Neue Zellen heißen dann z. B. <b id="sPrefixEx">CD-0001</b>. Bereits vergebene Nummern bleiben.</span></div>
-          <div class="actions"><button class="btn primary" id="sSave" type="button">Einstellungen speichern</button></div>
-        </section>
+      <details class="card acc" id="a-test"><summary><h2>Test-Standardwerte</h2><span class="saved"></span></summary><div class="accb">
+        <p class="note">Damit ist der Start-Dialog vorbelegt. Die BOOT-Taste, der QR-Scanner im Automatik-Modus und Home Assistant starten genau so.</p>
+        <div class="form num">
+          <div class="field"><label for="tI">Entladestrom (A)</label><input type="number" id="tI" data-s="tI" min="0.1" max="5" step="0.05"><span class="hint" id="tIHint"></span></div>
+          <div class="field"><label for="tCut">Abschaltspannung (V)</label><input type="number" id="tCut" data-s="tCut" min="2.5" max="3.6" step="0.05"></div>
+          <div class="field"><label for="tCyc">Zyklen</label><input type="number" id="tCyc" data-s="tCyc" min="1" max="5"></div>
+          <div class="field"><label for="sRest">Ruhezeit vor dem Entladen (min)</label><input type="number" id="sRest" data-s="restMin" min="0" max="240"></div>
+          <div class="field"><label for="tRestAfter">Erholen nach dem Entladen (min)</label><input type="number" id="tRestAfter" data-s="tRestAfter" min="1" max="60"></div>
+          <div class="field"><label for="tAfter">Danach</label><select id="tAfter" data-s="tAfter" data-t="num"><option value="1">Auf Lagerspannung</option><option value="2">Voll laden</option><option value="0">Nicht laden</option></select></div>
+          <div class="field"><label for="tStorPct">Lagerladung (% der Kapazität)</label><input type="number" id="tStorPct" data-s="tStorPct" min="20" max="80" step="5"><span class="hint">50 % ≈ 3,7–3,8 V, gut für lange Lagerung</span></div>
+        </div>
+        <label class="switch"><span>Vorher voll laden</span><input type="checkbox" id="tPre" data-s="tPre"></label>
+      </div></details>
 
-        <section class="card">
-          <h2>Home Assistant (MQTT) <span class="sub" id="mqState" style="text-transform:none;letter-spacing:0"></span></h2>
-          <p class="note">CellDoc meldet sich mit allen Messwerten automatisch in Home Assistant an (MQTT-Integration, z. B. mit dem Mosquitto-Add-on). Funktioniert nur im Heim-WLAN, nicht im Hotspot.</p>
-          <label class="switch"><span>MQTT verwenden</span><input type="checkbox" id="mqOn"></label>
-          <div class="form">
-            <div class="field"><label for="mqHost">Broker</label><input type="text" id="mqHost" placeholder="homeassistant.local" autocomplete="off"></div>
-            <div class="field"><label for="mqPort">Port</label><input type="number" id="mqPort" value="1883"></div>
-            <div class="field"><label for="mqUser">Benutzer</label><input type="text" id="mqUser" autocomplete="off"></div>
-            <div class="field"><label for="mqPass">Passwort</label><input type="password" id="mqPass" autocomplete="new-password"></div>
-            <div class="field full"><label for="mqBase">Thema</label><input type="text" id="mqBase" placeholder="celldoc"><span class="hint" id="mqHint"></span></div>
-          </div>
-          <div class="actions"><button class="btn primary" id="mqSave" type="button">MQTT speichern</button></div>
-        </section>
-      </div>
+      <details class="card acc" id="a-prof"><summary><h2>Testprofile</h2><span class="saved"></span></summary><div class="accb">
+        <p class="note">Eigene Vorlagen, im Start-Dialog oben auswählbar. „Standard“ sind die Test-Standardwerte.</p>
+        <div id="profList"></div>
+        <div class="actions"><button class="btn" id="profAdd" type="button">Neues Profil</button><button class="btn" id="profDef" type="button">Vorschläge hinzufügen</button></div>
+      </div></details>
 
-      <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
-        <section class="card">
-          <h2>Temperaturfühler <button class="btn small" id="tRescan" type="button">Neu suchen</button></h2>
-          <p class="note">Fühler erwärmen (z. B. mit den Fingern), um zu sehen, welcher welcher ist.</p>
-          <div id="sensorList" class="num"></div>
-          <div class="actions"><button class="btn primary" id="tSave" type="button">Zuordnung speichern</button></div>
-        </section>
+      <details class="card acc" id="a-chg"><summary><h2>Laden &amp; Sicherheit</h2><span class="saved"></span></summary><div class="accb">
+        <div class="form num">
+          <div class="field"><label for="chgA">Ladestrom des Lademoduls (A)</label><input type="number" id="chgA" data-s="chgA" min="0.1" max="3" step="0.1"><span class="hint">TP4056 mit 1,2 kΩ = 1 A. Für Restzeit und Überstromgrenze (×1,3).</span></div>
+          <div class="field"><label for="chgMaxH">Längste Ladezeit (h, 0 = aus)</label><input type="number" id="chgMaxH" data-s="chgMaxH" min="0" max="24"></div>
+          <div class="field"><label for="fullA">Voll, wenn Ladestrom unter (A)</label><input type="number" id="fullA" data-s="fullA" min="0.02" max="0.5" step="0.01"></div>
+          <div class="field"><label for="fullV">… und Zelle mindestens (V)</label><input type="number" id="fullV" data-s="fullV" min="4" max="4.2" step="0.01"></div>
+          <div class="field"><label for="maxV">Überspannung beim Laden (V)</label><input type="number" id="maxV" data-s="maxV" min="4.2" max="4.3" step="0.01"></div>
+          <div class="field"><label for="ocF">Überstrom beim Entladen (× Sollstrom)</label><input type="number" id="ocF" data-s="ocF" min="1.1" max="2" step="0.05"></div>
+          <div class="field"><label for="noTempA">Höchststrom ohne Zellfühler (A)</label><input type="number" id="noTempA" data-s="noTempA" min="0.2" max="2" step="0.1"></div>
+          <div class="field" id="sChgF" hidden><label for="sChg">Gleichzeitig laden</label><select id="sChg" data-s="chargeSlots" data-t="num"><option value="0">Alle Schächte</option><option value="1">höchstens 1 Schacht</option><option value="2">höchstens 2 Schächte</option><option value="3">höchstens 3 Schächte</option></select><span class="hint">Jeder Lader zieht 1 A. Mini 4 am 5-V/5-A-Regler: 3, direkt an USB-C mit 5 V/3 A: 2.</span></div>
+        </div>
+        <p class="note">Der Lader selbst hört bei etwa einem Zehntel seines Stroms auf. Die Werte oben bestimmen, wann CellDoc das als „voll“ wertet.</p>
+      </div></details>
 
-        <section class="card">
-          <h2>Kalibrierung</h2>
-          <p class="note">Mit dem Multimeter am Akku messen und den Istwert eintragen. Für den Strom eine Entladung von Hand mit mindestens 0,5 A laufen lassen.</p>
-          <div class="form num">
-            <div class="field"><label for="kWhat">Was</label>
-              <select id="kWhat"><option value="voltage">Spannung</option><option value="current">Strom</option><option value="zero">Strom-Nullpunkt (ohne Last)</option><option value="lead">Leitungswiderstand (Zellspannung unter Strom)</option><option value="balancer">Balancer-Abgriff</option><option value="reset">Alles zurücksetzen</option></select></div>
-            <div class="field"><label for="kPort">Anschluss</label><select id="kPort"><option>A</option><option>B</option></select></div>
-            <div class="field" id="kTapF" hidden><label for="kTap">Abgriff (1 = erste Zelle)</label><input type="number" id="kTap" min="1" max="6" value="1"></div>
-            <div class="field" id="kValF"><label for="kVal">Istwert (V bzw. A)</label><input type="number" id="kVal" step="0.001"></div>
-          </div>
-          <div class="note num" id="kShown"></div>
-          <div class="actions"><button class="btn" id="kGo" type="button">Abgleichen</button></div>
-        </section>
+      <details class="card acc" id="a-temp"><summary><h2>Temperaturgrenzen</h2><span class="saved"></span></summary><div class="accb">
+        <p class="note">Ab „Drosseln“ wird der Strom schrittweise bis auf 30 % reduziert, bei „Stopp“ schaltet CellDoc ab. Immer in °C.</p>
+        <div class="form num">
+          <div class="field"><label for="sCw">Laden: drosseln ab °C</label><input type="number" id="sCw" data-s="chargeWarnC" step="1"></div>
+          <div class="field"><label for="sCs">Laden: Stopp ab °C</label><input type="number" id="sCs" data-s="chargeStopC" step="1"></div>
+          <div class="field"><label for="sDw">Entladen: drosseln ab °C</label><input type="number" id="sDw" data-s="dischargeWarnC" step="1"></div>
+          <div class="field"><label for="sDs">Entladen: Stopp ab °C</label><input type="number" id="sDs" data-s="dischargeStopC" step="1"></div>
+          <div class="field"><label for="sKw">Kühlkörper: drosseln ab °C</label><input type="number" id="sKw" data-s="sinkWarnC" step="1"></div>
+          <div class="field"><label for="sKs">Kühlkörper: Stopp ab °C (max. 90)</label><input type="number" id="sKs" data-s="sinkStopC" step="1"></div>
+        </div>
+      </div></details>
 
-        <section class="card" id="logCard">
-          <h2>Ereignisprotokoll <span class="sub" id="logCount" style="text-transform:none;letter-spacing:0"></span></h2>
-          <p class="note">Was wann und warum passiert ist: Start und Ende jeder Phase mit Grund, Abbrüche mit Messwerten, Drosselung, Neustarts, WLAN und Updates. Neueste Einträge oben.</p>
-          <div class="seg" id="logF" role="group" aria-label="Filter" style="margin:10px 0"><button type="button" data-f="all" aria-pressed="true">Alles</button><button type="button" data-f="we" aria-pressed="false">Warnungen und Fehler</button></div>
-          <div id="logList" class="loglist num"></div>
-          <div class="actions"><button class="btn" id="logMore" type="button" hidden>Ältere anzeigen</button><button class="btn" id="logReload" type="button">Aktualisieren</button><button class="btn" id="logDl" type="button">Als Textdatei</button><button class="btn danger" id="logClr" type="button">Löschen</button></div>
-        </section>
+      <details class="card acc" id="a-sens"><summary><h2>Temperaturfühler</h2><span class="saved"></span></summary><div class="accb">
+        <p class="note">Fühler erwärmen (z. B. mit den Fingern), um zu sehen, welcher welcher ist.</p>
+        <div id="sensorList" class="num"></div>
+        <div class="actions"><button class="btn primary" id="tSave" type="button">Zuordnung speichern</button><button class="btn" id="tRescan" type="button">Neu suchen</button></div>
+      </div></details>
 
-        <section class="card">
-          <h2>Diagnose</h2>
-          <div id="diag" class="num"></div>
-        </section>
+      <details class="card acc" id="a-cal"><summary><h2>Kalibrierung</h2><span class="saved"></span></summary><div class="accb">
+        <p class="note">Mit dem Multimeter am Akku messen und den Istwert eintragen. Für den Strom eine Entladung von Hand mit mindestens 0,5 A laufen lassen.</p>
+        <div class="form num">
+          <div class="field"><label for="kWhat">Was</label>
+            <select id="kWhat"><option value="voltage">Spannung</option><option value="current">Strom</option><option value="zero">Strom-Nullpunkt (ohne Last)</option><option value="lead">Leitungswiderstand (Zellspannung unter Strom)</option><option value="balancer">Balancer-Abgriff</option><option value="reset">Alles zurücksetzen</option></select></div>
+          <div class="field"><label for="kPort">Anschluss</label><select id="kPort"><option>A</option><option>B</option></select></div>
+          <div class="field" id="kTapF" hidden><label for="kTap">Abgriff (1 = erste Zelle)</label><input type="number" id="kTap" min="1" max="6" value="1"></div>
+          <div class="field" id="kValF"><label for="kVal">Istwert (V bzw. A)</label><input type="number" id="kVal" step="0.001"></div>
+        </div>
+        <div class="note num" id="kShown"></div>
+        <div class="actions"><button class="btn" id="kGo" type="button">Abgleichen</button></div>
+      </div></details>
 
-        <section class="card">
-          <h2>Mehrere Geräte <span class="sub" id="syState" style="text-transform:none;letter-spacing:0"></span></h2>
-          <p class="note">Mehrere CellDocs im selben WLAN teilen sich Zellenbestand und Nummern, z. B. ein großer CellDoc und eine Mini. Jedes Gerät hat eine vollständige Kopie, Änderungen gleichen sie alle paar Minuten und nach jeder Änderung ab. Neue Nummern stimmen sie vorher ab, damit keine doppelt vergeben wird.</p>
-          <div class="form">
-            <div class="field"><label for="syHost">Name dieses Geräts</label><input type="text" id="syHost" maxlength="24" autocomplete="off"><span class="hint" id="syHostHint"></span></div>
-            <div class="field"><label for="syPeers">Partnergeräte</label><input type="text" id="syPeers" placeholder="celldoc-mini, 192.168.1.48" autocomplete="off"><span class="hint">Namen oder IP-Adressen, mit Komma getrennt</span></div>
-          </div>
-          <div id="syList" class="num"></div>
-          <div id="syFound"></div>
-          <div class="actions"><button class="btn primary" id="sySave" type="button">Speichern</button><button class="btn" id="syFind" type="button">Geräte suchen</button><button class="btn" id="syNow" type="button">Jetzt abgleichen</button></div>
-        </section>
+      <div class="sgh">Zellen &amp; Auswertung</div>
 
-        <section class="card">
-          <h2>Datensicherung</h2>
-          <p class="note">Sichert Zellenbestand, Ergebnisse und Einstellungen in eine Textdatei. Vor einem Neuflashen mit „Gerät löschen“ unbedingt sichern. Das WLAN- und das MQTT-Passwort sind nicht enthalten.</p>
-          <label class="switch"><span>Entladekurven mitsichern (größer)</span><input type="checkbox" id="bkCurves" checked></label>
-          <div class="actions"><button class="btn primary" id="bkGo" type="button">Sicherung herunterladen</button></div>
-          <div class="field"><label for="bkFile">Sicherung wiederherstellen</label><input type="file" id="bkFile" accept=".txt,text/plain"></div>
-          <div class="actions"><button class="btn" id="bkRestore" type="button" disabled>Einspielen</button></div>
-          <div class="lbl">Für Excel</div>
-          <div class="actions"><button class="btn" id="bkCellsCsv" type="button">Zellen als CSV</button><button class="btn" id="bkResCsv" type="button">Ergebnisse als CSV</button></div>
-          <div class="lbl">Neu anfangen</div>
-          <p class="note">Löscht alle Zellen, Testergebnisse und Kurven. Die Nummerierung beginnt wieder bei 1. Einstellungen, WLAN und Kalibrierung bleiben erhalten. Vorher am besten eine Sicherung herunterladen.</p>
-          <div class="actions"><button class="btn danger" id="bkWipe" type="button">Bestand komplett löschen</button></div>
-        </section>
+      <details class="card acc" id="a-types"><summary><h2>Zelltypen</h2><span class="saved"></span></summary><div class="accb">
+        <p class="note">Eigene Zelltypen erscheinen beim Anlegen und im Start-Dialog. Mitgelieferte Typen lassen sich ausblenden.</p>
+        <div id="typeList"></div>
+        <div class="actions"><button class="btn" id="typeAdd" type="button">Eigenen Zelltyp anlegen</button></div>
+      </div></details>
 
-        <section class="card">
-          <h2>Firmware-Update</h2>
-          <div class="lbl">Direkt von GitHub</div>
-          <p class="note" id="ghInfo">Lädt die neueste Firmware für dieses Gerät direkt von GitHub. CellDoc braucht dafür Internet über das WLAN.</p>
-          <div class="bar" id="ghBar" hidden><i></i></div>
-          <div class="actions"><button class="btn" id="ghCheck" type="button">Nach Update suchen</button><button class="btn primary" id="ghGo" type="button" hidden>Installieren</button></div>
-          <div class="lbl">Aus Datei</div>
-          <p class="note">Datei <b>celldoc-firmware.bin</b> aus den GitHub-Releases wählen. Während eines Tests ist kein Update möglich.</p>
-          <input type="file" id="fwFile" accept=".bin" aria-label="Firmware-Datei">
-          <div class="bar" id="fwBar" hidden><i></i></div>
-          <div class="actions"><button class="btn primary" id="fwGo" type="button" disabled>Hochladen</button><button class="btn" id="rst" type="button">Neu starten</button></div>
-        </section>
-      </div>
+      <details class="card acc" id="a-grade"><summary><h2>Bewertung</h2><span class="saved"></span></summary><div class="accb">
+        <p class="note">Ab welcher Lebenszahl eine Zelle welche Note bekommt und wann CellDoc vorschlägt, sie auszumustern.</p>
+        <div class="form num">
+          <div class="field"><label for="gA">Note A ab</label><input type="number" id="gA" data-u="grade.a" min="1" max="100"></div>
+          <div class="field"><label for="gB">Note B ab</label><input type="number" id="gB" data-u="grade.b" min="1" max="100"></div>
+          <div class="field"><label for="gC">Note C ab</label><input type="number" id="gC" data-u="grade.c" min="1" max="100"><span class="hint">Darunter: D</span></div>
+          <div class="field"><label for="gRet">Ausmustern vorschlagen unter</label><input type="number" id="gRet" data-u="grade.retire" min="0" max="100"><span class="hint">Lebenszahl, 0 = nie</span></div>
+          <div class="field"><label for="gRetRi">… oder Innenwiderstand über (mΩ)</label><input type="number" id="gRetRi" data-u="grade.retireRi" min="0" max="2000"><span class="hint">0 = egal</span></div>
+        </div>
+      </div></details>
+
+      <details class="card acc" id="a-pack"><summary><h2>Pack-Bau-Vorgaben</h2><span class="saved"></span></summary><div class="accb">
+        <p class="note">Vorbelegung für „Pack zusammenstellen“ im Bestand und Warnung, wenn die Zellen zu unterschiedlich sind.</p>
+        <div class="form num">
+          <div class="field"><label for="pS">Zellen in Serie (S)</label><input type="number" id="pS" data-u="pack.s" min="1" max="30"></div>
+          <div class="field"><label for="pP">Parallel (P)</label><input type="number" id="pP" data-u="pack.p" min="1" max="30"></div>
+          <div class="field"><label for="pMin">Mindest-Lebenszahl</label><input type="number" id="pMin" data-u="pack.min" min="0" max="100"></div>
+          <div class="field"><label for="pCapTol">Gruppen höchstens auseinander (%)</label><input type="number" id="pCapTol" data-u="pack.capTol" min="0.5" max="20" step="0.5"></div>
+          <div class="field"><label for="pRiTol">Innenwiderstand höchstens auseinander (%)</label><input type="number" id="pRiTol" data-u="pack.riTol" min="5" max="200" step="5"></div>
+        </div>
+        <label class="switch"><span>Zellen mit auffälliger Selbstentladung weglassen</span><input type="checkbox" id="pSd" data-u="pack.sd"></label>
+      </div></details>
+
+      <details class="card acc" id="a-label"><summary><h2>Etiketten &amp; Nummern</h2><span class="saved"></span></summary><div class="accb">
+        <div class="form">
+          <div class="field"><label for="sPrefix">Kürzel für Zellnummern</label><input type="text" id="sPrefix" data-s="cellPrefix" maxlength="6" placeholder="CD" style="text-transform:uppercase"><span class="hint">Neue Zellen heißen dann z. B. <b id="sPrefixEx">CD-0001</b>. Bereits vergebene Nummern bleiben.</span></div>
+          <div class="field"><label for="lSize">Etikettengröße</label><select id="lSize" data-u="label.size"></select></div>
+          <div class="field"><label for="lQrMode">QR-Code enthält</label><select id="lQrMode" data-u="label.qrMode"><option value="link">Link zur Zelle</option><option value="id">Nur die Nummer</option></select></div>
+        </div>
+        <div class="checks">
+          <label class="switch"><span>QR-Code</span><input type="checkbox" id="lQr" data-u="label.qr"></label>
+          <label class="switch"><span>Kapazität und Innenwiderstand</span><input type="checkbox" id="lVals" data-u="label.vals"></label>
+          <label class="switch"><span>Note und Lebenszahl</span><input type="checkbox" id="lGrade" data-u="label.grade"></label>
+          <label class="switch"><span>Datum des Tests</span><input type="checkbox" id="lDate" data-u="label.date"></label>
+          <label class="switch"><span>Name</span><input type="checkbox" id="lName" data-u="label.name"></label>
+        </div>
+      </div></details>
+
+      <details class="card acc" id="a-scan"><summary><h2>QR-Scanner</h2><span class="saved"></span></summary><div class="accb">
+        <p class="note">Was passiert, wenn der Scanner am Gerät ein CellDoc-Etikett liest.</p>
+        <div class="field"><label for="scanMode">Beim Scannen</label><select id="scanMode" data-s="scanMode" data-t="num">
+          <option value="0">Nur die Zelle in der Weboberfläche öffnen</option>
+          <option value="1">Zelle dem Schacht zuordnen (Start per Taste oder Web)</option>
+          <option value="2">Zuordnen und Test mit Standardwerten starten</option></select>
+          <span class="hint">„Starten“ beginnt, sobald die Zelle steckt. Gilt auch, wenn erst gescannt und dann eingesetzt wird.</span></div>
+        <label class="switch"><span>Ton beim Scannen</span><input type="checkbox" id="bzScan" data-s="bzScan"></label>
+      </div></details>
+
+      <div class="sgh">Anzeige &amp; Bedienung</div>
+
+      <details class="card acc" id="a-snd"><summary><h2>Anzeige &amp; Töne</h2><span class="saved"></span></summary><div class="accb">
+        <label class="switch"><span><b>Summer</b> (Hauptschalter)</span><input type="checkbox" id="sBuzz" data-s="buzzer"></label>
+        <div class="checks" style="padding-left:12px">
+          <label class="switch"><span>Tastendruck und Start</span><input type="checkbox" id="bzKey" data-s="bzKey"></label>
+          <label class="switch"><span>Fertig (Test, Laden, Entladen)</span><input type="checkbox" id="bzDone" data-s="bzDone"></label>
+          <label class="switch"><span>Fehler und Abbruch</span><input type="checkbox" id="bzErr" data-s="bzErr"></label>
+          <label class="switch"><span>Beim Einschalten: WLAN-Status</span><input type="checkbox" id="bzBoot" data-s="bzBoot"></label>
+        </div>
+        <p class="note">Beim Einschalten: <b>1 Ton</b> = WLAN verbunden, <b>2 Töne</b> = kein WLAN eingerichtet, Hotspot offen, <b>3 Töne</b> = WLAN nicht erreichbar, Hotspot offen.</p>
+        <label class="switch"><span>Status-LED</span><input type="checkbox" id="led" data-s="led"></label>
+        <div class="lbl">Display (OLED, falls angeschlossen)</div>
+        <div class="form num">
+          <div class="field"><label for="oledBr">Helligkeit</label><input type="range" id="oledBr" data-s="oledBr" data-t="num" min="0" max="255" step="5"></div>
+          <div class="field"><label for="oledOff">Dunkel nach (min ohne Bedienung, 0 = nie)</label><input type="number" id="oledOff" data-s="oledOff" min="0" max="1440"></div>
+        </div>
+        <div class="actions"><button class="btn" id="bzTest" type="button">Summer testen</button></div>
+      </div></details>
+
+      <details class="card acc" id="a-night"><summary><h2>Nachtmodus</h2><span class="saved"></span></summary><div class="accb">
+        <label class="switch"><span>Nachtmodus verwenden</span><input type="checkbox" id="nightOn" data-s="nightOn"></label>
+        <div class="form num">
+          <div class="field"><label for="nightFrom">Von</label><input type="time" id="nightFrom" data-s="nightFrom" data-t="time"></div>
+          <div class="field"><label for="nightTo">Bis</label><input type="time" id="nightTo" data-s="nightTo" data-t="time"></div>
+        </div>
+        <div class="checks">
+          <label class="switch"><span>Summer stumm (Fehler piepen trotzdem)</span><input type="checkbox" id="nightBz" data-s="nightBz"></label>
+          <label class="switch"><span>LED aus (Fehler blinken trotzdem)</span><input type="checkbox" id="nightLed" data-s="nightLed"></label>
+          <label class="switch"><span>Display dunkel</span><input type="checkbox" id="nightOled" data-s="nightOled"></label>
+        </div>
+        <p class="note" id="nightNow"></p>
+      </div></details>
+
+      <details class="card acc" id="a-live"><summary><h2>Live-Ansicht</h2><span class="saved"></span></summary><div class="accb">
+        <p class="note">Was auf der Live-Seite angezeigt wird. Gilt für alle Browser.</p>
+        <div class="checks">
+          <label class="switch"><span>Strom</span><input type="checkbox" id="lvI" data-u="live.i"></label>
+          <label class="switch"><span>Leistung</span><input type="checkbox" id="lvP" data-u="live.p"></label>
+          <label class="switch"><span>Ladung (mAh)</span><input type="checkbox" id="lvQ" data-u="live.q"></label>
+          <label class="switch"><span>Energie (Wh)</span><input type="checkbox" id="lvE" data-u="live.e"></label>
+          <label class="switch"><span>Ablauf der Phasen</span><input type="checkbox" id="lvSteps" data-u="live.steps"></label>
+          <label class="switch"><span>Temperaturen</span><input type="checkbox" id="lvTemps" data-u="live.temps"></label>
+          <label class="switch"><span>Restzeit und Ladezustand</span><input type="checkbox" id="lvEta" data-u="live.eta"></label>
+          <label class="switch"><span>Letztes Ergebnis</span><input type="checkbox" id="lvLast" data-u="live.last"></label>
+          <label class="switch"><span>Verlaufsdiagramm</span><input type="checkbox" id="lvChart" data-u="live.chart"></label>
+        </div>
+      </div></details>
+
+      <details class="card acc" id="a-units"><summary><h2>Einheiten &amp; Formate</h2><span class="saved"></span></summary><div class="accb">
+        <div class="form">
+          <div class="field"><label for="uCap">Kapazität</label><select id="uCap" data-u="units.cap"><option value="mAh">mAh</option><option value="Ah">Ah</option></select></div>
+          <div class="field"><label for="uTemp">Temperatur</label><select id="uTemp" data-u="units.temp"><option value="C">°C</option><option value="F">°F</option></select></div>
+          <div class="field"><label for="uDate">Datum</label><select id="uDate" data-u="units.date"><option value="de">14.11.26</option><option value="iso">2026-11-14</option></select></div>
+          <div class="field"><label for="uCsv">CSV-Trennzeichen</label><select id="uCsv" data-u="units.csv"><option value=";">Semikolon (Excel deutsch)</option><option value=",">Komma</option><option value="tab">Tabulator</option></select></div>
+        </div>
+        <label class="switch"><span>Innenwiderstand in Ω statt mΩ</span><input type="checkbox" id="sOhm" data-s="riInOhm"></label>
+      </div></details>
+
+      <details class="card acc" id="a-lang" hidden><summary><h2>Sprache</h2><span class="saved"></span></summary><div class="accb">
+        <div class="field"><label for="uLang">Sprache der Weboberfläche</label><select id="uLang" data-u="lang"><option value="de">Deutsch</option><option value="en">English</option></select></div>
+        <p class="note" id="langNote"></p>
+      </div></details>
+
+      <div class="sgh">Verbindungen</div>
+
+      <details class="card acc" id="a-wifi"><summary><h2>WLAN</h2><span class="saved"></span></summary><div class="accb">
+        <div class="note" id="wifiInfo"></div>
+        <div class="form">
+          <div class="field full"><label for="wSsid">Netzwerk</label>
+            <div style="display:flex;gap:8px"><input type="text" id="wSsid" autocomplete="off"><button class="btn small" id="wScan" type="button">Suchen</button></div>
+            <select id="wList" hidden aria-label="Gefundene Netzwerke"></select></div>
+          <div class="field full"><label for="wPass">Passwort</label><input type="password" id="wPass" autocomplete="new-password"></div>
+        </div>
+        <div class="actions"><button class="btn primary" id="wSave" type="button">Speichern und neu starten</button><button class="btn danger" id="wDel" type="button">WLAN löschen</button></div>
+      </div></details>
+
+      <details class="card acc" id="a-net"><summary><h2>Netzwerk erweitert</h2><span class="saved"></span></summary><div class="accb">
+        <p class="note">Gilt nach einem Neustart. Feste Adresse nur, wenn du weißt, welche in deinem Netz frei ist.</p>
+        <div class="lbl">Feste IP-Adresse (leer = automatisch)</div>
+        <div class="form num">
+          <div class="field"><label for="nIp">IP-Adresse</label><input type="text" id="nIp" data-s="ip" placeholder="192.168.1.50" inputmode="decimal"></div>
+          <div class="field"><label for="nGw">Router (Gateway)</label><input type="text" id="nGw" data-s="gw" placeholder="192.168.1.1" inputmode="decimal"></div>
+          <div class="field"><label for="nMask">Subnetzmaske</label><input type="text" id="nMask" data-s="mask" placeholder="255.255.255.0" inputmode="decimal"></div>
+          <div class="field"><label for="nDns">DNS</label><input type="text" id="nDns" data-s="dns" placeholder="wie Router" inputmode="decimal"></div>
+        </div>
+        <div class="lbl">Ausweich-WLAN</div>
+        <div class="form">
+          <div class="field"><label for="nSsid2">Netzwerk</label><input type="text" id="nSsid2" data-s="ssid2" autocomplete="off"></div>
+          <div class="field"><label for="nPass2">Passwort</label><input type="password" id="nPass2" data-s="pass2" autocomplete="new-password"></div>
+        </div>
+        <div class="lbl">Hotspot</div>
+        <div class="form">
+          <div class="field"><label for="nApName">Name</label><input type="text" id="nApName" data-s="apName" placeholder="CellDoc-XXXX" autocomplete="off"></div>
+          <div class="field"><label for="nApPass">Passwort (mind. 8 Zeichen)</label><input type="password" id="nApPass" data-s="apPass" placeholder="celldoc1" autocomplete="new-password"></div>
+        </div>
+        <div class="actions"><button class="btn" id="nRestart" type="button">Jetzt neu starten</button></div>
+      </div></details>
+
+      <details class="card acc" id="a-mqtt"><summary><h2>Home Assistant (MQTT) <span class="sub" id="mqState" style="text-transform:none;letter-spacing:0"></span></h2><span class="saved"></span></summary><div class="accb">
+        <p class="note">CellDoc meldet sich mit allen Messwerten automatisch in Home Assistant an (MQTT-Integration, z. B. mit dem Mosquitto-Add-on). Funktioniert nur im Heim-WLAN, nicht im Hotspot.</p>
+        <label class="switch"><span>MQTT verwenden</span><input type="checkbox" id="mqOn" data-s="mqttOn"></label>
+        <div class="form">
+          <div class="field"><label for="mqHost">Broker</label><input type="text" id="mqHost" data-s="mqttHost" placeholder="homeassistant.local" autocomplete="off"></div>
+          <div class="field"><label for="mqPort">Port</label><input type="number" id="mqPort" data-s="mqttPort"></div>
+          <div class="field"><label for="mqUser">Benutzer</label><input type="text" id="mqUser" data-s="mqttUser" autocomplete="off"></div>
+          <div class="field"><label for="mqPass">Passwort</label><input type="password" id="mqPass" data-s="mqttPass" autocomplete="new-password"></div>
+          <div class="field full"><label for="mqBase">Thema</label><input type="text" id="mqBase" data-s="mqttBase" placeholder="celldoc"><span class="hint" id="mqHint"></span></div>
+        </div>
+      </div></details>
+
+      <details class="card acc" id="a-notify"><summary><h2>Benachrichtigungen</h2><span class="saved"></span></summary><div class="accb">
+        <p class="note">Nachricht aufs Handy, kostenlos über <b>ntfy</b> (App installieren, Thema abonnieren) oder einen <b>Telegram</b>-Bot. Braucht Internet über das WLAN.</p>
+        <div class="form">
+          <div class="field full"><label for="nfNtfy">ntfy-Thema oder Adresse</label><input type="text" id="nfNtfy" data-s="ntfy" placeholder="z. B. celldoc-mario-7f3k oder https://ntfy.example.com/thema" autocomplete="off"><span class="hint">Ein schwer zu erratender Name, denn jeder mit dem Namen kann mitlesen.</span></div>
+          <div class="field"><label for="nfTok">Telegram-Bot-Token</label><input type="password" id="nfTok" data-s="tgTok" autocomplete="off"></div>
+          <div class="field"><label for="nfChat">Telegram-Chat-ID</label><input type="text" id="nfChat" data-s="tgChat" autocomplete="off" inputmode="numeric"></div>
+        </div>
+        <div class="checks">
+          <label class="switch"><span>Test fertig</span><input type="checkbox" id="nDone" data-s="nDone"></label>
+          <label class="switch"><span>Abbruch oder Fehler</span><input type="checkbox" id="nErr" data-s="nErr"></label>
+          <label class="switch"><span>Laden fertig (von Hand gestartet)</span><input type="checkbox" id="nChg" data-s="nChg"></label>
+        </div>
+        <div class="actions"><button class="btn" id="nfTest" type="button">Testnachricht senden</button></div>
+      </div></details>
+
+      <details class="card acc" id="a-sync"><summary><h2>Mehrere Geräte <span class="sub" id="syState" style="text-transform:none;letter-spacing:0"></span></h2><span class="saved"></span></summary><div class="accb">
+        <p class="note">Mehrere CellDocs im selben WLAN teilen sich Zellenbestand und Nummern. Jedes Gerät hat eine vollständige Kopie, Änderungen gleichen sie alle paar Minuten und nach jeder Änderung ab.</p>
+        <div class="form">
+          <div class="field full"><label for="syPeers">Partnergeräte</label><input type="text" id="syPeers" data-s="peers" placeholder="celldoc-mini, 192.168.1.48" autocomplete="off"><span class="hint">Namen oder IP-Adressen, mit Komma getrennt</span></div>
+        </div>
+        <div id="syList" class="num"></div>
+        <div id="syFound"></div>
+        <div class="actions"><button class="btn" id="syFind" type="button">Geräte suchen</button><button class="btn" id="syNow" type="button">Jetzt abgleichen</button></div>
+      </div></details>
+
+      <div class="sgh">System</div>
+
+      <details class="card acc" id="a-dev"><summary><h2>Gerät &amp; System</h2><span class="saved"></span></summary><div class="accb">
+        <div class="form">
+          <div class="field"><label for="syHost">Name dieses Geräts</label><input type="text" id="syHost" data-s="hostname" maxlength="24" autocomplete="off"><span class="hint" id="syHostHint"></span></div>
+          <div class="field"><label for="dTz">Zeitzone</label><select id="dTz" data-s="tz"></select></div>
+          <div class="field"><label for="dNtp">Zeitserver</label><input type="text" id="dNtp" data-s="ntp" placeholder="pool.ntp.org" autocomplete="off"></div>
+        </div>
+        <p class="note num" id="dTime"></p>
+        <div class="actions"><button class="btn" id="rst" type="button">Neu starten</button></div>
+        <div class="lbl">Zurücksetzen</div>
+        <p class="note"><b>Einstellungen zurücksetzen:</b> alles auf Werkszustand, WLAN, Kalibrierung, Fühler, Bestand und Ergebnisse bleiben. <b>Alles löschen:</b> CellDoc wie neu, auch Bestand, Ergebnisse und WLAN. Vorher eine Sicherung herunterladen.</p>
+        <div class="actions"><button class="btn danger" id="dReset" type="button">Einstellungen zurücksetzen</button><button class="btn danger" id="dWipe" type="button">Alles löschen</button></div>
+      </div></details>
+
+      <details class="card acc" id="a-stats"><summary><h2>Statistik</h2><span class="saved"></span></summary><div class="accb">
+        <div id="statBox" class="num"></div>
+        <div class="actions"><button class="btn" id="stReset" type="button">Zähler zurücksetzen</button></div>
+      </div></details>
+
+      <details class="card acc" id="a-hw"><summary><h2>Hardware-Test</h2><span class="saved"></span></summary><div class="accb">
+        <p class="note">Schaltet Teile einzeln, um Verdrahtung und Lötstellen zu prüfen. Nur wenn kein Test läuft. Lader und Last gehen nach 60 s automatisch aus, die Schutzgrenzen gelten weiter.</p>
+        <div class="form num">
+          <div class="field" id="hwSlotF"><label for="hwSlot">Schacht</label><select id="hwSlot"></select></div>
+          <div class="field"><label for="hwAmps">Laststrom (A)</label><input type="number" id="hwAmps" min="0.1" max="2" step="0.1" value="0.5"></div>
+        </div>
+        <div class="kv num" id="hwLive"></div>
+        <div class="actions">
+          <button class="btn" id="hwChg" type="button">Lader ein</button><button class="btn" id="hwLoad" type="button">Last ein</button><button class="btn" id="hwOff" type="button">Alles aus</button>
+          <button class="btn" id="hwBz" type="button">Summer</button><button class="btn" id="hwLedOn" type="button">LED an</button><button class="btn" id="hwLedOff" type="button">LED aus</button>
+        </div>
+      </div></details>
+
+      <details class="card acc" id="a-exp"><summary><h2>Experten-Ansicht</h2><span class="saved"></span></summary><div class="accb">
+        <label class="switch"><span>Ausführliches Protokoll (jede Ri-Messung, kurze Stromspitzen)</span><input type="checkbox" id="verbose" data-s="verbose"></label>
+        <label class="switch"><span>Rohwerte in der Live-Ansicht zeigen</span><input type="checkbox" id="exRaw" data-u="expert.raw"></label>
+        <div class="lbl">Rohwerte jetzt</div>
+        <div id="rawBox" class="num"></div>
+      </div></details>
+
+      <details class="card acc" id="logCard"><summary><h2>Ereignisprotokoll <span class="sub" id="logCount" style="text-transform:none;letter-spacing:0"></span></h2><span class="saved"></span></summary><div class="accb">
+        <p class="note">Was wann und warum passiert ist: Start und Ende jeder Phase mit Grund, Abbrüche mit Messwerten, Drosselung, Neustarts, WLAN und Updates. Neueste Einträge oben.</p>
+        <div class="seg" id="logF" role="group" aria-label="Filter" style="margin:10px 0"><button type="button" data-f="all" aria-pressed="true">Alles</button><button type="button" data-f="we" aria-pressed="false">Warnungen und Fehler</button></div>
+        <div id="logList" class="loglist num"></div>
+        <div class="actions"><button class="btn" id="logMore" type="button" hidden>Ältere anzeigen</button><button class="btn" id="logReload" type="button">Aktualisieren</button><button class="btn" id="logDl" type="button">Als Textdatei</button><button class="btn danger" id="logClr" type="button">Löschen</button></div>
+      </div></details>
+
+      <details class="card acc" id="a-diag"><summary><h2>Diagnose</h2><span class="saved"></span></summary><div class="accb">
+        <div id="diag" class="num"></div>
+      </div></details>
+
+      <details class="card acc" id="a-bk"><summary><h2>Datensicherung</h2><span class="saved"></span></summary><div class="accb">
+        <p class="note">Sichert Zellenbestand, Ergebnisse und Einstellungen in eine Textdatei. Vor einem Neuflashen mit „Gerät löschen“ unbedingt sichern. Die Passwörter sind nicht enthalten.</p>
+        <label class="switch"><span>Entladekurven mitsichern (größer)</span><input type="checkbox" id="bkCurves" checked></label>
+        <div class="actions"><button class="btn primary" id="bkGo" type="button">Sicherung herunterladen</button></div>
+        <div class="field"><label for="bkFile">Sicherung wiederherstellen</label><input type="file" id="bkFile" accept=".txt,text/plain"></div>
+        <div class="actions"><button class="btn" id="bkRestore" type="button" disabled>Einspielen</button></div>
+        <div class="lbl">Für Excel</div>
+        <div class="actions"><button class="btn" id="bkCellsCsv" type="button">Zellen als CSV</button><button class="btn" id="bkResCsv" type="button">Ergebnisse als CSV</button></div>
+        <div class="lbl">Neu anfangen</div>
+        <p class="note">Löscht alle Zellen, Testergebnisse und Kurven. Die Nummerierung beginnt wieder bei 1. Einstellungen, WLAN und Kalibrierung bleiben erhalten.</p>
+        <div class="actions"><button class="btn danger" id="bkWipe" type="button">Bestand komplett löschen</button></div>
+      </div></details>
+
+      <details class="card acc" id="a-fw"><summary><h2>Firmware-Update</h2><span class="saved"></span></summary><div class="accb">
+        <div class="lbl">Direkt von GitHub</div>
+        <p class="note" id="ghInfo">Lädt die neueste Firmware für dieses Gerät direkt von GitHub. CellDoc braucht dafür Internet über das WLAN.</p>
+        <div class="bar" id="ghBar" hidden><i></i></div>
+        <div class="actions"><button class="btn" id="ghCheck" type="button">Nach Update suchen</button><button class="btn primary" id="ghGo" type="button" hidden>Installieren</button></div>
+        <div class="lbl">Aus Datei</div>
+        <p class="note">Datei <b>celldoc-firmware.bin</b> aus den GitHub-Releases wählen. Während eines Tests ist kein Update möglich.</p>
+        <input type="file" id="fwFile" accept=".bin" aria-label="Firmware-Datei">
+        <div class="bar" id="fwBar" hidden><i></i></div>
+        <div class="actions"><button class="btn primary" id="fwGo" type="button" disabled>Hochladen</button></div>
+      </div></details>
     </div>
   </main>
 </div>
@@ -805,7 +1035,13 @@ const nf = (v, d = 0) => (v == null || isNaN(v)) ? "–" : Number(v).toLocaleStr
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dur = s => { s = Math.max(0, Math.round(s || 0)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? `${h} h ${m} min` : `${m} min ${s % 60} s`; };
-const dateStr = t => t ? new Date(t * 1000).toLocaleString("de-AT", {day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit"}) : "ohne Datum";
+const isoD = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const fmtDate = t => { if (!t) return ""; const d = new Date(t * 1000); return UI?.units?.date === "iso" ? isoD(d) : d.toLocaleDateString("de-AT", {day: "2-digit", month: "2-digit", year: "2-digit"}); };
+const dateStr = t => { if (!t) return "ohne Datum"; const d = new Date(t * 1000); return UI?.units?.date === "iso" ? isoD(d) + " " + d.toLocaleTimeString("de-AT", {hour: "2-digit", minute: "2-digit"}) : d.toLocaleString("de-AT", {day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit"}); };
+// Einheiten aus den Einstellungen (UI wird in loadSettings/init gefüllt)
+let UI = null;
+const capF = (v, d = 0) => v == null || isNaN(v) ? "–" : UI?.units?.cap === "Ah" ? nf(v / 1000, 2) + " Ah" : nf(v, d) + " mAh";
+const tF = (v, d = 0) => v == null || isNaN(v) ? "–" : UI?.units?.temp === "F" ? nf(v * 9 / 5 + 32, d) + " °F" : nf(v, d) + " °C";
 
 let S = null, RAW = null, INFO = null, SETTINGS = null, curveCache = [], lastCurveAt = 0;
 let SEL = 0;  // gewählter Schacht (Mini)
@@ -937,9 +1173,9 @@ const active = p => !["idle", "done", "error"].includes(p);
 function tempBox(label, t, warn, stop) {
   const pos = t == null ? 0 : clamp(t / (stop + 15) * 100, 0, 98);
   const gw = warn / (stop + 15) * 100, gs = stop / (stop + 15) * 100;
-  return `<div class="temp"><small>${label}</small><b>${t == null ? "–" : nf(t, 1) + " °C"}</b>
+  return `<div class="temp"><small>${label}</small><b>${t == null ? "–" : tF(t, 1)}</b>
     <div class="gauge" style="background:linear-gradient(90deg,var(--charge) 0 ${gw}%,var(--warn) ${gw}% ${gs}%,var(--danger) ${gs}%)">${t == null ? "" : `<i style="left:${pos}%"></i>`}</div>
-    <small>Drosseln ab ${nf(warn)} °C · Stopp ${nf(stop)} °C</small></div>`;
+    <small>Drosseln ab ${tF(warn)} · Stopp ${tF(stop)}</small></div>`;
 }
 
 function renderLive() {
@@ -955,7 +1191,7 @@ function renderLive() {
   // Banner
   let bn = "";
   if (ph === "error") bn = `<div class="banner err" role="alert"><div><b>${esc(s.error || "Gestoppt")}</b>Last und Lader sind getrennt. <a href="#" onclick="openLog();return false">Ereignisprotokoll ansehen</a></div></div>`;
-  else if (ph === "done") bn = `<div class="banner ok"><div style="flex:1"><b>${job.cellId ? esc(job.cellId) + " ist fertig" : job.name ? esc(job.name) + " ist fertig" : "Fertig"}${s.last?.grade && s.lastResult ? ` · Note ${esc(s.last.grade)}` : ""}</b>${s.lastResult ? "Das Ergebnis steht rechts und unter Ergebnisse." : ""}</div>${job.cell ? `<button class="btn small" id="bnLabel" type="button">Etikett</button>` : ""}</div>`;
+  else if (ph === "done") bn = `<div class="banner ok"><div style="flex:1"><b>${job.cellId ? esc(job.cellId) + " ist fertig" : job.name ? esc(job.name) + " ist fertig" : "Fertig"}${s.last?.score != null && s.lastResult ? ` · Note ${gradeOf(s.last.score)}` : s.last?.grade && s.lastResult ? ` · Note ${esc(s.last.grade)}` : ""}</b>${s.lastResult ? "Das Ergebnis steht rechts und unter Ergebnisse." : ""}</div>${job.cell ? `<button class="btn small" id="bnLabel" type="button">Etikett</button>` : ""}</div>`;
   else if (s.saturated) bn = `<div class="banner info"><div><b>Strom wird nicht erreicht</b>Die Akkuspannung ist für diesen Strom zu niedrig. Der Test läuft mit dem maximal möglichen Strom weiter.</div></div>`;
   if ($("banner").dataset.k !== bn) {
     $("banner").innerHTML = bn; $("banner").dataset.k = bn;
@@ -965,7 +1201,7 @@ function renderLive() {
   $("vBig").innerHTML = port.v > 0.3 ? `${nf(port.v, 3)}<small>V</small>` : `–<small>V</small>`;
   let sub = "Kein Akku erkannt";
   if (isAct || ph === "done" || ph === "error") {
-    const bits = [job.cellId && job.cellId !== job.name ? job.cellId : "", job.name, job.preset ? (INFO?.presets.find(p => p.id === job.preset) || {}).name : chemName(job.chem), job.cells > 1 ? job.cells + "S" : "", isMini() ? "" : "Anschluss " + job.port].filter(Boolean);
+    const bits = [job.cellId && job.cellId !== job.name ? job.cellId : "", job.name, job.preset ? typeName(job.preset) : chemName(job.chem), job.cells > 1 ? job.cells + "S" : "", isMini() ? "" : "Anschluss " + job.port].filter(Boolean);
     sub = bits.map(esc).join(" · ");
   } else if (port.v > .3) {
     const as = isMini() ? RAW.slots[SEL]?.assigned : RAW?.assigned;
@@ -989,7 +1225,7 @@ function renderLive() {
   $("kP").textContent = nf(Math.abs(port.p), 2) + " W";
   const dis = ["discharge", "manualdischarge"].includes(ph);
   $("kQl").textContent = isAct ? (dis ? "Entnommen" : "Geladen") : "Ladung";
-  $("kQ").textContent = isAct ? nf(s.mah) + " mAh" : "–";
+  $("kQ").textContent = isAct ? capF(s.mah) : "–";
   $("kE").textContent = isAct ? nf(s.wh, 2) + " Wh" : "–";
 
   // Ablauf
@@ -1103,7 +1339,7 @@ async function renderLiveChart(force) {
   if (dis && disPts.length > 2) {
     const q0 = disPts[0][3];
     drawChart(svg, [{pts: disPts.map(p => [Math.abs(p[3] - q0), p[1]]), color: "var(--discharge)", area: true, dot: active(ph)}],
-      {xFmt: v => nf(v) + " mAh", yFmt: v => nf(v, 2) + " V", hline: (job.cutoffV || 0) * cells, hlineLabel: "Entladeschluss " + nf((job.cutoffV || 0) * cells, 2) + " V", ...disAxes(job.chem, job.cutoffV, cells, job.nomCapMah)});
+      {xFmt: v => capF(v), yFmt: v => nf(v, 2) + " V", hline: (job.cutoffV || 0) * cells, hlineLabel: "Entladeschluss " + nf((job.cutoffV || 0) * cells, 2) + " V", ...disAxes(job.chem, job.cutoffV, cells, job.nomCapMah)});
     $("curveHint").textContent = "Spannung über entnommener Ladung";
     $("curveLegend").innerHTML = `<span><i style="background:var(--discharge)"></i>${esc(job.name || "Akku")}</span>`;
   } else {
@@ -1156,6 +1392,9 @@ async function refresh() {
     renderLiveChart(false);
     renderLastResult();
     checkDeviceScan();
+    if (document.body.classList.contains("ex-raw")) $("rawLine").textContent = rawTxt(isMini() ? SEL : 0);
+    if ($("a-hw")?.open) hwLive();
+    if ($("a-exp")?.open) rawUi();
   } catch (e) {
     $("vSub").textContent = "Keine Verbindung zu CellDoc …";
   }
@@ -1201,7 +1440,8 @@ function openStart(preCell) {
   if (preCell && !(preCell.no > 0)) preCell = null;
   let cellSel = preCell || null;
   const pB = !isMini() && S.ports[1].v > .5 && S.ports[0].v < .5;
-  const presetOpts = INFO.presets.map(p => `<option value="${p.id}">${esc(p.name)} · ${nf(p.capMah)} mAh</option>`).join("");
+  const presetOpts = presets().map(p => `<option value="${p.id}">${esc(p.name)} · ${capF(p.capMah)}</option>`).join("");
+  const profOpts = [defProfile(), ...(UI.profiles || [])].map((p, k) => `<option value="${k}">${esc(p.name)}</option>`).join("");
   const chemOpts = INFO.chemistries.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
   const {el, close} = openSheet(`
     <div class="sheet-head"><h3>Starten</h3><button class="btn small" data-close type="button">Abbrechen</button></div>
@@ -1212,6 +1452,7 @@ function openStart(preCell) {
     <div class="seg" role="group" aria-label="Anschluss" id="stPort"${isMini() ? " hidden" : ""}>
       <button type="button" data-p="A" aria-pressed="${!pB}">A · Einzelzelle</button><button type="button" data-p="B" aria-pressed="${pB}">B · Pack</button>
     </div>
+    <div class="field" id="fProf"><label for="stProf">Profil</label><select id="stProf">${profOpts}</select></div>
     <div class="field"><span class="lbl">Zelle</span>
       <div class="seg" role="group" aria-label="Zelle" id="stCellMode"><button type="button" data-c="new" aria-pressed="${!cellSel}">Neue Zelle</button><button type="button" data-c="old" aria-pressed="${!!cellSel}">Aus dem Bestand</button></div>
       <div id="stCellPick" hidden><div class="toolbar" style="margin-top:8px"><input type="search" id="stCellQ" class="grow" placeholder="Nummer, Name oder Ort" aria-label="Zelle suchen" autocomplete="off"><button class="btn" id="stScan" type="button"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3M8 12h8"/></svg>Scannen</button></div><div class="pick" id="stCellRes"></div></div>
@@ -1262,7 +1503,7 @@ function openStart(preCell) {
   function pickCell(c) {
     cellSel = c;
     q("#stName").value = c.name && c.name !== c.id ? c.name : "";
-    if (c.preset && INFO.presets.some(p => p.id === c.preset)) q("#stType").value = c.preset;
+    if (c.preset && presets().some(p => p.id === c.preset)) q("#stType").value = c.preset;
     else if (c.nomCapMah > 0) { q("#stType").value = "custom"; q("#stCap").value = c.nomCapMah; q("#stRi").value = c.riNew || ""; }
     else q("#stType").value = "unknown";
     cellUi(); upd(true);
@@ -1274,7 +1515,7 @@ function openStart(preCell) {
     if (old && cellSel) {
       const liveV = isMini() ? S.ports[0].v : S.ports[port === "A" ? 0 : 1].v, rv = cellSel.rest;
       const vc = rv?.t && liveV > 2.5 ? ` · seit ${nf((Date.now() / 1000 - rv.t) / 86400, 0)} Tagen ${nf((liveV - rv.v) * 1000)} mV` : "";
-      hint.innerHTML = `<span class="cid sm">${esc(cellSel.id)}</span> ${esc(cellSel.name !== cellSel.id ? cellSel.name : cellSel.presetName || "")}${cellSel.last?.cap ? ` · zuletzt ${nf(cellSel.last.cap)} mAh, Lebenszahl ${cellSel.last.score} %` : " · noch nicht geprüft"}${vc} · <a href="#" id="stCellChange">ändern</a>`;
+      hint.innerHTML = `<span class="cid sm">${esc(cellSel.id)}</span> ${esc(cellSel.name !== cellSel.id ? cellSel.name : cellSel.presetName || "")}${cellSel.last?.cap ? ` · zuletzt ${capF(cellSel.last.cap)}, Lebenszahl ${cellSel.last.score} %` : " · noch nicht geprüft"}${vc} · <a href="#" id="stCellChange">ändern</a>`;
       q("#stCellChange").addEventListener("click", e => { e.preventDefault(); cellSel = null; cellUi(); q("#stCellQ").focus(); });
       q("#stNameHint").textContent = "Der Vergleich mit dem ersten Test dieser Zelle erfolgt automatisch.";
     } else {
@@ -1286,7 +1527,7 @@ function openStart(preCell) {
       const l = CELLS.filter(c => c.status === "ok" && cellMatches(c, qq)).sort((a, b) => b.no - a.no);
       const n = /^#?\d+$/.test(qq) ? +qq.replace("#", "") : 0;
       if (n) l.sort((a, b) => (b.no === n) - (a.no === n));
-      q("#stCellRes").innerHTML = l.length ? l.slice(0, 6).map(c => `<div class="row tap" data-pick="${c.no}" tabindex="0" role="button"><div class="crow"><span class="cid">${esc(c.id)}</span><div class="l"><b>${esc(c.name !== c.id ? c.name : c.presetName || "")}</b><small>${c.last?.cap ? nf(c.last.cap) + " mAh" : "noch nicht geprüft"}${c.loc ? " · " + esc(c.loc) : ""}</small></div></div>${gradeBadge(c)}</div>`).join("")
+      q("#stCellRes").innerHTML = l.length ? l.slice(0, 6).map(c => `<div class="row tap" data-pick="${c.no}" tabindex="0" role="button"><div class="crow"><span class="cid">${esc(c.id)}</span><div class="l"><b>${esc(c.name !== c.id ? c.name : c.presetName || "")}</b><small>${c.last?.cap ? capF(c.last.cap) : "noch nicht geprüft"}${c.loc ? " · " + esc(c.loc) : ""}</small></div></div>${gradeBadge(c)}</div>`).join("")
         : `<div class="note">${CELLS.length ? "Keine passende Zelle" : "Der Bestand ist noch leer"}</div>`;
       q("#stCellRes").querySelectorAll("[data-pick]").forEach(r => {
         const go = () => pickCell(CELLS.find(c => c.no === +r.dataset.pick));
@@ -1296,8 +1537,9 @@ function openStart(preCell) {
   }
   let lastChem = null;
   function upd(chemChanged) {
-    const type = q("#stType").value, preset = INFO.presets.find(p => p.id === type);
+    const type = q("#stType").value, preset = presets().find(p => p.id === type);
     if (preset) q("#stChem").value = preset.chem;
+    q("#fProf").hidden = mode !== "test";
     const chem = INFO.chemistries.find(c => c.id === q("#stChem").value);
     if (port === "A") q("#stCells").value = 1;
     const cells = +q("#stCells").value || 1;
@@ -1332,15 +1574,27 @@ function openStart(preCell) {
     cellUi();
   }
   ["#stType", "#stChem", "#stCells", "#stCap", "#stCur", "#stPre", "#stRest", "#stAfter", "#stCyc"].forEach(s => q(s).addEventListener("input", () => upd(s === "#stChem")));
-  q("#stType").value = INFO.presets[0]?.id || "unknown"; if (isMini()) { q("#stAfter").value = "storage"; q("#stCur").max = INFO.limits.maxCurrentA; }
+  q("#stType").value = presets()[0]?.id || "unknown"; if (isMini()) { q("#stAfter").value = "storage"; q("#stCur").max = INFO.limits.maxCurrentA; }
   if (INFO.limits.defaultCurrentA) q("#stCur").value = INFO.limits.defaultCurrentA;
   if (cellSel) pickCell(cellSel); else upd(true);
+  // Profil: Standardwerte aus den Einstellungen oder eigenes Profil
+  const applyProf = () => {
+    const p = [defProfile(), ...(UI.profiles || [])][+q("#stProf").value || 0];
+    if (!p) return;
+    q("#stCur").value = Math.min(p.currentA, INFO.limits.maxCurrentA || 99); q("#stCyc").value = p.cycles; q("#stPre").checked = !!p.preCharge;
+    q("#stRest").value = p.restMin; q("#stAfter").value = p.after;
+    if ((q("#stChem").value || "liion") === "liion") q("#stCut").value = (+p.cutoffV).toFixed(2);
+    upd();
+  };
+  q("#stProf").addEventListener("change", applyProf);
+  applyProf();
   q("#stGo").addEventListener("click", async () => {
     const type = q("#stType").value;
     const body = {
       mode, port, chem: q("#stChem").value, cells: +q("#stCells").value || 1,
-      preset: INFO.presets.some(p => p.id === type) ? type : "",
-      nomCapMah: +q("#stCap").value || 0, riNew: +q("#stRi").value || 0, name: q("#stName").value.trim(),
+      preset: presetsAll().some(p => p.id === type) ? type : "",
+      nomCapMah: presets().find(p => p.id === type)?.custom ? presets().find(p => p.id === type).capMah : +q("#stCap").value || 0,
+      riNew: presets().find(p => p.id === type)?.custom ? presets().find(p => p.id === type).riNew || 0 : +q("#stRi").value || 0, name: q("#stName").value.trim(),
       currentA: +q("#stCur").value || .5, cutoffV: +q("#stCut").value || 0,
       preCharge: q("#stPre").checked && !q("#fPre").hidden, restMin: +q("#stRest").value || 0,
       cycles: q("#fCyc").hidden ? 1 : clamp(+q("#stCyc").value || 1, 1, 10),
@@ -1378,21 +1632,21 @@ function ringSvg(r) {
 }
 function resultSummary(r, compact) {
   const s = r.soh || {};
-  const capLine = s.refCapMah ? `Kapazität ${nf(r.capMah)} / ${nf(s.refCapMah)} mAh (${nf(s.capRatio)} %)${r.nomCapMah ? "" : " · Vergleichswert geschätzt"}` : `Kapazität ${nf(r.capMah)} mAh`;
+  const capLine = s.refCapMah ? `Kapazität ${nf(r.capMah)} / ${capF(s.refCapMah)} (${nf(s.capRatio)} %)${r.nomCapMah ? "" : " · Vergleichswert geschätzt"}` : `Kapazität ${capF(r.capMah)}`;
   const riRef = r.riNew ? ` / neu ${riFmt(r.riNew)}` : "";
   let h = `<div class="soh">${ringSvg(r)}<div class="soh-txt num">
       <div><b>${esc(s.verdict || "")}.</b> <span class="note">${esc(r.presetName || chemName(r.chem))}${r.cells > 1 ? " · " + r.cells + "S" : ""}</span></div>
       ${s.capScore >= 0 ? `<div class="part"><div><span>${capLine}</span><b>${s.capScore}</b></div><div class="bar"><i style="width:${s.capScore}%"></i></div></div>` : ""}
       ${s.riScore >= 0 ? `<div class="part"><div><span>Innenwiderstand ${riFmt(r.ri50 || r.ri100)}${riRef}</span><b>${s.riScore}</b></div><div class="bar"><i style="width:${s.riScore}%"></i></div></div>` : ""}
-      ${r.baselineCapMah ? `<div class="note">Seit dem ersten Test: ${nf((r.capMah / r.baselineCapMah - 1) * 100, 1)} % Kapazität (${nf(r.baselineCapMah)} → ${nf(r.capMah)} mAh)</div>` : ""}
+      ${r.baselineCapMah ? `<div class="note">Seit dem ersten Test: ${nf((r.capMah / r.baselineCapMah - 1) * 100, 1)} % Kapazität (${nf(r.baselineCapMah)} → ${capF(r.capMah)})</div>` : ""}
       ${r.throttled ? `<div class="note">Während des Tests wurde wegen Wärme gedrosselt.</div>` : ""}
       ${r.noTemp ? `<div class="note">Test ohne Temperaturfühler an der Zelle, Temperaturwerte fehlen.</div>` : ""}
     </div></div>`;
   const rows = [
-    ["Kapazität", nf(r.capMah) + " mAh"], ["Energie", nf(r.energyWh, 2) + " Wh"], ["Ø Spannung", nf(r.avgV, 3) + " V"],
+    ["Kapazität", capF(r.capMah)], ["Energie", nf(r.energyWh, 2) + " Wh"], ["Ø Spannung", nf(r.avgV, 3) + " V"],
     ["Ri bei 100 %", riFmt(r.ri100)], ["Ri bei 50 %", riFmt(r.ri50)], ["Entladestrom", nf(r.currentA, 2) + " A"],
     r.rechargeSec ? ["Ladezeit danach", dur(r.rechargeSec)] : null, r.coulombEff ? ["Coulomb-Wirkungsgrad", nf(r.coulombEff, 1) + " %"] : null,
-    r.energyEff ? ["Energie-Wirkungsgrad", nf(r.energyEff, 1) + " %"] : null, ["Max. Temperatur", r.tempMax ? nf(r.tempMax, 1) + " °C" : "–"],
+    r.energyEff ? ["Energie-Wirkungsgrad", nf(r.energyEff, 1) + " %"] : null, ["Max. Temperatur", r.tempMax ? tF(r.tempMax, 1) : "–"],
     ["Erwärmung", r.tempRise ? "+" + nf(r.tempRise, 1) + " K" : "–"], ["Ruhespannung voll", r.startOcv ? nf(r.startOcv, 3) + " V" : "–"],
     ["Erholt nach Entladung", r.restOcv ? nf(r.restOcv, 3) + " V" : "–"], ["Dauer gesamt", dur(r.durationSec)],
   ].filter(Boolean);
@@ -1416,12 +1670,12 @@ async function openCompare(ids) {
       <div class="legend">${items.map((it, k) => `<span><i style="background:${PALETTE[k % PALETTE.length]}"></i>${esc(it.r.cellId || it.r.name)}</span>`).join("")}</div>
       <svg class="chart" id="cmpC" viewBox="0 0 720 300" role="img" aria-label="Entladekurven im Vergleich"></svg></section>
     <section class="card"><div class="tbl"><table class="num"><thead><tr><th></th><th>Zelle</th><th>Kapazität</th><th>Ri 50 %</th><th>Ø Spannung</th><th>Lebenszahl</th><th>Strom</th></tr></thead><tbody>
-      ${items.map((it, k) => `<tr><td><i class="sdot" style="background:${PALETTE[k % PALETTE.length]}"></i></td><td>${esc(it.r.cellId || "")} ${esc(it.r.name !== it.r.cellId ? it.r.name : "")}</td><td>${nf(it.r.capMah)} mAh</td><td>${riFmt(it.r.ri50 || it.r.ri100)}</td><td>${nf(it.r.avgV, 3)} V</td><td>${it.r.soh?.score ?? "–"} %</td><td>${nf(it.r.currentA, 2)} A</td></tr>`).join("")}</tbody></table></div>
+      ${items.map((it, k) => `<tr><td><i class="sdot" style="background:${PALETTE[k % PALETTE.length]}"></i></td><td>${esc(it.r.cellId || "")} ${esc(it.r.name !== it.r.cellId ? it.r.name : "")}</td><td>${capF(it.r.capMah)}</td><td>${riFmt(it.r.ri50 || it.r.ri100)}</td><td>${nf(it.r.avgV, 3)} V</td><td>${it.r.soh?.score ?? "–"} %</td><td>${nf(it.r.currentA, 2)} A</td></tr>`).join("")}</tbody></table></div>
       <p class="note">Verschiedene Entladeströme verschieben die Kurven: höherer Strom = tiefere Spannung.</p></section>`);
   const draw = mode => {
     const rel = mode === "rel";
     drawChart(el.querySelector("#cmpC"), items.map((it, k) => ({pts: rel ? it.pts.map(([q, v]) => [q / (it.r.capMah || 1) * 100, v]) : it.pts, color: PALETTE[k % PALETTE.length]})),
-      {h: 300, xFmt: v => rel ? nf(v) + " %" : nf(v) + " mAh", yFmt: v => nf(v, 2) + " V"});
+      {h: 300, xFmt: v => rel ? nf(v) + " %" : capF(v), yFmt: v => nf(v, 2) + " V"});
   };
   el.querySelectorAll("#cmpMode button").forEach(b => b.addEventListener("click", () => { el.querySelectorAll("#cmpMode button").forEach(x => x.setAttribute("aria-pressed", x === b)); draw(b.dataset.m); }));
   draw("abs");
@@ -1431,7 +1685,7 @@ async function loadResults() {
     const list = await api("/api/results");
     $("resCount").textContent = list.length ? list.length + (list.length === 1 ? " Ergebnis" : " Ergebnisse") : "";
     $("resList").innerHTML = list.length ? list.map(r => `<div class="row tap" data-id="${r.id}" tabindex="0" role="button"><div class="crow">${r.cellId ? `<span class="cid">${esc(r.cellId)}</span>` : ""}<div class="l"><b>${esc(r.name !== r.cellId ? r.name : "")}${r.presetName ? " · " + esc(r.presetName.replace(/^(Samsung|LG|Sony\/Murata|Panasonic|Molicel) /, "")) : r.cells > 1 ? " · " + r.cells + "S " + esc(chemName(r.chem)) : ""}</b>
-      <small class="num">${dateStr(r.time)} · ${nf(r.capMah)} mAh · ${riFmt(r.ri50 || r.ri100)}${r.throttled ? " · gedrosselt" : ""}</small></div></div>${sohTag(r)}</div>`).join("")
+      <small class="num">${dateStr(r.time)} · ${capF(r.capMah)} · ${riFmt(r.ri50 || r.ri100)}${r.throttled ? " · gedrosselt" : ""}</small></div></div>${sohTag(r)}</div>`).join("")
       : `<div class="empty">Noch keine Tests. Starte unter Live einen Kapazitätstest.</div>`;
     $("cmpToggle").textContent = CMP ? "Abbrechen" : "Kurven vergleichen";
     $("cmpHint").hidden = !CMP; $("cmpGo").hidden = !CMP || CMP.size < 2;
@@ -1484,7 +1738,7 @@ async function openResult(id) {
     <section class="card">${resultSummary(r, false)}</section>
     <section class="card"><h2>Entladekurve${r.cycles?.length > 1 ? "n je Zyklus" : ""}</h2><div class="legend" id="rCl"></div><svg class="chart" id="rC" viewBox="0 0 720 260" role="img" aria-label="Entladekurve"></svg></section>
     ${r.cycles?.length > 1 ? `<section class="card"><h2>Zyklen</h2>${cycleBars(r.cycles)}<div class="tbl"><table class="num"><thead><tr><th>Zyklus</th><th>Geladen</th><th>Entnommen</th><th>Energie</th><th>Ri 50 %</th><th>Wirkungsgrad</th></tr></thead><tbody>
-      ${r.cycles.map((c, k) => `<tr><td>${k + 1}</td><td>${c.chg ? nf(c.chg) + " mAh" : "–"}</td><td>${nf(c.cap)} mAh</td><td>${nf(c.wh, 2)} Wh</td><td>${riFmt(c.ri)}</td><td>${c.chg ? nf(c.cap / c.chg * 100, 1) + " %" : "–"}</td></tr>`).join("")}</tbody></table></div>
+      ${r.cycles.map((c, k) => `<tr><td>${k + 1}</td><td>${c.chg ? capF(c.chg) : "–"}</td><td>${capF(c.cap)}</td><td>${nf(c.wh, 2)} Wh</td><td>${riFmt(c.ri)}</td><td>${c.chg ? nf(c.cap / c.chg * 100, 1) + " %" : "–"}</td></tr>`).join("")}</tbody></table></div>
       <p class="note num">Streuung ${nf((Math.max(...r.cycles.map(c => c.cap)) - Math.min(...r.cycles.map(c => c.cap))) / Math.max(...r.cycles.map(c => c.cap)) * 100, 1)} %. Für die Lebenszahl zählt der letzte Zyklus.</p></section>` : ""}
     ${r.riCurve?.length > 1 ? `<section class="card"><h2>Innenwiderstand über der Entladung</h2><svg class="chart" id="rRi" viewBox="0 0 720 200" role="img" aria-label="Innenwiderstand"></svg></section>` : ""}
     ${r.cellRi?.length ? `<section class="card"><h2>Innenwiderstand je Zelle</h2><div class="balcells num">${r.cellRi.map((v, k) => `<div class="balcell ${v === Math.max(...r.cellRi) && r.cellRi.length > 1 ? "low" : ""}"><span>Zelle ${k + 1}</span><b>${riFmt(v)}</b></div>`).join("")}</div><p class="note">Die Zelle mit dem höchsten Wert begrenzt das Pack.</p></section>` : ""}
@@ -1495,11 +1749,11 @@ async function openResult(id) {
   if (segs.length) {
     const many = segs.length > 1;
     drawChart(el.querySelector("#rC"), segs.map((pts, k) => ({pts, color: many ? PALETTE[k % PALETTE.length] : "var(--discharge)", area: !many})),
-      {xFmt: v => nf(v) + " mAh", yFmt: v => nf(v, 2) + " V", hline: (r.cutoffV || 0) * cells, hlineLabel: "Entladeschluss", ...disAxes(r.chem, r.cutoffV, cells, Math.max(r.nomCapMah || 0, r.capMah, ...(r.cycles || []).map(c => c.cap)))});
+      {xFmt: v => capF(v), yFmt: v => nf(v, 2) + " V", hline: (r.cutoffV || 0) * cells, hlineLabel: "Entladeschluss", ...disAxes(r.chem, r.cutoffV, cells, Math.max(r.nomCapMah || 0, r.capMah, ...(r.cycles || []).map(c => c.cap)))});
     if (many) el.querySelector("#rCl").innerHTML = segs.map((_, k) => `<span><i style="background:${PALETTE[k % PALETTE.length]}"></i>Zyklus ${k + 1}</span>`).join("");
   } else drawChart(el.querySelector("#rC"), [], {empty: "Keine Kurve gespeichert"});
   if (r.riCurve?.length > 1) drawChart(el.querySelector("#rRi"), [{pts: r.riCurve.map(p => [p[0], S?.riInOhm ? p[1] / 1000 : p[1]]), color: "var(--rest)"}],
-    {h: 200, xFmt: v => nf(v) + " mAh", yFmt: v => S?.riInOhm ? nf(v, 3) + " Ω" : nf(v) + " mΩ"});
+    {h: 200, xFmt: v => capF(v), yFmt: v => S?.riInOhm ? nf(v, 3) + " Ω" : nf(v) + " mΩ"});
   el.querySelector("#rDel").addEventListener("click", () => confirmInline(el.querySelector("#rAct"), "Ergebnis endgültig löschen?", async () => {
     await api("/api/result/delete?id=" + id, {}); close(); loadResults(); toast("Gelöscht");
   }));
@@ -1511,26 +1765,288 @@ async function openResult(id) {
 async function loadSettings() {
   try {
     SETTINGS = await api("/api/settings");
+    UI = mergeUi(SETTINGS.ui);
     const st = SETTINGS;
-    $("sCw").value = st.chargeWarnC; $("sCs").value = st.chargeStopC; $("sDw").value = st.dischargeWarnC; $("sDs").value = st.dischargeStopC;
-    $("sKw").value = st.sinkWarnC; $("sKs").value = st.sinkStopC; $("sRest").value = st.restMin; $("sOhm").checked = st.riInOhm; $("sBuzz").checked = st.buzzer;
+    fillSettings();
     $("sChgF").hidden = !isMini() || isNano();
-    $("sKw").previousElementSibling.textContent = sinkName() + ": drosseln ab °C"; $("sKs").previousElementSibling.textContent = sinkName() + ": Stopp ab °C (max. 90)"; $("sChg").value = String(st.chargeSlots ?? 0);
-    $("sPrefix").value = st.cellPrefix || "CD"; $("sPrefixEx").textContent = `${st.cellPrefix || "CD"}-${String(st.nextCellNo || 1).padStart(4, "0")}`;
-    $("mqOn").checked = !!st.mqttOn; $("mqHost").value = st.mqttHost || ""; $("mqPort").value = st.mqttPort || 1883; $("mqUser").value = st.mqttUser || ""; $("mqBase").value = st.mqttBase || "celldoc";
-    $("mqPass").placeholder = st.mqttPassSet ? "gespeichert, leer lassen = unverändert" : "";
+    $("sKw").previousElementSibling.textContent = sinkName() + ": drosseln ab °C"; $("sKs").previousElementSibling.textContent = sinkName() + ": Stopp ab °C (max. 90)";
+    $("sPrefixEx").textContent = `${st.cellPrefix || "CD"}-${String(st.nextCellNo || 1).padStart(4, "0")}`;
+    $("tI").placeholder = nf(INFO?.limits?.defaultCurrentA || .8, 2); if (!st.tI) $("tI").value = "";
+    $("tI").max = INFO?.limits?.maxCurrentA || 2;
+    $("tIHint").textContent = `Höchstens ${nf(INFO?.limits?.maxCurrentA || 2, 1)} A`;
+    for (const [k, id] of [["mqttPassSet", "mqPass"], ["tgTokSet", "nfTok"], ["pass2Set", "nPass2"], ["apPassSet", "nApPass"]]) {
+      const e = $(id); e.dataset.ph0 ??= e.placeholder;
+      e.placeholder = st[k] ? "gespeichert, leer lassen = unverändert" : e.dataset.ph0;
+    }
     $("mqState").textContent = S?.mqtt ? "· " + S.mqtt : "";
-    $("syHost").value = st.hostname || ""; $("syPeers").value = st.peers || "";
     $("syHostHint").textContent = `Erreichbar unter http://${st.hostname || "celldoc"}.local`;
-    loadSync();
     $("mqHint").textContent = `Messwerte unter ${st.mqttBase || "celldoc"}/celldoc_xxxxxx/state, Geräte erscheinen in Home Assistant unter Einstellungen → Geräte → MQTT.`;
     const w = S?.wifi || {};
     $("wifiInfo").textContent = w.ap ? `Hotspot aktiv: ${w.ssid} · ${w.ip}` : `Verbunden mit ${w.ssid || st.wifiSsid} · ${w.ip}`;
     if (!$("wSsid").value) $("wSsid").value = st.wifiSsid || "";
-    await loadDiag();
+    renderProfiles(); renderTypes(); nightNow(); devTime();
+    const open = document.querySelector("#v-settings details.acc[open]");
+    if (open) accOpen(open.id);
     kUpd();
   } catch (e) { toast(e.message); }
 }
+
+// ---------------------------------------------------------------------------
+// Einstellungen: ausklappbar (immer nur eines offen), Änderungen sofort speichern
+const UI_DEF = {
+  grade: {a: 85, b: 70, c: 50, retire: 0, retireRi: 0},
+  pack: {s: 7, p: 2, min: 60, capTol: 2, riTol: 30, sd: true},
+  label: {size: "14x40", qr: true, qrMode: "link", vals: true, grade: true, date: true, name: false},
+  live: {i: true, p: true, q: true, e: true, steps: true, temps: true, eta: true, last: true, chart: true},
+  units: {cap: "mAh", temp: "C", date: "de", csv: ";"},
+  profiles: [], types: [], hiddenTypes: [], expert: {raw: false}, lang: "de",
+};
+UI = structuredClone(UI_DEF);
+function mergeUi(u) {
+  const o = structuredClone(UI_DEF);
+  if (u && typeof u === "object") for (const k in u) o[k] = u[k] && typeof u[k] === "object" && !Array.isArray(u[k]) && o[k] && !Array.isArray(o[k]) ? {...o[k], ...u[k]} : u[k];
+  return o;
+}
+const getPath = (o, p) => p.split(".").reduce((a, k) => a?.[k], o);
+function setPath(o, p, v) { const ks = p.split("."); let a = o; for (const k of ks.slice(0, -1)) a = a[k] = a[k] && typeof a[k] === "object" ? a[k] : {}; a[ks.at(-1)] = v; }
+function inVal(el) {
+  if (el.type === "checkbox") return el.checked;
+  if (el.dataset.t === "time") { const [h, m] = (el.value || "0:0").split(":"); return (+h || 0) * 60 + (+m || 0); }
+  if (el.type === "number" || el.type === "range" || el.dataset.t === "num") return el.value === "" ? 0 : +String(el.value).replace(",", ".");
+  return el.value.trim();
+}
+function setIn(el, v) {
+  if (v === undefined || el.type === "password") return;
+  if (el.type === "checkbox") el.checked = !!v;
+  else if (el.dataset.t === "time") el.value = String(Math.floor(v / 60)).padStart(2, "0") + ":" + String(v % 60).padStart(2, "0");
+  else el.value = v ?? "";
+}
+function fillSettings() {
+  $("lSize").innerHTML = LABEL_SIZES.map(([k, n]) => `<option value="${k}">${n}</option>`).join("");
+  $("dTz").innerHTML = TZS.map(([z, n]) => `<option value="${z}">${n}</option>`).join("") + (TZS.some(t => t[0] === SETTINGS.tz) ? "" : `<option value="${esc(SETTINGS.tz)}">${esc(SETTINGS.tz)}</option>`);
+  document.querySelectorAll("#v-settings [data-s]").forEach(el => setIn(el, SETTINGS[el.dataset.s]));
+  document.querySelectorAll("#v-settings [data-u]").forEach(el => setIn(el, getPath(UI, el.dataset.u)));
+}
+function markSaved(el, ok, msg) {
+  const sp = el.closest("details")?.querySelector(".saved");
+  if (!sp) return ok ? null : toast(msg);
+  sp.textContent = ok ? "Gespeichert ✓" : msg; sp.className = "saved " + (ok ? "ok" : "err");
+  clearTimeout(sp._t); sp._t = setTimeout(() => { sp.textContent = ""; }, ok ? 2000 : 6000);
+}
+async function saveUi() { applyUi(); if (!DEMO) await api("/api/settings", {ui: UI}); }
+async function autoSave(el) {
+  const v = inVal(el);
+  if (el.type === "number" && el.value !== "" && isNaN(v)) return markSaved(el, false, "Ungültige Zahl");
+  try {
+    if (el.dataset.s) {
+      const k = el.dataset.s;
+      if (el.type === "password" && !v) return;
+      if (!DEMO) await api("/api/settings", {[k]: v});
+      SETTINGS[k] = v;
+      if (!DEMO) { const fresh = await api("/api/settings"); SETTINGS = fresh; UI = mergeUi(fresh.ui); setIn(el, fresh[k]); }
+      if (el.type === "password") { el.value = ""; el.placeholder = "gespeichert, leer lassen = unverändert"; }
+      afterSave(k);
+    } else {
+      setPath(UI, el.dataset.u, v);
+      await saveUi();
+    }
+    markSaved(el, true);
+  } catch (e) { markSaved(el, false, e.message); }
+}
+function afterSave(k) {
+  if (k === "cellPrefix") $("sPrefixEx").textContent = `${SETTINGS.cellPrefix || "CD"}-${String(SETTINGS.nextCellNo || 1).padStart(4, "0")}`;
+  if (k === "hostname") { $("syHostHint").textContent = `Erreichbar unter http://${SETTINGS.hostname}.local, gilt nach einem Neustart`; }
+  if (k === "mqttBase") $("mqHint").textContent = `Messwerte unter ${SETTINGS.mqttBase}/celldoc_xxxxxx/state.`;
+  if (k === "peers") loadSync();
+  if (k.startsWith("night")) nightNow();
+  if (k === "riInOhm") { renderCells?.(); }
+}
+document.querySelectorAll("#v-settings [data-s], #v-settings [data-u]").forEach(el => el.addEventListener("change", () => autoSave(el)));
+document.querySelectorAll("#v-settings details.acc").forEach(d => d.addEventListener("toggle", () => {
+  if (!d.open) return;
+  document.querySelectorAll("#v-settings details.acc[open]").forEach(o => { if (o !== d) o.open = false; });
+  accOpen(d.id);
+  setTimeout(() => { const r = d.getBoundingClientRect(); if (r.top < 60 || r.top > innerHeight * .6) d.scrollIntoView({behavior: "smooth", block: "start"}); }, 50);
+}));
+function accOpen(id) {
+  if (id === "a-sens" || id === "a-diag") loadDiag();
+  if (id === "logCard") loadLog();
+  if (id === "a-sync") loadSync();
+  if (id === "a-stats") loadStats();
+  if (id === "a-hw") hwUi();
+  if (id === "a-exp") rawUi();
+  if (id === "a-cal") kUpd();
+  if (id === "a-dev") devTime();
+}
+const TZS = [["CET-1CEST,M3.5.0,M10.5.0/3", "Mitteleuropa (Wien, Berlin, Zürich)"], ["GMT0BST,M3.5.0/1,M10.5.0", "London, Dublin"], ["WET0WEST,M3.5.0/1,M10.5.0", "Lissabon"],
+  ["EET-2EEST,M3.5.0/3,M10.5.0/4", "Osteuropa (Athen, Helsinki)"], ["MSK-3", "Moskau, Istanbul"], ["UTC0", "UTC"], ["EST5EDT,M3.2.0,M11.1.0", "New York"],
+  ["CST6CDT,M3.2.0,M11.1.0", "Chicago"], ["MST7MDT,M3.2.0,M11.1.0", "Denver"], ["PST8PDT,M3.2.0,M11.1.0", "Los Angeles"], ["IST-5:30", "Indien"],
+  ["CST-8", "China"], ["JST-9", "Japan"], ["AEST-10AEDT,M10.1.0,M4.1.0/3", "Sydney"]];
+function devTime() {
+  const t = RAW?.time;
+  $("dTime").textContent = t ? `Uhrzeit am Gerät: ${new Date(t * 1000).toLocaleString("de-AT")}` : "Das Gerät hat noch keine Uhrzeit (kein Internet). Sie wird beim Öffnen der Weboberfläche vom Browser übernommen.";
+}
+function nightNow() {
+  const st = SETTINGS || {};
+  if (!st.nightOn) { $("nightNow").textContent = ""; return; }
+  const d = new Date(), m = d.getHours() * 60 + d.getMinutes(), f = st.nightFrom, t = st.nightTo;
+  const on = f <= t ? m >= f && m < t : m >= f || m < t;
+  $("nightNow").textContent = on ? "Gerade ist Nachtmodus." : "Gerade ist kein Nachtmodus.";
+}
+// Live-Ansicht, Einheiten und Experten-Anzeige anwenden
+function applyUi() {
+  for (const k in UI_DEF.live) document.body.classList.toggle("lv-no-" + k, UI.live[k] === false);
+  document.body.classList.toggle("ex-raw", !!UI.expert?.raw);
+  if (typeof renderLive === "function" && S) try { renderLive(); } catch (e) {}
+}
+
+// Testprofile
+const AFTER_TXT = {storage: "danach Lagerspannung", full: "danach voll", none: "danach nicht laden"};
+function profSummary(p) { return `${nf(p.currentA, 2)} A bis ${nf(p.cutoffV, 2)} V · ${p.cycles} ${p.cycles > 1 ? "Zyklen" : "Zyklus"} · ${p.preCharge ? "vorher laden" : "ohne Vorladen"} · Ruhe ${p.restMin} min · ${AFTER_TXT[p.after]}`; }
+function defProfile() {
+  const st = SETTINGS || {};
+  return {name: "Standard", currentA: st.tI || INFO?.limits?.defaultCurrentA || .8, cutoffV: st.tCut || 3, cycles: st.tCyc || 1, preCharge: st.tPre !== false, restMin: st.restMin ?? 30, after: ["none", "storage", "full"][st.tAfter ?? 1]};
+}
+function renderProfiles() {
+  const l = UI.profiles || [];
+  $("profList").innerHTML = `<div class="row"><div class="l"><b>Standard</b><small>${esc(profSummary(defProfile()))}</small></div><span class="tag">Test-Standardwerte</span></div>` +
+    l.map((p, k) => `<div class="row tap" data-prof="${k}" tabindex="0" role="button"><div class="l"><b>${esc(p.name)}</b><small>${esc(profSummary(p))}</small></div><span class="tag">ändern</span></div>`).join("");
+  $("profList").querySelectorAll("[data-prof]").forEach(r => r.addEventListener("click", () => editProfile(+r.dataset.prof)));
+}
+function editProfile(k) {
+  const isNew = k < 0, p = isNew ? {...defProfile(), name: ""} : {...UI.profiles[k]};
+  const {el, close} = openSheet(`
+    <div class="sheet-head"><h3>${isNew ? "Neues Profil" : "Profil ändern"}</h3><button class="btn small" data-close type="button">Abbrechen</button></div>
+    <div class="form num">
+      <div class="field full"><label for="pfName">Name</label><input type="text" id="pfName" maxlength="30" value="${esc(p.name)}" placeholder="z. B. Schnelltest"></div>
+      <div class="field"><label for="pfI">Entladestrom (A)</label><input type="number" id="pfI" min="0.1" max="${INFO?.limits?.maxCurrentA || 2}" step="0.05" value="${p.currentA}"></div>
+      <div class="field"><label for="pfCut">Abschaltspannung (V)</label><input type="number" id="pfCut" min="2.5" max="3.6" step="0.05" value="${p.cutoffV}"></div>
+      <div class="field"><label for="pfCyc">Zyklen</label><input type="number" id="pfCyc" min="1" max="5" value="${p.cycles}"></div>
+      <div class="field"><label for="pfRest">Ruhezeit (min)</label><input type="number" id="pfRest" min="0" max="240" value="${p.restMin}"></div>
+      <div class="field"><label for="pfAfter">Danach</label><select id="pfAfter"><option value="storage">Auf Lagerspannung</option><option value="full">Voll laden</option><option value="none">Nicht laden</option></select></div>
+    </div>
+    <label class="switch"><span>Vorher voll laden</span><input type="checkbox" id="pfPre" ${p.preCharge ? "checked" : ""}></label>
+    <div class="actions"><button class="btn primary" id="pfSave" type="button" style="flex:1">Speichern</button>${isNew ? "" : `<button class="btn danger" id="pfDel" type="button">Löschen</button>`}</div>`);
+  const q = x => el.querySelector(x);
+  q("#pfAfter").value = p.after;
+  q("#pfSave").addEventListener("click", async () => {
+    const n = {name: q("#pfName").value.trim() || "Profil", currentA: clamp(+q("#pfI").value || .5, .05, 5), cutoffV: clamp(+q("#pfCut").value || 3, 2.5, 3.6), cycles: clamp(+q("#pfCyc").value || 1, 1, 5),
+      restMin: clamp(+q("#pfRest").value || 0, 0, 240), after: q("#pfAfter").value, preCharge: q("#pfPre").checked};
+    UI.profiles = [...(UI.profiles || [])]; if (isNew) UI.profiles.push(n); else UI.profiles[k] = n;
+    try { await saveUi(); close(); renderProfiles(); toast("Profil gespeichert"); } catch (e) { toast(e.message); }
+  });
+  q("#pfDel")?.addEventListener("click", async () => { UI.profiles = UI.profiles.filter((_, i) => i !== k); try { await saveUi(); close(); renderProfiles(); toast("Profil gelöscht"); } catch (e) { toast(e.message); } });
+}
+$("profAdd").addEventListener("click", () => editProfile(-1));
+$("profDef").addEventListener("click", async () => {
+  const mx = INFO?.limits?.maxCurrentA || 1.2;
+  const sug = [{name: "Schnelltest", currentA: Math.min(1, mx), cutoffV: 3, cycles: 1, preCharge: false, restMin: 5, after: "storage"},
+    {name: "Genau (2 Zyklen)", currentA: .5, cutoffV: 3, cycles: 2, preCharge: true, restMin: 30, after: "storage"},
+    {name: "Nur messen, danach voll", currentA: Math.min(.8, mx), cutoffV: 3, cycles: 1, preCharge: true, restMin: 30, after: "full"}];
+  UI.profiles = [...(UI.profiles || []), ...sug.filter(x => !(UI.profiles || []).some(p => p.name === x.name))];
+  try { await saveUi(); renderProfiles(); toast("Vorschläge hinzugefügt"); } catch (e) { toast(e.message); }
+});
+
+// Zelltypen: mitgelieferte (ausblendbar) und eigene
+const presetsAll = () => [...(INFO?.presets || []), ...(UI.types || []).map(t => ({...t, custom: true}))];
+const presets = () => presetsAll().filter(p => !(UI.hiddenTypes || []).includes(p.id));
+const typeName = id => presetsAll().find(p => p.id === id)?.name || "";
+function renderTypes() {
+  const own = UI.types || [], hid = UI.hiddenTypes || [];
+  $("typeList").innerHTML = (own.length ? `<div class="lbl">Eigene</div>` + own.map((t, k) => `<div class="row tap" data-type="${k}" tabindex="0" role="button"><div class="l"><b>${esc(t.name)}</b><small>${capF(t.capMah)}${t.riNew ? " · Ri neu " + nf(t.riNew) + " mΩ" : ""} · ${esc(chemName(t.chem))}</small></div><span class="tag">ändern</span></div>`).join("") : "")
+    + `<div class="lbl">Mitgeliefert</div>` + (INFO?.presets || []).map(p => `<label class="switch"><span>${esc(p.name)} <small class="sub">${capF(p.capMah)}</small></span><input type="checkbox" data-hide="${p.id}" ${hid.includes(p.id) ? "" : "checked"}></label>`).join("");
+  $("typeList").querySelectorAll("[data-type]").forEach(r => r.addEventListener("click", () => editType(+r.dataset.type)));
+  $("typeList").querySelectorAll("[data-hide]").forEach(c => c.addEventListener("change", async () => {
+    const id = c.dataset.hide; UI.hiddenTypes = (UI.hiddenTypes || []).filter(x => x !== id); if (!c.checked) UI.hiddenTypes.push(id);
+    try { await saveUi(); markSaved(c, true); } catch (e) { markSaved(c, false, e.message); }
+  }));
+}
+function editType(k) {
+  const isNew = k < 0, t = isNew ? {name: "", chem: "liion", capMah: 2500, riNew: 0} : {...UI.types[k]};
+  const chems = (INFO?.chemistries || []).map(c => `<option value="${c.id}" ${c.id === t.chem ? "selected" : ""}>${esc(c.name)}</option>`).join("");
+  const {el, close} = openSheet(`
+    <div class="sheet-head"><h3>${isNew ? "Eigener Zelltyp" : "Zelltyp ändern"}</h3><button class="btn small" data-close type="button">Abbrechen</button></div>
+    <div class="form num">
+      <div class="field full"><label for="tyName">Name</label><input type="text" id="tyName" maxlength="40" value="${esc(t.name)}" placeholder="z. B. RH Power YG18650"></div>
+      <div class="field"><label for="tyChem">Chemie</label><select id="tyChem">${chems}</select></div>
+      <div class="field"><label for="tyCap">Nennkapazität (mAh)</label><input type="number" id="tyCap" min="50" max="100000" step="50" value="${t.capMah || ""}"></div>
+      <div class="field"><label for="tyRi">Innenwiderstand neu (mΩ, DC)</label><input type="number" id="tyRi" min="0" max="2000" value="${t.riNew || ""}" placeholder="optional"></div>
+    </div>
+    <div class="actions"><button class="btn primary" id="tySave" type="button" style="flex:1">Speichern</button>${isNew ? "" : `<button class="btn danger" id="tyDel" type="button">Löschen</button>`}</div>`);
+  const q = x => el.querySelector(x);
+  q("#tySave").addEventListener("click", async () => {
+    const n = {id: t.id || "u" + Date.now().toString(36), name: q("#tyName").value.trim() || "Eigener Typ", chem: q("#tyChem").value, capMah: +q("#tyCap").value || 0, riNew: +q("#tyRi").value || 0};
+    UI.types = [...(UI.types || [])]; if (isNew) UI.types.push(n); else UI.types[k] = n;
+    try { await saveUi(); close(); renderTypes(); toast("Zelltyp gespeichert"); } catch (e) { toast(e.message); }
+  });
+  q("#tyDel")?.addEventListener("click", async () => { UI.types = UI.types.filter((_, i) => i !== k); try { await saveUi(); close(); renderTypes(); toast("Zelltyp gelöscht"); } catch (e) { toast(e.message); } });
+}
+$("typeAdd").addEventListener("click", () => editType(-1));
+
+// Benachrichtigungen, Summer, Netzwerk, Gerät
+$("nfTest").addEventListener("click", async () => { try { if (!DEMO) await api("/api/notify/test", {}); toast("Testnachricht verschickt"); } catch (e) { toast(e.message); } });
+$("bzTest").addEventListener("click", async () => { try { if (!DEMO) await api("/api/hwtest", {what: "buzzer"}); } catch (e) { toast(e.message); } });
+$("nRestart").addEventListener("click", () => confirmInline($("nRestart").parentElement, "Jetzt neu starten? Ein laufender Test wird abgebrochen.", async () => { await api("/api/restart", {}); toast("Startet neu …"); }));
+$("dReset").addEventListener("click", () => confirmInline($("dReset").parentElement, "Alle Einstellungen auf Werkszustand? WLAN, Kalibrierung, Fühler, Bestand und Ergebnisse bleiben.", async () => {
+  try { await api("/api/factory", {what: "settings"}); toast("Zurückgesetzt, startet neu …"); setTimeout(() => location.reload(), 8000); } catch (e) { toast(e.message); }
+}));
+$("dWipe").addEventListener("click", () => confirmInline($("dWipe").parentElement, "Wirklich ALLES löschen? Bestand, Ergebnisse, Einstellungen und WLAN sind danach weg. CellDoc öffnet dann seinen Hotspot.", async () => {
+  try { await api("/api/factory", {what: "all"}); toast("Alles gelöscht, CellDoc startet als Hotspot neu"); } catch (e) { toast(e.message); }
+}));
+
+// Statistik
+async function loadStats() {
+  let st = {};
+  try { st = DEMO ? {tests: 12, mahIn: 31800, mahOut: 27400, whIn: 121.3, whOut: 98.6, hours: 213.4, since: Date.now() / 1000 - 86400 * 20} : await api("/api/stats"); } catch (e) { $("statBox").textContent = e.message; return; }
+  try { await loadCellsData(); } catch (e) {}
+  const tested = CELLS.filter(c => c.last?.cap > 0), caps = tested.map(c => c.last.cap);
+  const rows = [["Abgeschlossene Tests", nf(st.tests)], ["Betriebsstunden", nf(st.hours, 1) + " h"], ["Geladen", capF(st.mahIn)], ["Geladene Energie", nf(st.whIn, 1) + " Wh"], ["Entladen", capF(st.mahOut)], ["Entladene Energie", nf(st.whOut, 1) + " Wh"],
+    ["Zählt seit", st.since ? fmtDate(st.since) : "–"],
+    ["Zellen im Bestand", nf(CELLS.filter(c => c.status === "ok").length)], ["Davon geprüft", nf(tested.filter(c => c.status === "ok").length)],
+    ["Verbaut", nf(CELLS.filter(c => c.status === "verbaut").length)], ["Ausgemustert", nf(CELLS.filter(c => ["defekt", "entsorgt"].includes(c.status)).length)],
+    ["Ø Kapazität geprüfter Zellen", caps.length ? capF(caps.reduce((a, b) => a + b, 0) / caps.length) : "–"]];
+  $("statBox").innerHTML = `<div class="kv">${rows.map(([l, v]) => `<div><span>${l}</span><b>${v}</b></div>`).join("")}</div>`;
+}
+$("stReset").addEventListener("click", () => confirmInline($("stReset").parentElement, "Zähler für Tests, Energie und Betriebsstunden auf 0 setzen?", async () => { try { if (!DEMO) await api("/api/stats/reset", {}); loadStats(); } catch (e) { toast(e.message); } }));
+
+// Hardware-Test
+function hwUi() {
+  const n = RAW?.slots?.length || 1;
+  $("hwSlot").innerHTML = Array.from({length: n}, (_, k) => `<option value="${k + 1}">Schacht ${k + 1}</option>`).join("");
+  $("hwSlotF").hidden = n < 2;
+  $("hwAmps").max = INFO?.limits?.maxCurrentA || 2;
+  hwLive();
+}
+function hwLive() {
+  if (!$("a-hw").open) return;
+  const k = (+$("hwSlot").value || 1) - 1, p = isMini() ? RAW?.slots?.[k]?.ports?.[0] : S?.ports?.[0], h = RAW?.hwtest;
+  const t = isMini() ? RAW?.slots?.[k]?.temps : S?.temps;
+  $("hwLive").innerHTML = `<div><span>Spannung</span><b>${p ? nf(p.v, 3) + " V" : "–"}</b></div><div><span>Strom</span><b>${p ? nf(p.i, 3) + " A" : "–"}</b></div>
+    <div><span>Zelle</span><b>${t?.cell != null ? tF(t.cell, 1) : "–"}</b></div><div><span>Aktiv</span><b>${h ? (h.what === "charger" ? "Lader" : "Last") + " · noch " + h.left + " s" : "nichts"}</b></div>`;
+}
+const hw = async b => { try { if (!DEMO) await api("/api/hwtest", {slot: +$("hwSlot").value || 1, ...b}); setTimeout(hwLive, 600); } catch (e) { toast(e.message); } };
+$("hwChg").addEventListener("click", () => hw({what: "charger", on: true}));
+$("hwLoad").addEventListener("click", () => hw({what: "load", on: true, amps: +$("hwAmps").value || .5}));
+$("hwOff").addEventListener("click", () => hw({what: "off"}));
+$("hwBz").addEventListener("click", () => hw({what: "buzzer"}));
+$("hwLedOn").addEventListener("click", () => hw({what: "led", state: 1}));
+$("hwLedOff").addEventListener("click", () => hw({what: "led", state: 0}));
+
+// Experten: Rohwerte aus Anzeige und Kalibrierung zurückgerechnet
+function rawTxt(k) {
+  const p = isMini() ? RAW?.slots?.[k]?.ports?.[0] : S?.ports?.[k];
+  const st = SETTINGS || {};
+  if (!p) return "";
+  const vg = st.vGain?.[k] ?? 1, ig = st.iGain?.[k] ?? 1, io = st.iOffset?.[k] ?? 0, rl = st.rLead?.[k] ?? 0;
+  const bus = (p.v + p.i * rl) / vg, ish = (p.i + io) / ig;
+  return `Bus ${nf(bus, 4)} V · Shunt ${nf(ish * 10, 3)} mV (${nf(ish, 4)} A roh) · Faktoren U ×${nf(vg, 4)}, I ×${nf(ig, 4)}, Null ${nf(io * 1000, 1)} mA, Leitung ${nf(rl * 1000)} mΩ`;
+}
+function rawUi() {
+  if (!$("a-exp").open) return;
+  const n = isMini() ? RAW?.slots?.length || 1 : 2;
+  $("rawBox").innerHTML = Array.from({length: n}, (_, k) => `<div class="note">${n > 1 ? (isMini() ? "Schacht " + (k + 1) : "Anschluss " + "AB"[k]) + ": " : ""}${esc(rawTxt(k))}</div>`).join("");
+}
+
 // ---------------------------------------------------------------------------
 // Ereignisprotokoll
 let LOG = [], logFilter = "all", logShow = 60;
@@ -1596,7 +2112,7 @@ async function loadDiag() {
   const role = isMini()
     ? Object.fromEntries([...RAW.slots.map((_, k) => ["cell" + (k + 1), isNano() ? "Zelle" : "Zelle Schacht " + (k + 1)]), ["sink", sinkName()], ["", "nicht verwendet"]])
     : {cell: "Zelle (A)", pack: "Pack (B)", sink: "Kühlkörper", "": "nicht verwendet"};
-  $("sensorList").innerHTML = d.sensors.length ? d.sensors.map(s => `<div class="row"><div class="l"><b>${s.t > -100 ? nf(s.t, 1) + " °C" : "Fehler"}</b><small style="font-family:var(--mono)">${esc(s.addr)}</small></div>
+  $("sensorList").innerHTML = d.sensors.length ? d.sensors.map(s => `<div class="row"><div class="l"><b>${s.t > -100 ? tF(s.t, 1) : "Fehler"}</b><small style="font-family:var(--mono)">${esc(s.addr)}</small></div>
     <select data-addr="${esc(s.addr)}" style="width:auto" aria-label="Rolle">${Object.entries(role).map(([k, v]) => `<option value="${k}" ${s.role === k ? "selected" : ""}>${v}</option>`).join("")}</select></div>`).join("") : `<div class="empty">Keine DS18B20 gefunden</div>`;
   const okc = b => b ? `<b style="color:var(--charge)">ok</b>` : `<b style="color:var(--danger)">fehlt</b>`;
   const st = SETTINGS || {};
@@ -1609,13 +2125,6 @@ async function loadDiag() {
     ["Ergebnisspeicher", st.storageTotal ? `${nf(st.storageUsed / 1024)} von ${nf(st.storageTotal / 1024)} kB` : "–"], ["Chip", esc(d.chip)], ["Firmware", "v" + esc(S?.version || "")]]
     .map(([a, b]) => `<div class="row"><span class="note" style="font-size:14px">${a}</span><span>${b}</span></div>`).join("");
 }
-$("sSave").addEventListener("click", async () => {
-  try {
-    await api("/api/settings", {chargeWarnC: +$("sCw").value, chargeStopC: +$("sCs").value, dischargeWarnC: +$("sDw").value, dischargeStopC: +$("sDs").value,
-      sinkWarnC: +$("sKw").value, sinkStopC: +$("sKs").value, restMin: +$("sRest").value, riInOhm: $("sOhm").checked, buzzer: $("sBuzz").checked, cellPrefix: $("sPrefix").value.trim() || "CD", chargeSlots: +$("sChg").value || 0});
-    toast("Gespeichert"); loadSettings();
-  } catch (e) { toast(e.message); }
-});
 $("sPrefix").addEventListener("input", () => $("sPrefixEx").textContent = `${($("sPrefix").value.trim() || "CD").toUpperCase().replace(/[^A-Z0-9]/g, "")}-${String(SETTINGS?.nextCellNo || 1).padStart(4, "0")}`);
 $("tSave").addEventListener("click", async () => {
   const b = {cell: "", pack: "", sink: ""};
@@ -1709,7 +2218,14 @@ $("rst").addEventListener("click", () => confirmInline($("rst").parentElement, "
 // Zellenbestand
 // ======================================================================
 let CELLS = [], CELLS_DEL = [], CELLS_AT = 0, cellFilter = "all";
-const gradeOf = s => s >= 85 ? "A" : s >= 70 ? "B" : s >= 50 ? "C" : "D";
+const gradeOf = s => { const g = UI?.grade || {a: 85, b: 70, c: 50}; return s >= g.a ? "A" : s >= g.b ? "B" : s >= g.c ? "C" : "D"; };
+// Vorschlag zum Ausmustern nach den Grenzen aus den Einstellungen
+function retireHint(c) {
+  const g = UI?.grade || {}, l = c.last;
+  if (!l?.cap || c.status !== "ok") return "";
+  const why = [g.retire > 0 && l.score < g.retire ? `Lebenszahl ${l.score} % unter ${g.retire} %` : "", g.retireRi > 0 && l.ri > g.retireRi ? `Innenwiderstand ${nf(l.ri)} mΩ über ${nf(g.retireRi)} mΩ` : ""].filter(Boolean);
+  return why.length ? `<div class="banner err"><div><b>Ausmustern?</b>${why.join(", ")}. Status auf „Defekt“ oder „Entsorgt“ setzen, wenn du sie nicht mehr verwenden willst.</div></div>` : "";
+}
 const gradeCol = g => ({A: "--charge", B: "--charge", C: "--warn", D: "--danger"}[g] || "--muted");
 const STATUS_TXT = {ok: "Im Bestand", verbaut: "Verbaut", defekt: "Defekt", entsorgt: "Entsorgt"};
 const cellPrefix = () => (S?.prefix || SETTINGS?.cellPrefix || "CD");
@@ -1724,12 +2240,13 @@ function sdShort(c) {
 function gradeBadge(c, big) {
   const l = c.last;
   if (!l || !(l.cap > 0)) return `<span class="grade none${big ? " big" : ""}" title="noch nicht geprüft">–</span>`;
-  const g = l.grade || gradeOf(l.score);
+  const g = gradeOf(l.score);
   return `<span class="grade${big ? " big" : ""}" style="background:var(${gradeCol(g)})" title="Note ${g}, Lebenszahl ${l.score} %">${g}<small>${l.est ? "≈" : ""}${l.score}</small></span>`;
 }
 async function loadCellsData(force) {
   if (!force && CELLS.length && Date.now() - CELLS_AT < 5000) return CELLS;
   const all = await api("/api/cells?deleted=1"); CELLS_AT = Date.now();
+  all.forEach(c => { if (!c.presetName && c.preset) c.presetName = typeName(c.preset); });
   CELLS = all.filter(c => !c.deleted); CELLS_DEL = all.filter(c => c.deleted);
   return CELLS;
 }
@@ -1767,7 +2284,7 @@ function filteredCells() {
 function cellRow(c) {
   const l = c.last || {};
   const name = cellName(c);
-  const bits = [c.deleted ? "gelöscht" + (c.deletedAt ? " am " + dateStr(c.deletedAt).split(",")[0] : "") : "", c.format || "", l.cap ? nf(l.cap) + " mAh" : c.nomCapMah ? "Nenn " + nf(c.nomCapMah) + " mAh" : "noch nicht geprüft", l.ri ? riFmt(l.ri) : "", c.loc ? "Ort: " + c.loc : "", c.status && c.status !== "ok" ? STATUS_TXT[c.status] + (c.pack ? " in " + c.pack : "") : "", sdShort(c)].filter(Boolean);
+  const bits = [c.deleted ? "gelöscht" + (c.deletedAt ? " am " + dateStr(c.deletedAt).split(",")[0] : "") : "", c.format || "", l.cap ? capF(l.cap) : c.nomCapMah ? "Nenn " + capF(c.nomCapMah) : "noch nicht geprüft", l.ri ? riFmt(l.ri) : "", c.loc ? "Ort: " + c.loc : "", c.status && c.status !== "ok" ? STATUS_TXT[c.status] + (c.pack ? " in " + c.pack : "") : "", sdShort(c)].filter(Boolean);
   return `<div class="row tap" data-no="${c.no}" tabindex="0" role="button"${c.deleted ? ' style="opacity:.6"' : ""}><div class="crow"><span class="cid">${esc(c.id)}</span><div class="l"><b>${esc(name) || "&nbsp;"}</b><small class="num">${bits.map(esc).join(" · ")}</small></div></div>${gradeBadge(c)}</div>`;
 }
 function renderCells() {
@@ -1819,13 +2336,13 @@ function readMore(q, pre) {
   return o;
 }
 function moreSummary(c) {
-  const rows = [["Hersteller", c.maker], ["Modell", c.model], ["Bauform", c.format], ["Nennkapazität", c.nomCapMah ? nf(c.nomCapMah) + " mAh" : ""], ["Nennspannung", c.vNom ? nf(c.vNom, 2) + " V" : ""],
+  const rows = [["Hersteller", c.maker], ["Modell", c.model], ["Bauform", c.format], ["Nennkapazität", c.nomCapMah ? capF(c.nomCapMah) : ""], ["Nennspannung", c.vNom ? nf(c.vNom, 2) + " V" : ""],
     ["Max. Strom", c.maxA ? nf(c.maxA, 1) + " A" : ""], ["Herstelldatum", c.made], ["Herkunft", c.origin], ["Gewicht", c.weight ? nf(c.weight, 1) + " g" : ""], ["Eingangsspannung", c.vIn ? nf(c.vIn, 3) + " V" : ""]].filter(r => r[1]);
   return rows.length ? `<div class="kv num" style="margin-top:12px">${rows.map(([l, v]) => `<div><span>${l}</span><b>${esc(String(v))}</b></div>`).join("")}</div>` : "";
 }
 
 function openNewCell() {
-  const presetOpts = INFO.presets.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
+  const presetOpts = presets().map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
   const {el, close} = openSheet(`
     <div class="sheet-head"><h3>Neue Zelle anlegen</h3><button class="btn small" data-close type="button">Abbrechen</button></div>
     <p class="note">Bekommt sofort die nächste freie Nummer (${esc(nextCellId())}), damit du sie schon vor dem Test beschriften kannst.</p>
@@ -1839,10 +2356,10 @@ function openNewCell() {
     ${moreFields("nc")}
     <div class="actions"><button class="btn primary" id="ncGo" type="button" style="flex:1">Anlegen</button></div>`);
   const q = s => el.querySelector(s);
-  q("#ncType").addEventListener("input", () => { const p = INFO.presets.find(x => x.id === q("#ncType").value); q("#ncnomCapMah").placeholder = p?.capMah ? `${p.capMah} laut Zelltyp` : ""; });
+  q("#ncType").addEventListener("input", () => { const p = presets().find(x => x.id === q("#ncType").value); q("#ncnomCapMah").placeholder = p?.capMah ? `${p.capMah} laut Zelltyp` : ""; });
   q("#ncGo").addEventListener("click", async () => {
     const n = clamp(+q("#ncN").value || 1, 1, 50), made = [];
-    const p = INFO.presets.find(x => x.id === q("#ncType").value), more = readMore(q, "nc");
+    const p = presets().find(x => x.id === q("#ncType").value), more = readMore(q, "nc");
     for (let k = 0; k < n; k++) {
       const name = q("#ncName").value.trim();
       try {
@@ -1873,7 +2390,7 @@ async function openCell(no) {
   const l = c.last || {};
   const name = c.name && c.name !== c.id ? c.name : "";
   const del = !!c.deleted;
-  const first = c.first?.cap && l.cap && c.first.id !== l.id ? `<div class="note">Seit dem ersten Test (${dateStr(c.first.time).split(",")[0]}): ${nf((l.cap / c.first.cap - 1) * 100, 1)} % Kapazität (${nf(c.first.cap)} → ${nf(l.cap)} mAh)</div>` : "";
+  const first = c.first?.cap && l.cap && c.first.id !== l.id ? `<div class="note">Seit dem ersten Test (${dateStr(c.first.time).split(",")[0]}): ${nf((l.cap / c.first.cap - 1) * 100, 1)} % Kapazität (${nf(c.first.cap)} → ${capF(l.cap)})</div>` : "";
   const sd = c.sd || null;
   let sdHtml;
   if (!sd) sdHtml = `<p class="note">Zeigt, ob die Zelle von selbst Ladung verliert. Voll laden, eine Stunde ruhen lassen, Startspannung messen, 7–14 Tage lagern, nachmessen. Nach einem Kapazitätstest mit „Danach voll laden“ misst CellDoc die Startspannung nach einer Stunde automatisch.</p>
@@ -1889,11 +2406,12 @@ async function openCell(no) {
   const {el, close} = openSheet(`
     <div class="sheet-head"><h3 class="cell-h"><span class="cid big">${esc(c.id)}</span></h3><button class="btn small" data-close type="button">Schließen</button></div>
     ${del ? `<div class="banner err" role="alert"><div><b>Gelöscht${c.deletedAt ? " am " + dateStr(c.deletedAt) : ""}</b>Die Zelle ist nicht mehr im Bestand. Mit „Wiederherstellen“ kommt sie samt Nummer und Angaben zurück.</div></div>` : ""}
+    ${del ? "" : retireHint(c)}
     ${c.conflict ? `<div class="banner err" role="alert"><div><b>Nummer doppelt vergeben</b>Auf ${esc(c.conflict)} gibt es eine andere Zelle mit derselben Nummer, weil die Geräte beim Anlegen keine Verbindung hatten. Eine der beiden Zellen neu anlegen und neu beschriften.</div></div>` : ""}
     <section class="card">
       <div class="cellsum">${gradeBadge(c, true)}<div class="l"><b>${esc(cellName(c) || "Ohne Namen")}</b>
         <small class="num">${[c.presetName && name ? c.presetName : "", (STATUS_TXT[c.status] || "") + (c.pack ? " in " + c.pack : ""), c.loc ? "Ort: " + c.loc : "", c.created ? "angelegt " + dateStr(c.created).split(",")[0] : ""].filter(Boolean).map(esc).join(" · ")}</small></div></div>
-      ${l.cap ? `<div class="kv num"><div><span>Kapazität</span><b>${nf(l.cap)} mAh</b></div><div><span>Innenwiderstand</span><b>${riFmt(l.ri)}</b></div><div><span>Lebenszahl</span><b>${l.est ? `${l.low}–${l.high}` : l.score} %</b></div><div><span>Energie</span><b>${nf(l.wh, 2)} Wh</b></div></div>${first}` : `<div class="note">Noch nicht geprüft. Starte einen Kapazitätstest und wähle diese Zelle aus dem Bestand.</div>`}
+      ${l.cap ? `<div class="kv num"><div><span>Kapazität</span><b>${capF(l.cap)}</b></div><div><span>Innenwiderstand</span><b>${riFmt(l.ri)}</b></div><div><span>Lebenszahl</span><b>${l.est ? `${l.low}–${l.high}` : l.score} %</b></div><div><span>Energie</span><b>${nf(l.wh, 2)} Wh</b></div></div>${first}` : `<div class="note">Noch nicht geprüft. Starte einen Kapazitätstest und wähle diese Zelle aus dem Bestand.</div>`}
       ${del ? moreSummary(c) : ""}
     </section>
     ${del ? "" : `<section class="card"><h2>Angaben</h2>
@@ -1913,8 +2431,8 @@ async function openCell(no) {
       <div class="toolbar">${portSelect("vcPort")}<button class="btn" id="vcGo" type="button">Jetzt prüfen</button></div></section>
     <section class="card"><h2>Selbstentladung</h2><div id="sdBox">${sdHtml}</div></section>`}
     <section class="card"><h2>Tests <span class="sub" style="text-transform:none;letter-spacing:0">${(c.hist?.length || results.length) || ""}</span></h2>
-      ${c.hist?.length ? c.hist.slice().reverse().map(h => { const here = !h.dev || h.dev === S?.host; return `<div class="row tap" data-hid="${h.id}" data-dev="${esc(here ? "" : h.dev)}" tabindex="0" role="button"><div class="l"><b>${dateStr(h.t)}</b><small class="num">${nf(h.cap)} mAh · ${riFmt(h.ri)}${here ? "" : " · auf " + esc(h.dev)}</small></div><span class="tag" style="color:var(${gradeCol(gradeOf(h.score))})">${h.score} %</span></div>`; }).join("")
-        : results.length ? results.map(r => `<div class="row tap" data-hid="${r.id}" data-dev="" tabindex="0" role="button"><div class="l"><b>${dateStr(r.time)}</b><small class="num">${nf(r.capMah)} mAh · ${riFmt(r.ri50 || r.ri100)} · ${nf(r.currentA, 2)} A</small></div>${sohTag(r)}</div>`).join("") : `<div class="note">Keine gespeicherten Tests.</div>`}
+      ${c.hist?.length ? c.hist.slice().reverse().map(h => { const here = !h.dev || h.dev === S?.host; return `<div class="row tap" data-hid="${h.id}" data-dev="${esc(here ? "" : h.dev)}" tabindex="0" role="button"><div class="l"><b>${dateStr(h.t)}</b><small class="num">${capF(h.cap)} · ${riFmt(h.ri)}${here ? "" : " · auf " + esc(h.dev)}</small></div><span class="tag" style="color:var(${gradeCol(gradeOf(h.score))})">${h.score} %</span></div>`; }).join("")
+        : results.length ? results.map(r => `<div class="row tap" data-hid="${r.id}" data-dev="" tabindex="0" role="button"><div class="l"><b>${dateStr(r.time)}</b><small class="num">${capF(r.capMah)} · ${riFmt(r.ri50 || r.ri100)} · ${nf(r.currentA, 2)} A</small></div>${sohTag(r)}</div>`).join("") : `<div class="note">Keine gespeicherten Tests.</div>`}
     </section>
     <div class="actions" id="ceAct">${del ? `<button class="btn primary" id="ceRestore" type="button">Wiederherstellen</button>` : `
       <button class="btn primary" id="ceLabel" type="button">Etikett drucken</button>
@@ -2052,7 +2570,7 @@ function checkDeviceScan() {
   lastScanSeq = sc.seq;
   if (!sc.ok) return toast("Unbekannter Code: " + sc.id);
   if (scanTarget && scanTarget(sc.no)) return;
-  if (!$("v-cells").hidden && !document.querySelector(".sheet-bg")) return openCell(sc.no);
+  if ((!$("v-cells").hidden || (isMini() && SETTINGS?.scanMode === 0)) && !document.querySelector(".sheet-bg")) return openCell(sc.no);
   const pend = isMini() && RAW.pending?.no === sc.no;
   toast(`${sc.id} gescannt${pend ? " · kommt in den nächsten Schacht, in den eine Zelle gesteckt wird" : ""}`);
 }
@@ -2062,7 +2580,7 @@ function checkDeviceScan() {
 // ======================================================================
 const LABEL_SIZES = [["12x40", "12 × 40 mm"], ["14x40", "14 × 40 mm"], ["15x40", "15 × 40 mm"], ["15x50", "15 × 50 mm"], ["12x30", "12 × 30 mm"], ["15x30", "15 × 30 mm"]];
 const LABEL_DEF = {size: "14x40", qr: true, qrMode: "link", vals: true, grade: true, date: true, name: false};
-function labelOpts() { try { return {...LABEL_DEF, ...JSON.parse(localStorage.getItem("celldoc-label") || "{}")}; } catch (e) { return {...LABEL_DEF}; } }
+function labelOpts() { return {...LABEL_DEF, ...(UI?.label || {})}; }
 function qrText(c, o) {
   if (o.qrMode === "id") return c.id;
   const host = DEMO || !location.host ? "celldoc.local" : location.host;
@@ -2071,9 +2589,9 @@ function qrText(c, o) {
 function labelLines(c, o) {
   const l = c.last || {}, lines = [];
   if (o.name && c.name && c.name !== c.id) lines.push(c.name);
-  if (o.vals && l.cap) lines.push(`${nf(l.cap)} mAh · ${l.ri ? riFmt(l.ri) : "–"}`);
+  if (o.vals && l.cap) lines.push(`${capF(l.cap)} · ${l.ri ? riFmt(l.ri) : "–"}`);
   const g = [];
-  if (o.grade && l.cap) g.push(`Note ${l.grade || gradeOf(l.score)} · ${l.score} %`);
+  if (o.grade && l.cap) g.push(`Note ${gradeOf(l.score)} · ${l.score} %`);
   if (o.date && l.time) g.push(new Date(l.time * 1000).toLocaleDateString("de-AT", {day: "2-digit", month: "2-digit", year: "2-digit"}));
   if (g.length) lines.push(g.join(" · "));
   return lines;
@@ -2132,7 +2650,7 @@ function openLabel(list) {
   const read = () => ({size: q("#lbSize").value, qrMode: q("#lbQrMode").value, qr: q("#lbQr").checked, vals: q("#lbVals").checked, grade: q("#lbGrade").checked, date: q("#lbDate").checked, name: q("#lbName").checked});
   const draw = () => {
     const op = read();
-    try { localStorage.setItem("celldoc-label", JSON.stringify(op)); } catch (e) {}
+    if (JSON.stringify(op) !== JSON.stringify({...LABEL_DEF, ...UI.label})) { UI.label = op; clearTimeout(draw._t); draw._t = setTimeout(() => saveUi().catch(() => {}), 800); }
     q("#lbQrMode").parentElement.hidden = !op.qr;
     const prev = q("#lbPrev"); prev.innerHTML = "";
     list.slice(0, 6).forEach(c => { const cv = document.createElement("canvas"); drawLabel(cv, c, op); cv.setAttribute("role", "img"); cv.setAttribute("aria-label", "Etikett " + c.id); prev.appendChild(cv); });
@@ -2155,19 +2673,20 @@ function openLabel(list) {
 // CSV (Excel mit Semikolon, UTF-8 mit BOM)
 // ======================================================================
 function csvDownload(name, rows) {
-  const cell = v => { const s = String(v ?? ""); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  const txt = "﻿" + rows.map(r => r.map(cell).join(";")).join("\r\n");
+  const sep = UI?.units?.csv === "tab" ? "\t" : UI?.units?.csv || ";";
+  const cell = v => { const s = String(v ?? ""); return s.includes(sep) || /["\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const txt = "﻿" + rows.map(r => r.map(cell).join(sep)).join("\r\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([txt], {type: "text/csv;charset=utf-8"}));
   a.download = name; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 const num = (v, d = 0) => v == null || v === "" || isNaN(v) ? "" : Number(v).toFixed(d).replace(".", ",");
-const isoDate = t => t ? new Date(t * 1000).toLocaleDateString("de-AT") : "";
+const isoDate = t => t ? fmtDate(t) : "";
 function exportCellsCsv(list, o = labelOpts()) {
   csvDownload(`celldoc-zellen-${new Date().toISOString().slice(0, 10)}.csv`, [
     ["ID", "Nummer", "Name", "Zelltyp", "Status", "Lagerort", "Pack", "Kapazität mAh", "Innenwiderstand mΩ", "Lebenszahl %", "Note", "Energie Wh", "Letzter Test", "Tests", "Selbstentladung mV/Tag", "Selbstentladung", "Notiz", "Hersteller", "Modell", "Bauform", "Nennkapazität mAh", "Nennspannung V", "Max. Strom A", "Herstelldatum", "Herkunft", "Gewicht g", "Eingangsspannung V", "Gelöscht am", "Etikett Zeile 2", "Etikett Zeile 3", "QR-Code"],
-    ...list.map(c => { const l = c.last || {}, lines = labelLines(c, {...o, name: false}); return [c.id, c.no, c.name !== c.id ? c.name : "", c.presetName || "", STATUS_TXT[c.status] || c.status, c.loc || "", c.pack || "", num(l.cap), num(l.ri, 1), l.score ?? "", l.cap ? l.grade || gradeOf(l.score) : "", num(l.wh, 2), isoDate(l.time), (c.tests || []).length, c.sd?.mvDay != null ? num(c.sd.mvDay, 1) : "", c.sd ? (c.sd.state === "run" ? "läuft" : c.sd.grade) : "", c.note || "", c.maker || "", c.model || "", c.format || "", num(c.nomCapMah), num(c.vNom, 2), num(c.maxA, 1), c.made || "", c.origin || "", num(c.weight, 1), num(c.vIn, 3), c.deleted ? isoDate(c.deletedAt) : "", lines[0] || "", lines[1] || "", qrText(c, o)]; }),
+    ...list.map(c => { const l = c.last || {}, lines = labelLines(c, {...o, name: false}); return [c.id, c.no, c.name !== c.id ? c.name : "", c.presetName || "", STATUS_TXT[c.status] || c.status, c.loc || "", c.pack || "", num(l.cap), num(l.ri, 1), l.score ?? "", l.cap ? gradeOf(l.score) : "", num(l.wh, 2), isoDate(l.time), (c.tests || []).length, c.sd?.mvDay != null ? num(c.sd.mvDay, 1) : "", c.sd ? (c.sd.state === "run" ? "läuft" : c.sd.grade) : "", c.note || "", c.maker || "", c.model || "", c.format || "", num(c.nomCapMah), num(c.vNom, 2), num(c.maxA, 1), c.made || "", c.origin || "", num(c.weight, 1), num(c.vIn, 3), c.deleted ? isoDate(c.deletedAt) : "", lines[0] || "", lines[1] || "", qrText(c, o)]; }),
   ]);
 }
 async function exportResultsCsv() {
@@ -2222,7 +2741,7 @@ function buildPack(cands, S_, P_) {
 }
 async function openPack() {
   try { await loadCellsData(); } catch (e) { return toast(e.message); }
-  const o = (() => { try { return JSON.parse(localStorage.getItem("celldoc-pack") || "{}"); } catch (e) { return {}; } })();
+  const o = (() => { try { return {...UI.pack, ...JSON.parse(localStorage.getItem("celldoc-pack") || "{}")}; } catch (e) { return {...UI.pack}; } })();
   const {el, close} = openSheet(`
     <div class="sheet-head"><h3>Pack zusammenstellen</h3><button class="btn small" data-close type="button">Schließen</button></div>
     <p class="note">Sucht aus dem Bestand Zellen mit möglichst gleicher Kapazität und ähnlichem Innenwiderstand und verteilt sie so auf die Parallelgruppen, dass jede Gruppe gleich viel Kapazität hat.</p>
@@ -2248,11 +2767,13 @@ async function openPack() {
     if (!res) { q("#pkOut").innerHTML = `<div class="banner info"><div><b>Zu wenige passende Zellen</b>Gebraucht werden ${S_ * P_}, im Bestand passen ${cands.length}. Mindest-Lebenszahl senken oder Filter lockern.</div></div>`; return; }
     const sums = res.groups.map(g => g.sum), mn2 = Math.min(...sums), mx = Math.max(...sums);
     const caps = res.chosen.map(c => c.last.cap), ris = res.chosen.map(c => c.last.ri).filter(Boolean);
+    const capSpread = (mx - mn2) / mn2 * 100, riSpread = ris.length ? (Math.max(...ris) - Math.min(...ris)) / Math.min(...ris) * 100 : 0;
+    const tolWarn = [capSpread > (UI.pack.capTol ?? 2) ? `Gruppen weichen um ${nf(capSpread, 1)} % ab (Vorgabe ${nf(UI.pack.capTol, 1)} %)` : "", riSpread > (UI.pack.riTol ?? 30) ? `Innenwiderstand streut um ${nf(riSpread, 0)} % (Vorgabe ${nf(UI.pack.riTol, 0)} %)` : ""].filter(Boolean);
     const vNom = (INFO?.chemistries.find(c => c.id === chem) || {}).nominalV || 3.6;
-    q("#pkOut").innerHTML = `
+    q("#pkOut").innerHTML = `${tolWarn.length ? `<div class="banner err"><div><b>Außerhalb der Pack-Bau-Vorgaben</b>${tolWarn.join(". ")}.</div></div>` : ""}
       <section class="card">
-        <div class="kv num"><div><span>Pack · ${S_ * P_} Zellen</span><b>${S_}S${P_}P</b></div><div><span>Kapazität</span><b>${nf(mn2)} mAh</b></div><div><span>Energie ca.</span><b>${nf(mn2 / 1000 * vNom * S_, 0)} Wh</b></div><div><span>Spannung</span><b>${nf(vNom * S_, 1)} V nom.</b></div></div>
-        <div class="note num">Gruppen weichen um ${nf(mx - mn2)} mAh ab (${nf((mx - mn2) / mn2 * 100, 1)} %). Zellen ${nf(Math.min(...caps))}–${nf(Math.max(...caps))} mAh${ris.length ? `, Innenwiderstand ${riFmt(Math.min(...ris))}–${riFmt(Math.max(...ris))}` : ""}. Passende Zellen im Bestand: ${CELLS.filter(c => c.status === "ok" && c.last?.cap > 0).length}.</div>
+        <div class="kv num"><div><span>Pack · ${S_ * P_} Zellen</span><b>${S_}S${P_}P</b></div><div><span>Kapazität</span><b>${capF(mn2)}</b></div><div><span>Energie ca.</span><b>${nf(mn2 / 1000 * vNom * S_, 0)} Wh</b></div><div><span>Spannung</span><b>${nf(vNom * S_, 1)} V nom.</b></div></div>
+        <div class="note num">Gruppen weichen um ${capF(mx - mn2)} ab (${nf((mx - mn2) / mn2 * 100, 1)} %). Zellen ${nf(Math.min(...caps))}–${capF(Math.max(...caps))}${ris.length ? `, Innenwiderstand ${riFmt(Math.min(...ris))}–${riFmt(Math.max(...ris))}` : ""}. Passende Zellen im Bestand: ${CELLS.filter(c => c.status === "ok" && c.last?.cap > 0).length}.</div>
         <div class="tbl"><table class="num"><thead><tr><th>Gruppe</th><th>Zellen</th><th>Summe</th><th>Ø Ri</th></tr></thead><tbody>
           ${res.groups.map((g, k) => `<tr><td>${S_ > 1 ? k + 1 + "S" : "–"}</td><td>${g.cells.map(c => `<span class="cid sm">${esc(c.id)}</span>`).join(" ")}</td><td>${nf(g.sum)}</td><td>${riFmt(g.ri)}</td></tr>`).join("")}
         </tbody></table></div>
@@ -2322,12 +2843,12 @@ function openPackPlan(groups, S_, P_, name, vNom) {
   const {el} = openSheet(`
     <div class="sheet-head"><h3>Bauplan ${esc(name || "")}</h3><button class="btn small" data-close type="button">Schließen</button></div>
     <div class="printme">
-      <h3 style="margin:0 0 6px">${esc(name || "Pack")} · ${S_}S${P_}P · ${nf(vNom * S_, 1)} V nominal · ${nf(Math.min(...groups.map(g => g.sum)))} mAh</h3>
+      <h3 style="margin:0 0 6px">${esc(name || "Pack")} · ${S_}S${P_}P · ${nf(vNom * S_, 1)} V nominal · ${capF(Math.min(...groups.map(g => g.sum)))}</h3>
       <div class="plan">${svg}</div>
       <div class="note" style="margin-top:8px">Jede Reihe ist eine Parallelgruppe (${P_} Zellen, alle gleich herum). Die Reihen stehen abwechselnd: Reihe 1 mit Plus nach oben, Reihe 2 mit Minus nach oben usw. Graue Flächen sind Nickelbänder. Oben verbinden sie 1S–2S, 3S–4S …, unten 2S–3S, 4S–5S … So entsteht die Serienschaltung.</div>
       <div class="note"><b>Balancer-Abgriffe</b> (rot): ${taps}. B− und B+ bekommen die dicken Anschlusskabel.</div>
       <div class="tbl" style="margin-top:8px"><table class="num"><thead><tr><th>Reihe</th><th>Zellen</th><th>Summe</th><th>Ø Ri</th></tr></thead><tbody>
-        ${groups.map((g, k) => `<tr><td>${k + 1}S</td><td>${g.cells.map(c => esc(c.id)).join(", ")}</td><td>${nf(g.sum)} mAh</td><td>${riFmt(g.ri)}</td></tr>`).join("")}</tbody></table></div>
+        ${groups.map((g, k) => `<tr><td>${k + 1}S</td><td>${g.cells.map(c => esc(c.id)).join(", ")}</td><td>${capF(g.sum)}</td><td>${riFmt(g.ri)}</td></tr>`).join("")}</tbody></table></div>
     </div>
     <div class="callout danger">Nur mit passendem BMS bauen. Vor dem Verbinden alle Zellen auf gleiche Spannung bringen (höchstens 0,05 V Unterschied). Nickelband punktschweißen, nicht direkt an die Zellen löten.</div>
     <div class="actions"><button class="btn primary" id="ppPrint" type="button">Drucken</button><button class="btn" id="ppSvg" type="button">Als Bild (SVG)</button></div>`);
@@ -2362,11 +2883,6 @@ $("bkWipe").addEventListener("click", () => confirmInline($("bkWipe").parentElem
   await api("/api/wipe", {confirm: "LOESCHEN"});
   toast("Bestand gelöscht, nächste Zelle ist Nr. 1"); setTimeout(() => location.reload(), 1200);
 }));
-$("mqSave").addEventListener("click", async () => {
-  const b = {mqttOn: $("mqOn").checked, mqttHost: $("mqHost").value.trim(), mqttPort: +$("mqPort").value || 1883, mqttUser: $("mqUser").value.trim(), mqttBase: $("mqBase").value.trim() || "celldoc"};
-  if ($("mqPass").value) b.mqttPass = $("mqPass").value;
-  try { await api("/api/settings", b); $("mqPass").value = ""; toast("Gespeichert"); setTimeout(loadSettings, 2500); } catch (e) { toast(e.message); }
-});
 
 // Kleiner QR-Code-Erzeuger (Byte-Modus, Fehlerkorrektur L/M, Version 1–10)
 function qrEncode(text, ecl) {
@@ -2521,14 +3037,6 @@ async function loadSync() {
     if (!st.time) $("syList").insertAdjacentHTML("beforeend", `<div class="note">Der Abgleich braucht die Uhrzeit aus dem Internet und läuft nur im Heim-WLAN.</div>`);
   } catch (e) {}
 }
-$("sySave").addEventListener("click", async () => {
-  const host = $("syHost").value.trim().toLowerCase(), changed = host && host !== SETTINGS?.hostname;
-  try {
-    await api("/api/settings", {hostname: host, peers: $("syPeers").value.trim()});
-    toast("Gespeichert"); await loadSettings();
-    if (changed) confirmInline($("sySave").parentElement, `Neuer Name gilt nach einem Neustart (http://${host}.local). Jetzt neu starten?`, async () => { await api("/api/restart", {}); toast("Startet neu …"); });
-  } catch (e) { toast(e.message); }
-});
 $("syNow").addEventListener("click", async () => { try { await api("/api/sync/now", {}); toast("Abgleich läuft"); setTimeout(loadSync, 4000); } catch (e) { toast(e.message); } });
 $("syFind").addEventListener("click", async () => {
   $("syFind").disabled = true; $("syFind").textContent = "Sucht …";
@@ -2730,7 +3238,9 @@ async function demoApi(path, body) {
     else { if (now - c.sd.t0 < 6 * 3600) throw new Error("Frühestens 6 Stunden nach dem Start messen, besser nach 7–14 Tagen"); }
     return {ok: true};
   }
-  if (path === "/api/settings" && body === undefined) return {chargeSlots: MINI_N > 2 ? 3 : 0, hostname: MINI_N ? "celldoc-mini" : "celldoc", peers: MINI_N ? "celldoc" : "celldoc-mini", cellPrefix: "CD", nextCellNo: Math.max(...demo.cells.map(x => x.no)) + 1, mqttOn: true, mqttHost: "homeassistant.local", mqttPort: 1883, mqttUser: "celldoc", mqttPassSet: true, mqttBase: "celldoc", wifiSsid: "Heimnetz", chargeWarnC: 40, chargeStopC: 45, dischargeWarnC: 45, dischargeStopC: 55, sinkWarnC: 75, sinkStopC: 90, restMin: 30, riInOhm: false, buzzer: true, storageUsed: 81920, storageTotal: 1441792};
+  if (path === "/api/settings" && body === undefined) return demo.settings || (demo.settings = {chargeSlots: MINI_N > 2 ? 3 : 0, hostname: MINI_N ? "celldoc-mini" : "celldoc", peers: MINI_N ? "celldoc" : "celldoc-mini", cellPrefix: "CD", nextCellNo: Math.max(...demo.cells.map(x => x.no)) + 1, mqttOn: true, mqttHost: "homeassistant.local", mqttPort: 1883, mqttUser: "celldoc", mqttPassSet: true, mqttBase: "celldoc", wifiSsid: "Heimnetz", chargeWarnC: 40, chargeStopC: 45, dischargeWarnC: 45, dischargeStopC: 55, sinkWarnC: 75, sinkStopC: 90, restMin: 30, riInOhm: false, buzzer: true, storageUsed: 81920, storageTotal: 1441792, tI: 0, tCut: 3, tCyc: 1, tPre: true, tAfter: 1, tStorPct: 50, tRestAfter: 10, chgA: 1, fullA: .12, fullV: 4.15, chgMaxH: 8, maxV: 4.25, ocF: 1.25, noTempA: 1,
+    tz: "CET-1CEST,M3.5.0,M10.5.0/3", ntp: "pool.ntp.org", bzKey: true, bzDone: true, bzErr: true, bzBoot: true, bzScan: true, led: true, oledBr: 180, oledOff: 0, nightOn: false, nightFrom: 1320, nightTo: 420, nightBz: true, nightLed: true, nightOled: true,
+    ntfy: "", tgChat: "", tgTokSet: false, nDone: true, nErr: true, nChg: false, ip: "", gw: "", mask: "", dns: "", ssid2: "", apName: "", scanMode: 1, verbose: false, ui: {}, vGain: [1, 1, 1, 1], iGain: [1, 1, 1, 1], iOffset: [0, 0, 0, 0], rLead: [0, 0, 0, 0]});
   if (path === "/api/diag" && MINI_N) return {ina: Array(MINI_N).fill(true), dac: true, oled: true, balancer: false, taps: [], heap: 172000, chip: "ESP32-D0WD-V3",
     sensors: [...Array(MINI_N)].map((_, k) => ({addr: "28FF4A1B6216031" + k, t: 24 + k * 2.3, role: "cell" + (k + 1)})).concat(NANO_DEMO ? [] : [{addr: "28FF91C3611604E2", t: 41.7, role: "sink"}])};
   if (path === "/api/diag") return {inaA: true, inaB: true, dac: true, balancer: true, taps: [0, 0, 0, 0, 0, 0], heap: 187000, chip: "ESP32-D0WD-V3",
@@ -2764,6 +3274,7 @@ function openFromHash() {
   $("demoTag").hidden = !DEMO;
   try { INFO = await api("/api/info"); } catch (e) {}
   try { SETTINGS = await api("/api/settings"); } catch (e) {}
+  UI = mergeUi(SETTINGS?.ui); applyUi();
   let tab = params.get("tab");
   if (!tab) try { tab = localStorage.getItem("celldoc-tab"); } catch (e) {}
   if (location.hash.startsWith("#m-")) tab = "manual";
