@@ -26,7 +26,29 @@ void begin() {
   u8g2.setBusClock(400000);
   u8g2.begin();
   u8g2.enableUTF8Print();
-  u8g2.setContrast(180);
+  u8g2.setContrast(settings.oledBr);
+}
+
+// Helligkeit, Abschaltung nach Zeit und Nachtmodus
+static bool dark = false;
+static uint8_t contrast = 0;
+static Phase lastPh[4];
+static void power(uint32_t now) {
+  for (int s = 0; s < NSLOTS; s++)
+    if (slots[s].phase() != lastPh[s]) {
+      lastPh[s] = slots[s].phase();
+      lastInput = now;  // Phasenwechsel weckt das Display
+    }
+  bool off = (settings.night() && settings.nightOled) ||
+             (settings.oledOff && now - lastInput > uint32_t(settings.oledOff) * 60000UL) || settings.oledBr == 0;
+  if (off != dark) {
+    dark = off;
+    u8g2.setPowerSave(off ? 1 : 0);
+  }
+  if (!off && contrast != settings.oledBr) {
+    contrast = settings.oledBr;
+    u8g2.setContrast(contrast);
+  }
 }
 
 static const char* shortPhase(Phase p) {
@@ -45,15 +67,9 @@ static const char* shortPhase(Phase p) {
   return "";
 }
 
-// Standardtest über die Taster: unbekannte 18650, halber Maximalstrom, danach Lagerspannung
+// Standardtest über die Taster mit den Test-Standardwerten aus den Einstellungen
 static void quickStart(uint8_t s) {
-  SlotJob j;
-  j.cellNo = assign::no(s);  // gescannte Zelle, sonst neue
-  j.currentA = DEFAULT_CURRENT_A;
-  j.preCharge = true;
-  j.restMin = settings.restMin;
-  j.after = After::Storage;
-  String e = slots[s].startTest(j);
+  String e = startDefault(s, assign::no(s));  // gescannte Zelle, sonst neue
   if (e.length()) hal.alarm(); else hal.beep(80);
 }
 
@@ -148,7 +164,11 @@ static void drawDetail() {
 
 void update(uint32_t now) {
   BtnEvent e = hal.button();
-  if (e != BtnEvent::None) lastInput = now;
+  if (e != BtnEvent::None) {
+    bool wasDark = dark;
+    lastInput = now;
+    if (wasDark && present) e = BtnEvent::None;  // erster Tastendruck weckt nur das Display
+  }
   switch (e) {
     case BtnEvent::Prev: sel = (sel + NSLOTS - 1) % NSLOTS; break;
     case BtnEvent::Next: sel = (sel + 1) % NSLOTS; break;
@@ -162,13 +182,15 @@ void update(uint32_t now) {
     case BtnEvent::OkLong:
       if (slots[sel].active()) {
         slots[sel].stop("Am Gerät gestoppt");
-        hal.beep(300);
+        hal.beep(300, 'k');
       }
       break;
     default: break;
   }
   if (!present || now - lastDraw < 250) return;
   lastDraw = now;
+  power(now);
+  if (dark) return;
   // nach 2 Minuten ohne Taste zurück zur Übersicht
   if (detail && now - lastInput > 120000) detail = false;
   u8g2.clearBuffer();

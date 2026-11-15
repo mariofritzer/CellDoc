@@ -3,6 +3,7 @@
 #include "config_mini.h"
 #include "hal_mini.h"
 #include "slot.h"
+#include "settings.h"
 
 using namespace mcfg;
 
@@ -19,6 +20,9 @@ static uint32_t pendNo = 0, pendAt = 0;
 static uint32_t checkAt[4] = {};
 static JsonDocument chk[4];
 static String pendId;
+static uint32_t autoAt[4] = {};              // Scan-Modus 2: Test starten, sobald die Zelle steckt
+static uint32_t lastNo = 0, lastSeq = 0;     // Scan-Modus 0: nur in der Weboberfläche öffnen
+static String lastId;
 
 uint32_t no(int s) { return slotNo[s]; }
 const String& id(int s) { return slotId[s]; }
@@ -43,15 +47,22 @@ static void put(int s, uint32_t n, const String& i) {
   slotId[s] = i;
   chk[s].clear();
   checkAt[s] = millis() + 2500;  // Spannungscheck, sobald sich die Spannung gesetzt hat
-  hal.beep(40);
+  if (settings.scanMode == 2) autoAt[s] = millis() + 3000;
+  hal.beep(40, 's');
 }
 
 void onScan(uint32_t n, const String& i) {
   if (!n) {
-    hal.beep(400);
+    hal.beep(400, 's');
     return;
   }
-  hal.beep(60);
+  hal.beep(60, 's');
+  if (settings.scanMode == 0) {
+    lastNo = n;
+    lastId = i;
+    lastSeq++;
+    return;
+  }
   // genau ein freier Schacht mit eingesetzter, noch nicht zugeordneter Zelle: sofort zuordnen
   int cand = -1, count = 0;
   for (int s = 0; s < NSLOTS; s++) {
@@ -83,7 +94,16 @@ void tick(uint32_t now) {
       }
     } else if (was && v < OUT_V) {
       inserted[s] = false;
+      autoAt[s] = 0;
       clear(s);
+    }
+    if (autoAt[s] && (int32_t)(now - autoAt[s]) >= 0) {
+      autoAt[s] = 0;
+      if (inserted[s] && slotNo[s] && !slots[s].active()) {
+        String e = startDefault(s, slotNo[s]);
+        if (e.length()) hal.alarm();
+        else hal.beep(80, 'k');
+      }
     }
     // läuft der Vorgang mit dieser Zelle, ist die Zuordnung erledigt
     if (slotNo[s] && slots[s].active()) clear(s);
@@ -102,6 +122,12 @@ void stateJson(JsonObject root, JsonArray arr) {
     a["no"] = slotNo[s];
     a["id"] = slotId[s];
     if (chk[s]["dv"].is<float>()) a["check"] = chk[s].as<JsonObjectConst>();
+  }
+  if (lastSeq) {
+    JsonObject l = root["scan"].to<JsonObject>();
+    l["no"] = lastNo;
+    l["id"] = lastId;
+    l["seq"] = lastSeq;
   }
   if (pendNo) {
     JsonObject p = root["pending"].to<JsonObject>();

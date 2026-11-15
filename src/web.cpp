@@ -1,5 +1,6 @@
 #include "web.h"
 #include "evlog.h"
+#include "notify.h"
 #include <ArduinoJson.h>
 #include <DNSServer.h>
 #include <HTTPClient.h>
@@ -113,10 +114,60 @@ static void handleSettingsPost() {
   b.remove("wifiPass");
   b.remove("nextCellNo");
   b.remove("nextResultId");
-  if (b["mqttPass"].is<const char*>() && !strlen(b["mqttPass"].as<const char*>())) b.remove("mqttPass");  // leer = unverändert
+  // Passwörter: leer = unverändert, löschen nur ausdrücklich
+  for (const char* k : {"mqttPass", "tgTok", "pass2", "apPass"}) {
+    if (b[k].is<const char*>() && !strlen(b[k].as<const char*>())) b.remove(k);
+    if (b[String(k) + "Clear"] | false) b[k] = "";
+  }
+  String tz = settings.tz;
   settings.fromJson(b.as<JsonObjectConst>());
   settings.save();
+  if (settings.tz != tz) {
+    setenv("TZ", settings.tz.c_str(), 1);
+    tzset();
+  }
   mqtt::reconfigure();
+  sendOk();
+}
+
+// Werkseinstellungen: "settings" = Einstellungen zurück (WLAN bleibt), "all" = alles löschen wie neu
+static void handleFactory() {
+  JsonDocument b;
+  if (!readBody(b)) return sendError("Ungültige Anfrage");
+  if (device::busy()) return sendError("Während eines Vorgangs nicht möglich", 409);
+  String what = b["what"] | "";
+  if (what == "settings") {
+    // WLAN, Zähler, Kalibrierung und Fühlerzuordnung gehören zur Hardware und bleiben
+    Settings old = settings;
+    settings = Settings();
+    settings.wifiSsid = old.wifiSsid;
+    settings.wifiPass = old.wifiPass;
+    settings.nextCellNo = old.nextCellNo;
+    settings.nextResultId = old.nextResultId;
+    memcpy(settings.vGain, old.vGain, sizeof(old.vGain));
+    memcpy(settings.iGain, old.iGain, sizeof(old.iGain));
+    memcpy(settings.iOffset, old.iOffset, sizeof(old.iOffset));
+    memcpy(settings.rLead, old.rLead, sizeof(old.rLead));
+    memcpy(settings.balGain, old.balGain, sizeof(old.balGain));
+    memcpy(settings.sensorAddr, old.sensorAddr, sizeof(old.sensorAddr));
+    memcpy(settings.sensorSet, old.sensorSet, sizeof(old.sensorSet));
+    settings.save();
+    evlog::warn(0, "Einstellungen auf Werkseinstellungen zurückgesetzt (WLAN, Kalibrierung, Fühler, Bestand und Ergebnisse bleiben)");
+  } else if (what == "all") {
+    device::killAll();
+    LittleFS.format();
+    WiFi.disconnect(true, true);
+  } else {
+    return sendError("Unbekannt");
+  }
+  sendOk();
+  scheduleRestart();
+}
+
+static void handleNotifyTest() {
+  if (!notify::configured()) return sendError("Zuerst ntfy oder Telegram eintragen");
+  if (ap || WiFi.status() != WL_CONNECTED) return sendError("Kein Internet: CellDoc ist nicht mit dem WLAN verbunden", 409);
+  notify::send('t', "Test", "Benachrichtigungen funktionieren.");
   sendOk();
 }
 
@@ -333,43 +384,67 @@ static void startAp() {
   WiFi.macAddress(mac);
   char name[24];
   snprintf(name, sizeof(name), "CellDoc-%02X%02X", mac[4], mac[5]);
+  String apName = settings.apName.length() ? settings.apName : String(name);
+  const char* apPass = settings.apPass.length() >= 8 ? settings.apPass.c_str() : cfg::AP_PASSWORD;
   WiFi.mode(WIFI_AP);
-  WiFi.softAP(name, cfg::AP_PASSWORD);
+  WiFi.softAP(apName.c_str(), apPass);
 #if CONFIG_IDF_TARGET_ESP32C3
   WiFi.setTxPower(WIFI_POWER_8_5dBm);
 #endif
   dns.start(53, "*", WiFi.softAPIP());
-  Serial.printf("Hotspot %s, Passwort %s, http://%s\n", name, cfg::AP_PASSWORD,
+  Serial.printf("Hotspot %s, Passwort %s, http://%s\n", apName.c_str(), apPass,
                 WiFi.softAPIP().toString().c_str());
 }
 
 void begin() {
   scanner::begin();
   WiFi.setHostname(settings.hostname.c_str());
+  String joined;
   if (settings.wifiSsid.length()) {
     WiFi.mode(WIFI_STA);
     WiFi.setAutoReconnect(true);
-    WiFi.begin(settings.wifiSsid.c_str(), settings.wifiPass.c_str());
+    // feste Adresse, sonst DHCP
+    IPAddress ip, gw, mask, dnsIp;
+    if (ip.fromString(settings.ip) && gw.fromString(settings.gw)) {
+      if (!mask.fromString(settings.mask)) mask = IPAddress(255, 255, 255, 0);
+      if (!dnsIp.fromString(settings.dns)) dnsIp = gw;
+      WiFi.config(ip, gw, mask, dnsIp);
+    }
+    // erst das Haupt-WLAN, dann das Ausweich-WLAN
+    for (int n = 0; n < 2 && WiFi.status() != WL_CONNECTED; n++) {
+      const String& ssid = n ? settings.ssid2 : settings.wifiSsid;
+      const String& pass = n ? settings.pass2 : settings.wifiPass;
+      if (!ssid.length()) continue;
+      if (n) {
+        evlog::warn(0, "WLAN „" + settings.wifiSsid + "“ nicht erreichbar, versuche Ausweich-WLAN „" + ssid + "“");
+        WiFi.disconnect();
+        delay(100);
+      }
+      WiFi.begin(ssid.c_str(), pass.c_str());
 #if CONFIG_IDF_TARGET_ESP32C3
-    WiFi.setTxPower(WIFI_POWER_8_5dBm);  // C3 SuperMini: Antenne verträgt volle Sendeleistung schlecht
+      WiFi.setTxPower(WIFI_POWER_8_5dBm);  // C3 SuperMini: Antenne verträgt volle Sendeleistung schlecht
 #endif
-    uint32_t t0 = millis();
-    while (WiFi.status() != WL_CONNECTED && millis() - t0 < 15000) {
-      device::idle();  // Messungen laufen weiter, Last ist ohnehin aus
-      improv::update();
-      delay(50);
+      uint32_t t0 = millis();
+      while (WiFi.status() != WL_CONNECTED && millis() - t0 < 15000) {
+        device::idle();  // Messungen laufen weiter, Last ist ohnehin aus
+        improv::update();
+        delay(50);
+      }
+      if (WiFi.status() == WL_CONNECTED) joined = ssid;
     }
   }
   if (WiFi.status() == WL_CONNECTED) {
-    evlog::info(0, "WLAN „" + settings.wifiSsid + "“ verbunden, Adresse " + WiFi.localIP().toString());
+    evlog::info(0, "WLAN „" + joined + "“ verbunden, Adresse " + WiFi.localIP().toString());
     Serial.printf("WLAN verbunden: http://%s  (http://%s.local)\n", WiFi.localIP().toString().c_str(),
                   settings.hostname.c_str());
-    configTzTime("CET-1CEST,M3.5.0,M10.5.0/3", "pool.ntp.org", "time.google.com");
+    configTzTime(settings.tz.c_str(), settings.ntp.c_str(), "time.google.com");
+    device::signal(1);
   } else {
     evlog::add(settings.wifiSsid.length() ? 'w' : 'i', 0,
                settings.wifiSsid.length() ? "WLAN „" + settings.wifiSsid + "“ nicht erreichbar, Hotspot geöffnet"
                                           : String("Kein WLAN eingerichtet, Hotspot geöffnet"));
     startAp();
+    device::signal(settings.wifiSsid.length() ? 3 : 2);
   }
   if (MDNS.begin(settings.hostname.c_str())) {
     MDNS.addService("http", "tcp", 80);
@@ -387,6 +462,8 @@ void begin() {
   server.on("/api/wifi/scan", HTTP_GET, handleWifiScan);
   server.on("/api/wifi", HTTP_POST, handleWifiSave);
   server.on("/api/restart", HTTP_POST, handleRestart);
+  server.on("/api/factory", HTTP_POST, handleFactory);
+  server.on("/api/notify/test", HTTP_POST, handleNotifyTest);
   server.on("/update", HTTP_POST, handleUpdateDone, handleUpdateUpload);
   server.on("/api/ghupdate", HTTP_GET, handleGhStatus);
   server.on("/api/ghupdate", HTTP_POST, handleGhStart);

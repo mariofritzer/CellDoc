@@ -112,3 +112,6 @@ class Slot {
 
 extern Slot slots[4];
 const char* phaseId(Phase p);
+
+float defaultCurrent();                          // Standard-Entladestrom aus den Einstellungen
+String startDefault(uint8_t s, uint32_t cellNo);  // Test mit Standardwerten, leer = gestartet

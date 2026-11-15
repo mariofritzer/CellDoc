@@ -41,8 +41,12 @@ class HalMini {
   void kill(uint8_t s);
   void killAll();
 
-  void beep(uint16_t ms);
+  // kind: k Taste, d fertig, e Fehler, b Start/WLAN, s Scan (siehe Settings::sound)
+  void beep(uint16_t ms, char kind = 'k');
+  void beeps(uint8_t n, uint16_t on, char kind);  // n Töne hintereinander
+  void beepRaw(uint16_t ms);                      // ohne Einstellungen (Hardware-Test)
   void alarm();
+  int8_t ledForce = -1;                           // Hardware-Test: 0 aus, 1 an, -1 normal
   BtnEvent button();  // ein Ereignis pro Aufruf
 
   struct SensorInfo { uint8_t addr[8]; float t; int role; };
@@ -73,6 +77,7 @@ class HalMini {
   uint8_t fanDuty_ = 0;
   uint32_t beepUntil_ = 0, alarmNext_ = 0;
   uint8_t alarmBeeps_ = 0;
+  uint16_t alarmOn_ = 150;
   // Taster
   uint8_t btnState_ = 0, btnStable_ = 0;
   uint32_t btnChanged_ = 0, okDown_ = 0;

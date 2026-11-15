@@ -300,7 +300,7 @@ void handleTime() {
   if (t > 1700000000 && now < 1700000000) {
     timeval tv{time_t(t), 0};
     settimeofday(&tv, nullptr);
-    setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
+    setenv("TZ", settings.tz.c_str(), 1);
     tzset();
   }
   sendOk();

@@ -8,8 +8,11 @@
 #include "slot.h"
 #include "evlog.h"
 #include "storage.h"
+#include "stats.h"
 #include "web.h"
 #include "web_device.h"
+
+namespace device { void hwTick(uint32_t now); }  // web_mini.cpp: Hardware-Test
 
 void setup() {
   Serial.begin(115200);
@@ -18,11 +21,11 @@ void setup() {
   if (!storage::begin()) Serial.println("LittleFS konnte nicht eingebunden werden");
   evlog::begin();
   settings.load();
+  stats::begin();
   hal.rescanTempSensors();
   for (int s = 0; s < mcfg::NSLOTS; s++) slots[s].begin(s);
   display::begin();
-  web::begin();
-  hal.beep(80);
+  web::begin();  // meldet sich mit 1/2/3 Tönen: WLAN verbunden / Hotspot / WLAN nicht erreichbar
 }
 
 void loop() {
@@ -31,4 +34,6 @@ void loop() {
   for (int s = 0; s < mcfg::NSLOTS; s++) slots[s].update(now);
   display::update(now);
   web::update();
+  stats::update(now);
+  device::hwTick(now);
 }

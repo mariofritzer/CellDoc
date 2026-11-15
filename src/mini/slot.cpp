@@ -6,12 +6,14 @@
 #include "soh.h"
 #include "storage.h"
 #include "evlog.h"
+#include "notify.h"
+#include "stats.h"
 
 using namespace mcfg;
 
 Slot slots[4];
-static constexpr uint32_t REST_AFTER_MS = 10UL * 60 * 1000;
-static constexpr uint32_t CHARGE_TIMEOUT_MS = 8UL * 3600 * 1000;
+#define REST_AFTER_MS (uint32_t(settings.tRestAfter) * 60000UL)
+#define STOR_F (settings.tStorPct / 100.0f)
 
 const char* phaseId(Phase p) {
   switch (p) {
@@ -86,7 +88,7 @@ float Slot::capEstimate() const {
 
 static uint32_t chgSec(float mah, bool tail) {
   // Konstantstrom mit ca. 90 % des Ladestroms, danach Konstantspannung (TP4056) ca. 25 min
-  return uint32_t(max(0.0f, mah) / (CHG_MAX_A * 900) * 3600) + (tail ? 1500 : 0);
+  return uint32_t(max(0.0f, mah) / (settings.chgA * 900) * 3600) + (tail ? 1500 : 0);
 }
 
 uint32_t Slot::phaseEta(uint32_t now) const {
@@ -98,7 +100,7 @@ uint32_t Slot::phaseEta(uint32_t now) const {
     case Phase::ManualCharge:
     case Phase::Recharge: {
       if (phase_ == Phase::Recharge && storageMah_ > 0) return chgSec(storageMah_ - mah(), false);
-      if (m.v >= 4.15f) return uint32_t(1500 * constrain((m.i - 0.1f) / (CHG_MAX_A - 0.1f), 0.04f, 1.0f));
+      if (m.v >= settings.fullV) return uint32_t(1500 * constrain((m.i - 0.1f) / (settings.chgA - 0.1f), 0.04f, 1.0f));
       return chgSec(cap * max(0.0f, 85 - vSoc(m.v, -m.i)) / 100, true);
     }
     case Phase::Rest: {
@@ -127,7 +129,7 @@ uint32_t Slot::totalEta(uint32_t now) const {
   uint32_t rest = uint32_t(job_.restMin) * 60, ra = REST_AFTER_MS / 1000;
   uint32_t dis = uint32_t(cap / (a * 1000) * 3600);
   uint32_t full = chgSec(cap, true);
-  uint32_t after = job_.after == After::Full ? full : job_.after == After::Storage ? chgSec(cap * 0.5f, false) : 0;
+  uint32_t after = job_.after == After::Full ? full : job_.after == After::Storage ? chgSec(cap * STOR_F, false) : 0;
   int cur = cycleIdx_ + ((phase_ == Phase::Recharge && midRe_) ? 1 : 0);
   int left = int(job_.cycles) - cur - 1;
   switch (phase_) {
@@ -173,7 +175,7 @@ String Slot::precheck(const SlotJob& j, bool charge, bool discharge) const {
 String Slot::startTest(const SlotJob& jIn) {
   SlotJob j = jIn;
   j.chem = findChemistry("liion");
-  if (j.noTemp && j.currentA > NO_TEMP_MAX_A) j.currentA = NO_TEMP_MAX_A;
+  if (j.noTemp && j.currentA > settings.noTempA) j.currentA = settings.noTempA;
   String e = precheck(j, true, true);
   if (e.length()) return e;
   e = linkCell(j, true);
@@ -205,7 +207,7 @@ String Slot::startTest(const SlotJob& jIn) {
                  ", entladen mit " + evlog::num(job_.currentA, 2) + " A bis " + evlog::num(job_.cutoffV, 2) + " V, Ruhe " +
                  String(job_.restMin) + " min, " + String(job_.cycles) + (job_.cycles > 1 ? " Zyklen" : " Zyklus") +
                  ", danach " + aft + (job_.preCharge ? "" : ", ohne Vorladen") +
-                 (job_.noTemp ? ", ohne Zellfühler (bestätigt, Strom auf " + evlog::num(NO_TEMP_MAX_A, 1) + " A begrenzt)" : ""));
+                 (job_.noTemp ? ", ohne Zellfühler (bestätigt, Strom auf " + evlog::num(settings.noTempA, 1) + " A begrenzt)" : ""));
   }
   enter(job_.preCharge ? Phase::PreCharge : Phase::Rest);
   return "";
@@ -232,7 +234,7 @@ String Slot::startCharge(const SlotJob& jIn) {
 
 String Slot::startDischarge(const SlotJob& jIn) {
   SlotJob j = jIn;
-  if (j.noTemp && j.currentA > NO_TEMP_MAX_A) j.currentA = NO_TEMP_MAX_A;
+  if (j.noTemp && j.currentA > settings.noTempA) j.currentA = settings.noTempA;
   String e = precheck(j, false, true);
   if (e.length()) return e;
   e = linkCell(j, false);
@@ -308,6 +310,7 @@ void Slot::fail(const String& why) {
   error_ = why;
   enter(Phase::Error);
   hal.alarm();
+  notify::send('e', "Abbruch" + (job_.cellId.length() ? " " + job_.cellId : String("")), why);
 }
 
 void Slot::enter(Phase p) {
@@ -396,7 +399,7 @@ void Slot::update(uint32_t now) {
         log('i', "Erholt: Ruhespannung " + evlog::num(m.v, 3) + " V nach " + dur(now - phaseMs_) +
                      (cycleIdx_ + 1 < job_.cycles ? ", weiter mit Zyklus " + String(cycleIdx_ + 2) + " von " + String(job_.cycles)
                       : job_.after == After::None ? String(", Test wird abgeschlossen")
-                      : job_.after == After::Storage ? ", lade auf Lagerspannung (" + evlog::num(capMah_ * 0.5f, 0) + " mAh)"
+                      : job_.after == After::Storage ? ", lade auf Lagerspannung (" + evlog::num(capMah_ * STOR_F, 0) + " mAh)"
                                                      : String(", lade wieder voll")));
         restOcv_ = m.v;
         if (nCyc_ < 10) {
@@ -413,7 +416,7 @@ void Slot::update(uint32_t now) {
         } else if (job_.after == After::None) {
           finish();
         } else {
-          storageMah_ = job_.after == After::Storage ? capMah_ * 0.5f : 0;
+          storageMah_ = job_.after == After::Storage ? capMah_ * STOR_F : 0;
           enter(Phase::Recharge);
         }
       }
@@ -436,10 +439,13 @@ void Slot::safety(uint32_t now) {
 
   float dis = -m.i, tgt = hal.loadTarget(s_);
   bool oc = fabsf(m.i) > MAX_CURRENT_A * 1.3f + 0.2f;
-  if (isDischarge(phase_) && dis > max(tgt * OVERCURRENT_FACTOR, tgt + 0.3f)) oc = true;
-  if (isCharge(phase_) && m.i > CHG_MAX_A * 1.3f) oc = true;
+  if (isDischarge(phase_) && dis > max(tgt * settings.ocF, tgt + 0.3f)) oc = true;
+  if (isCharge(phase_) && m.i > settings.chgA * 1.3f) oc = true;
   if (oc) {
-    if (!ocSince_) ocSince_ = now;
+    if (!ocSince_) {
+      ocSince_ = now;
+      if (settings.verbose) log('w', "Strom kurz über der Grenze (" + snap() + ")");
+    }
     if (now - ocSince_ > OVERCURRENT_MS) { fail("Überstrom " + String(fabsf(m.i), 2) + " A"); return; }
   } else {
     ocSince_ = 0;
@@ -450,7 +456,7 @@ void Slot::safety(uint32_t now) {
     chgF_ = thermal(t, settings.chargeWarnC, settings.chargeStopC);
     hal.setChargerDuty(s_, chgF_);
     if (chgF_ < 0.99f) throttled_ = true;
-    if (m.v > 4.25f) {
+    if (m.v > settings.maxV) {
       if (!ovSince_) ovSince_ = now;
       if (now - ovSince_ > 2000) { fail("Überspannung beim Laden (" + String(m.v, 3) + " V)"); return; }
     } else {
@@ -495,12 +501,15 @@ void Slot::handleCharge(uint32_t now) {
   }
   uint32_t t = now - phaseMs_;
   float mah = float(m.chargeAs / 3.6);
-  if (t > CHARGE_TIMEOUT_MS) { fail("Laden dauert zu lange (über 8 h)"); return; }
+  if (settings.chgMaxH && t > uint32_t(settings.chgMaxH) * 3600000UL) {
+    fail("Laden dauert zu lange (über " + String(settings.chgMaxH) + " h)");
+    return;
+  }
   if (t > 120000 && mah < 5 && m.v < 4.1f) { fail("Lader liefert keinen Strom"); return; }
   bool full = false;
   // TP4056 beendet bei ca. 1/10 des Ladestroms. Danach sinkt die Spannung oft unter 4,15 V,
   // deshalb gilt auch "Lader liefert praktisch nichts mehr" bei nahezu voller Zelle als fertig.
-  bool chgDone = m.i < 0.12f && (m.v >= 4.15f || (m.i < 0.02f && m.v >= 4.0f));
+  bool chgDone = m.i < settings.fullA && (m.v >= settings.fullV || (m.i < 0.02f && m.v >= 4.0f));
   if (t > 60000 && chgDone && chgF_ > 0.99f) {
     if (!fullSince_) fullSince_ = now;
     if (now - fullSince_ > 30000) full = true;
@@ -512,7 +521,7 @@ void Slot::handleCharge(uint32_t now) {
   if (!full) return;
   {
     String why = storageHit ? "Lagerladung erreicht (" + evlog::num(mah, 0) + " von " + evlog::num(storageMah_, 0) + " mAh)"
-                 : m.v >= 4.15f ? "Zelle voll, Ladestrom seit 30 s unter 0,12 A bei " + evlog::num(m.v, 3) + " V"
+                 : m.v >= settings.fullV ? "Zelle voll, Ladestrom seit 30 s unter " + evlog::num(settings.fullA, 2) + " A bei " + evlog::num(m.v, 3) + " V"
                                 : "Lader hat abgeschaltet (" + evlog::num(m.i * 1000, 0) + " mA) bei " + evlog::num(m.v, 3) +
                                       " V, Zelle gilt als voll";
     log('i', String(phaseTxt(phase_)) + " beendet: " + why + ". Geladen " + evlog::num(mah, 0) + " mAh in " + dur(t));
@@ -534,7 +543,9 @@ void Slot::handleCharge(uint32_t now) {
     finish();
   } else {
     enter(Phase::Done);
-    hal.beep(500);
+    hal.beep(500, 'd');
+    notify::send('c', "Laden fertig" + (job_.cellId.length() ? " " + job_.cellId : String("")),
+                 "Geladen " + evlog::num(mah, 0) + " mAh, " + evlog::num(m.v, 3) + " V");
   }
 }
 
@@ -559,7 +570,9 @@ void Slot::handleDischarge(uint32_t now) {
     logPoint(now, true);
     if (phase_ == Phase::ManualDischarge) {
       enter(Phase::Done);
-      hal.beep(500);
+      hal.beep(500, 'd');
+      notify::send('d', "Entladen fertig" + (job_.cellId.length() ? " " + job_.cellId : String("")),
+                   "Entnommen " + evlog::num(capMah_, 0) + " mAh, " + evlog::num(energyWh_, 2) + " Wh");
     } else {
       enter(Phase::RestAfter);
     }
@@ -618,6 +631,7 @@ void Slot::handleRi(uint32_t now) {
   riQ_[riCount_] = capMah_;
   riR_[riCount_] = (v1 - v2) / (i2 - i1) * 1000;
   lastRi_ = riR_[riCount_];
+  if (settings.verbose) log('i', "Innenwiderstand " + evlog::num(lastRi_, 0) + " mΩ bei " + evlog::num(capMah_, 0) + " mAh (" + evlog::num(v1, 3) + " V/" + evlog::num(i1, 2) + " A → " + evlog::num(v2, 3) + " V/" + evlog::num(i2, 2) + " A)");
   riCount_++;
 }
 
@@ -716,6 +730,11 @@ void Slot::finish() {
                (job_.nomCapMah > 0 ? " (" + evlog::num(capMah_ / job_.nomCapMah * 100, 0) + " % der Nennkapazität)" : "") +
                ", Ri " + evlog::num(ri50 > 0 ? ri50 : ri100, 0) + " mΩ, Lebenszahl " + String(r.score) + ", Dauer " +
                dur(millis() - startMs_));
+  stats::testDone();
+  notify::send('d', "Test fertig " + job_.cellId,
+               evlog::num(capMah_, 0) + " mAh" +
+                   (job_.nomCapMah > 0 ? " (" + evlog::num(capMah_ / job_.nomCapMah * 100, 0) + " %)" : "") + ", Ri " +
+                   evlog::num(ri50 > 0 ? ri50 : ri100, 0) + " mΩ, Lebenszahl " + String(r.score));
   so["low"] = r.low;
   so["high"] = r.high;
   so["estimated"] = r.estimated;
@@ -735,7 +754,7 @@ void Slot::finish() {
   sdArmAt_ = millis() + 3600000UL;
   sdStartToo_ = job_.after == After::Full;
   enter(Phase::Done);
-  hal.beep(800);
+  hal.beep(800, 'd');
 }
 
 // ---------------------------------------------------------------------------
@@ -822,4 +841,22 @@ void Slot::curveJson(JsonArray a) const {
     p.add(roundf(pts_[k].qmAh));
     p.add(isnan(pts_[k].temp) ? 0 : roundf(pts_[k].temp * 10) / 10);
   }
+}
+
+// Test mit den Standardwerten aus den Einstellungen (BOOT-Taste, QR-Scanner, Home Assistant)
+float defaultCurrent() {
+  float a = settings.tI > 0.05f ? settings.tI : DEFAULT_CURRENT_A;
+  return min(a, MAX_CURRENT_A);
+}
+
+String startDefault(uint8_t s, uint32_t cellNo) {
+  SlotJob j;
+  j.cellNo = cellNo;
+  j.currentA = defaultCurrent();
+  j.cutoffV = settings.tCut;
+  j.cycles = settings.tCyc;
+  j.preCharge = settings.tPre;
+  j.restMin = settings.restMin;
+  j.after = settings.tAfter == 0 ? After::None : settings.tAfter == 2 ? After::Full : After::Storage;
+  return slots[s].startTest(j);
 }

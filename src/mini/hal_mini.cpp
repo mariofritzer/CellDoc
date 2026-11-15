@@ -63,11 +63,11 @@ void HalMini::update(uint32_t now) {
   }
 
   if (alarmBeeps_ && now >= alarmNext_) {
-    beep(150);
+    beepRaw(alarmOn_);
     alarmBeeps_--;
-    alarmNext_ = now + 300;
+    alarmNext_ = now + alarmOn_ + 150;
   }
-  digitalWrite(PIN_BUZZER, (settings.buzzer && now < beepUntil_) ? HIGH : LOW);
+  digitalWrite(PIN_BUZZER, now < beepUntil_ ? HIGH : LOW);
 }
 
 void HalMini::readIna(uint32_t now) {
@@ -280,12 +280,20 @@ void HalMini::killAll() {
   dac.flush();
 }
 
-void HalMini::beep(uint16_t ms) { beepUntil_ = millis() + ms; }
+void HalMini::beepRaw(uint16_t ms) { beepUntil_ = millis() + ms; }
 
-void HalMini::alarm() {
-  alarmBeeps_ = 6;
+void HalMini::beep(uint16_t ms, char kind) {
+  if (settings.sound(kind)) beepRaw(ms);
+}
+
+void HalMini::beeps(uint8_t n, uint16_t on, char kind) {
+  if (!settings.sound(kind)) return;
+  alarmBeeps_ = n;
+  alarmOn_ = on;
   alarmNext_ = millis();
 }
+
+void HalMini::alarm() { beeps(6, 150, 'e'); }
 
 // ---------------------------------------------------------------------------
 // Taster (aktiv LOW, externe Pull-ups)

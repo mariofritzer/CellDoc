@@ -25,6 +25,7 @@ struct MqttEntity {
 const char* model();
 // Status für die RGB-LED des S3-Boards: 0 bereit, 1 lädt, 2 entlädt, 3 fertig, 4 Fehler
 uint8_t ledState();
+void signal(uint8_t n);  // n kurze Töne beim Start: 1 WLAN verbunden, 2 Hotspot, 3 WLAN nicht erreichbar
 uint32_t scannedCell();  // vom QR-Scanner gewählte Zelle (0 = keine)
 
 // QR-Scanner am Gerät: no = Zelle (0 = unbekannter Code)

@@ -1,6 +1,7 @@
 // CellDoc Mini – gerätespezifische Web-API (mehrere Schächte)
 #include <ArduinoJson.h>
 #include <WebServer.h>
+#include "stats.h"
 
 #include "evlog.h"
 #include "assign.h"
@@ -107,7 +108,7 @@ void handleInfo() {
 #ifdef CELLDOC_NANO
   d["nano"] = true;
 #endif
-  lim["defaultCurrentA"] = DEFAULT_CURRENT_A;
+  lim["defaultCurrentA"] = defaultCurrent();
   d["nextCellNo"] = settings.nextCellNo;
   sendJson(d);
 }
@@ -124,13 +125,13 @@ void handleStart() {
   j.cellNo = b["cell"].is<const char*>() ? cells::parseRef(b["cell"].as<const char*>()) : (b["cell"] | 0u);
   j.nomCapMah = b["nomCapMah"] | 0.0f;
   j.riNewMilli = b["riNew"] | 0.0f;
-  j.currentA = b["currentA"] | DEFAULT_CURRENT_A;
-  j.cutoffV = b["cutoffV"] | 3.0f;
-  j.preCharge = b["preCharge"] | true;
+  j.currentA = b["currentA"] | defaultCurrent();
+  j.cutoffV = b["cutoffV"] | settings.tCut;
+  j.preCharge = b["preCharge"] | settings.tPre;
   j.restMin = b["restMin"] | settings.restMin;
-  j.cycles = b["cycles"] | 1;
+  j.cycles = b["cycles"] | settings.tCyc;
   j.noTemp = b["noTemp"] | false;
-  String after = b["after"] | "storage";
+  String after = b["after"] | (settings.tAfter == 0 ? "none" : settings.tAfter == 2 ? "full" : "storage");
   j.after = after == "none" ? After::None : after == "full" ? After::Full : After::Storage;
   const CellPreset* p = findPreset(j.presetId.c_str());
   if (p) {
@@ -257,7 +258,72 @@ void handleCalibrate() {
 
 namespace device {
 
+// ---------------------------------------------------------------------------
+// Hardware-Test: Lader, Last, Summer und LED einzeln schalten (nur wenn nichts läuft)
+
+static int8_t hwSlot = -1;
+static uint8_t hwWhat = 0;  // 1 Lader, 2 Last
+static uint32_t hwUntil = 0;
+
+static void hwOff(const char* why) {
+  if (hwSlot >= 0) {
+    hal.setCharger(hwSlot, false);
+    hal.setLoad(hwSlot, 0);
+    if (why) evlog::info(hwSlot + 1, String("Hardware-Test beendet: ") + why);
+  }
+  hwSlot = -1;
+  hwWhat = 0;
+}
+
+void hwTick(uint32_t now) {
+  if (hwSlot < 0) return;
+  const SlotMeas& m = hal.m(hwSlot);
+  float ts = hal.tSink();
+  if (slots[hwSlot].active()) { hwSlot = -1; hwWhat = 0; return; }  // ein Test hat übernommen
+  if ((int32_t)(now - hwUntil) >= 0) hwOff("nach 60 s automatisch aus");
+  else if (hwWhat == 1 && m.v > settings.maxV) hwOff("Zelle voll");
+  else if (hwWhat == 2 && m.v < 3.0f) hwOff("Zelle unter 3,0 V");
+  else if (!isnan(m.tCell) && m.tCell > settings.dischargeStopC) hwOff("Zelle zu warm");
+  else if (!isnan(ts) && ts > min(settings.sinkStopC, SINK_STOP_C)) hwOff("Lastwiderstand zu warm");
+}
+
+static void handleHwTest() {
+  JsonDocument b;
+  if (!readBody(b)) return sendError("Ungültige Anfrage");
+  int s = slotArg(&b);
+  String what = b["what"] | "";
+  bool on = b["on"] | false;
+  if (what == "off") { hwOff("von Hand"); hal.ledForce = -1; return sendOk(); }
+  if (what == "buzzer") { hal.beepRaw(400); return sendOk(); }
+  if (what == "led") { hal.ledForce = b["state"] | -1; return sendOk(); }
+  for (int k = 0; k < NSLOTS; k++)
+    if (slots[k].active()) return sendError("Während eines Tests nicht möglich", 409);
+  const SlotMeas& m = hal.m(s);
+  if (!on) { hwOff("von Hand"); return sendOk(); }
+  if (m.v < 2.5f) return sendError("Keine Zelle eingesetzt", 409);
+  hwOff(nullptr);
+  if (what == "charger") {
+    if (m.v > 4.15f) return sendError("Zelle ist schon voll", 409);
+    hal.setCharger(s, true);
+    hwWhat = 1;
+  } else if (what == "load") {
+    float a = constrain(float(b["amps"] | 0.5f), 0.1f, MAX_CURRENT_A);
+    if (m.v < 3.1f) return sendError("Zelle zu leer für die Last", 409);
+    hal.setLoad(s, a);
+    hwWhat = 2;
+    evlog::info(s + 1, "Hardware-Test: Last mit " + evlog::num(a, 2) + " A ein");
+  } else {
+    return sendError("Unbekannt");
+  }
+  if (what == "charger") evlog::info(s + 1, "Hardware-Test: Lader ein");
+  hwSlot = s;
+  hwUntil = millis() + 60000;
+  sendOk();
+}
+
 void routes() {
+  server.on("/api/hwtest", HTTP_POST, handleHwTest);
+  stats::routes();
   server.on("/api/state", HTTP_GET, handleState);
   server.on("/api/curve", HTTP_GET, handleCurve);
   server.on("/api/info", HTTP_GET, handleInfo);
@@ -281,7 +347,15 @@ bool busy() {
 
 void killAll() { hal.killAll(); }
 
-void fillState(JsonObject o) { fillStateImpl(o); }
+void fillState(JsonObject o) {
+  fillStateImpl(o);
+  if (hwSlot >= 0) {
+    JsonObject h = o["hwtest"].to<JsonObject>();
+    h["slot"] = hwSlot;
+    h["what"] = hwWhat == 1 ? "charger" : "load";
+    h["left"] = int32_t(hwUntil - millis()) / 1000;
+  }
+}
 
 String cellVoltage(JsonDocument& b, float& v) {
   int s = slotArg(&b);
@@ -353,5 +427,7 @@ void mqttCommand(const String& cmd) {
 }
 
 void idle() { hal.update(millis()); }
+
+void signal(uint8_t n) { hal.beeps(n, 90, 'b'); }
 
 }  // namespace device

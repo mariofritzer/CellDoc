@@ -345,4 +345,8 @@ void killAll() { hal.killAll(); }
 
 void idle() { hal.update(millis()); }
 
+void signal(uint8_t n) {
+  if (settings.sound('b')) hal.beep(uint16_t(80 * n));
+}
+
 }  // namespace device
