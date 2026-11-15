@@ -35,9 +35,9 @@ void loop() {
   display::update(now);
   web::update();
   {
-    float a[NSLOTS], w[NSLOTS];
-    for (int s = 0; s < NSLOTS; s++) { const SlotMeas& m = hal.m(s); a[s] = m.ok ? m.i : NAN; w[s] = m.p; }
-    stats::tick(now, a, w, NSLOTS);
+    float a[mcfg::NSLOTS], w[mcfg::NSLOTS];
+    for (int s = 0; s < mcfg::NSLOTS; s++) { const SlotMeas& m = hal.m(s); a[s] = m.ok ? m.i : NAN; w[s] = m.p; }
+    stats::tick(now, a, w, mcfg::NSLOTS);
   }
   device::hwTick(now);
 }
