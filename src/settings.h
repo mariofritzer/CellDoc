@@ -108,6 +108,7 @@ struct Settings {
 
   // Experten
   bool verbose = false;
+  uint8_t logSec = 10;  // Abstand der Kurvenpunkte in s (wird bei langen Tests automatisch verdoppelt)
 
   // Reine Oberflächen-Einstellungen (Profile, Zelltypen, Bewertung, Etiketten …) als JSON-Text
   String ui = "{}";

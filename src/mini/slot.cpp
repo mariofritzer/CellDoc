@@ -194,7 +194,7 @@ String Slot::startTest(const SlotJob& jIn) {
   lastRi_ = 0;
   throttled_ = saturatedSeen_ = false;
   nPts_ = 0;
-  ptInterval_ = 10;
+  ptInterval_ = settings.logSec;
   lastPtSec_ = 0;
   tStart_ = tMax_ = hal.m(s_).tCell;
   error_ = "";
@@ -224,7 +224,7 @@ String Slot::startCharge(const SlotJob& jIn) {
   job_.chem = findChemistry("liion");
   error_ = "";
   nPts_ = 0;
-  ptInterval_ = 10;
+  ptInterval_ = settings.logSec;
   lastPtSec_ = 0;
   startMs_ = millis();
   log('i', "Laden gestartet" + (job_.cellId.length() ? ": " + job_.cellId : String("")));
@@ -245,7 +245,7 @@ String Slot::startDischarge(const SlotJob& jIn) {
   if (job_.cutoffV < 2.7f) job_.cutoffV = job_.chem->cutoffV;
   error_ = "";
   nPts_ = 0;
-  ptInterval_ = 10;
+  ptInterval_ = settings.logSec;
   lastPtSec_ = 0;
   riCount_ = riStage_ = 0;
   riStep_ = 1e9;

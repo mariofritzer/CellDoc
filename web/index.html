@@ -171,6 +171,8 @@ input:focus,select:focus{outline:2px solid var(--rest);outline-offset:0}
 .sheet-head h3{margin:0;font-size:20px}
 /* Handbuch */
 .manual{display:flex;flex-direction:column;gap:16px}
+#manDe,#manEn{display:flex;flex-direction:column;gap:16px}
+#manDe[hidden],#manEn[hidden]{display:none}
 .manual h3{font-size:20px;margin:0;letter-spacing:-.01em}
 .manual h4{font-size:15px;margin:6px 0 0}
 .manual p,.manual li{max-width:72ch}
@@ -330,13 +332,14 @@ tr:last-child td{border-bottom:0}
 
   <!-- ===================== HANDBUCH ===================== -->
   <main id="v-manual" class="view manual" hidden>
+    <div id="manDe">
     <section class="card">
       <h3>Handbuch</h3>
       <p class="sub" style="font-size:14px">Alles Wichtige zu Akkutypen, Bauformen, Steckern, Messwerten und Sicherheit, dazu die Bedienung von CellDoc. Funktioniert auch ohne Internet.</p>
       <nav class="toc" aria-label="Kapitel">
         <a href="#m-typen">Akkutypen</a><a href="#m-vergleich">Vergleich</a><a href="#m-bauformen">Bauformen</a><a href="#m-bezeichnung">Typbezeichnung</a>
         <a href="#m-packs">Packs &amp; Stecker</a><a href="#m-werte">Messwerte</a><a href="#m-leben">Lebenszahl</a><a href="#m-sicher">Sicherheit</a>
-        <a href="#m-lagern">Lagern &amp; Entsorgen</a><a href="#m-bedienung">Bedienung</a>
+        <a href="#m-lagern">Lagern &amp; Entsorgen</a><a href="#m-bedienung">Bedienung</a><a href="#m-einst">Einstellungen</a>
       </nav>
     </section>
 
@@ -551,7 +554,7 @@ tr:last-child td{border-bottom:0}
       <h4>Erwärmung</h4>
       <p>Wie stark die Zelle während des Tests wärmer wird. Bei 0,5 A sind 2–8 K normal. Wird eine Zelle bei kleinem Strom auffällig warm, ist sie verdächtig.</p>
       <h4>Selbstentladung</h4>
-      <p>CellDoc misst sie nicht automatisch. So geht es von Hand: Zelle voll laden, 1–2 Wochen liegen lassen, dann die Spannung messen. Fällt eine Li-Ion-Zelle mehr als ca. 0,05 V pro Woche, hat sie einen inneren Kurzschluss und sollte nicht mehr verwendet werden.</p>
+      <p>Zelle voll laden, 1–2 Wochen liegen lassen, dann die Spannung messen. Fällt eine Li-Ion-Zelle mehr als ca. 0,05 V pro Woche, hat sie einen inneren Kurzschluss und sollte nicht mehr verwendet werden. CellDoc kann das für dich verfolgen, siehe „Selbstentladung“ unter Bedienung.</p>
     </section>
 
     <section class="card" id="m-leben">
@@ -631,9 +634,9 @@ tr:last-child td{border-bottom:0}
         <li>Jeder Kapazitätstest legt eine Zelle mit fester Nummer an, z. B. <b>CD-0042</b>. Die Nummer bleibt der Zelle für immer, auch nach weiteren Tests.</li>
         <li>Unter <b>Bestand</b> lässt sich nach Nummer, Name, Lagerort, Notiz oder Pack suchen. Eine Zahl wie „42“ findet direkt CD-0042, Enter öffnet sie.</li>
         <li><b>Etikett drucken</b> erzeugt ein Bild mit Nummer, QR-Code, Kapazität, Innenwiderstand, Note und Datum in 203 dpi, passend für Supvan E16, Niimbot und ähnliche Drucker. In der App des Druckers als Bild einfügen.</li>
-        <li><b>Scannen:</b> Unter Bestand oder im Startdialog auf „Scannen“ tippen und das Etikett fotografieren, dann öffnet bzw. wählt CellDoc die Zelle. Mit einem QR-Scanner-Modul am Gerät reicht es, die Zelle davor zu halten. Bei der Mini kommt sie in den Schacht, in den sie danach gesteckt wird, und OK startet den Test.</li>
+        <li><b>Scannen:</b> Unter Bestand oder im Startdialog auf „Scannen“ tippen und das Etikett fotografieren, dann öffnet bzw. wählt CellDoc die Zelle. Mit einem QR-Scanner-Modul am Gerät reicht es, die Zelle davor zu halten. Was dann passiert, steht unter Einstellungen → QR-Scanner.</li>
         <li>Der QR-Code öffnet die Zelle direkt in CellDoc, wenn das Handy im selben WLAN ist. Beim nächsten Test „Aus dem Bestand“ wählen, dann wird automatisch mit dem ersten Test verglichen.</li>
-        <li>Note: <b>A</b> ab Lebenszahl 85, <b>B</b> ab 70, <b>C</b> ab 50, darunter <b>D</b>.</li>
+        <li>Note: ab Werk <b>A</b> ab Lebenszahl 85, <b>B</b> ab 70, <b>C</b> ab 50, darunter <b>D</b>. Einstellbar unter Einstellungen → Bewertung.</li>
       </ul>
       <h4>Selbstentladung</h4>
       <p>Zellen mit innerem Kurzschluss verlieren auch ohne Last Ladung. Nach einem Test mit „Danach voll laden“ merkt sich CellDoc nach einer Stunde Ruhe die Spannung. Die Zelle 7–14 Tage lagern, dann in der Zelle unter Bestand „Jetzt nachmessen“ wählen. Unter 3 mV pro Tag ist gut, ab 8 mV pro Tag gehört die Zelle nicht in ein Pack.</p>
@@ -655,7 +658,7 @@ tr:last-child td{border-bottom:0}
       <ul>
         <li>Die Mini prüft nur <b>18650 Li-Ion</b> (4,2 V), in 1, 2 oder 4 Schächten gleichzeitig. Jeder Schacht hat seinen eigenen Lader, seine Last und seinen Temperaturfühler.</li>
         <li>In der Weboberfläche oben unter <b>Schächte</b> einen Schacht antippen. Live, Starten, Stoppen und die Kalibrierung beziehen sich dann auf diesen Schacht.</li>
-        <li>Mit OLED und Tastern: <b>◀ / ▶</b> wählt den Schacht, <b>OK</b> öffnet die Detailansicht, in der Detailansicht eines freien Schachts startet <b>OK</b> einen Standardtest (unbekannte Zelle, 0,5 A, danach Lagerspannung). <b>OK lang</b> stoppt, <b>OK</b> bestätigt ein Ergebnis oder einen Fehler.</li>
+        <li>Mit OLED und Tastern: <b>◀ / ▶</b> wählt den Schacht, <b>OK</b> öffnet die Detailansicht, in der Detailansicht eines freien Schachts startet <b>OK</b> einen Test mit den Test-Standardwerten. <b>OK lang</b> stoppt, <b>OK</b> bestätigt ein Ergebnis oder einen Fehler.</li>
         <li>Ohne Fühler an der Zelle startet ein Schacht nicht.</li>
       </ul>
       <h4>CellDoc Nano</h4>
@@ -663,11 +666,382 @@ tr:last-child td{border-bottom:0}
         <li>Die Nano ist die kleinste Variante: ein Schacht für <b>18650 Li-Ion</b>, ESP32-C3 SuperMini, fester Lastwiderstand (3 Ω). Die Firmware taktet ihn mit 25 kHz (unhörbar) und regelt so auf Konstantstrom, bis 1,2 A. Mit 0,8 A bleibt der Strom bis zur Abschaltspannung konstant.</li>
         <li><b>BOOT-Taste</b> am Board: kurz = Test mit den Test-Standardwerten starten (Einstellungen → Test-Standardwerte, ab Werk 0,8 A, danach Lagerspannung) oder Ergebnis bestätigen, lang = stoppen.</li>
         <li><b>Blaue LED</b>: kurzer Blitz alle 3 s = bereit, langsam blinkend = lädt, an = entlädt, Doppelblitz = fertig, schnell blinkend = Fehler, zwei Blitze pro Sekunde = Hotspot.</li>
+        <li><b>Summer beim Einschalten</b>: 1 Ton = WLAN verbunden, 2 Töne = kein WLAN eingerichtet, Hotspot offen, 3 Töne = WLAN nicht erreichbar, Hotspot offen.</li>
         <li>Ein zweiter DS18B20 am Lastwiderstand ist optional. Ist er da, drosselt und stoppt die Nano bei zu viel Wärme.</li>
       </ul>
       <h4>Firmware aktualisieren</h4>
-      <p>Neue Versionen gibt es auf GitHub unter Releases. Unter Einstellungen → Firmware-Update die passende Datei hochladen: <b>celldoc-firmware.bin</b> für CellDoc, <b>celldoc-mini1/2/4-firmware.bin</b> für die Mini mit 1, 2 oder 4 Schächten, <b>celldoc-nano-firmware.bin</b> für die Nano. Einstellungen und Ergebnisse bleiben erhalten.</p>
+      <p>Unter Einstellungen → Firmware-Update auf „Nach Update suchen“ tippen: CellDoc lädt die passende Datei direkt von GitHub. Oder die Datei aus den GitHub-Releases hochladen: <b>celldoc-firmware.bin</b> für CellDoc, <b>celldoc-mini1/2/4-firmware.bin</b> für die Mini mit 1, 2 oder 4 Schächten, <b>celldoc-nano-firmware.bin</b> für die Nano. Einstellungen und Ergebnisse bleiben erhalten.</p>
     </section>
+  
+    <section class="card" id="m-einst">
+      <h3>Einstellungen</h3>
+      <p>Die Einstellungen sind in ausklappbare Menüs gruppiert, es ist immer nur eines offen. Änderungen werden sofort gespeichert („Gespeichert ✓“ erscheint). WLAN, Kalibrierung und Fühlerzuordnung haben einen eigenen Knopf.</p>
+      <ul>
+        <li><b>Test-Standardwerte:</b> belegen den Start-Dialog vor und gelten für die BOOT-Taste, den QR-Scanner im Automatik-Modus und Home Assistant.</li>
+        <li><b>Testprofile:</b> eigene Vorlagen wie „Schnelltest“, im Start-Dialog oben auswählbar.</li>
+        <li><b>Laden &amp; Sicherheit:</b> Strom des Lademoduls, ab wann die Zelle als voll gilt, längste Ladezeit, Überspannung, Überstrom und Höchststrom ohne Zellfühler.</li>
+        <li><b>Zelltypen, Bewertung, Pack-Bau, Etiketten, QR-Scanner:</b> eigene Zelltypen, Grenzen für Noten und den Hinweis zum Ausmustern, Vorgaben für Packs und Etiketten, was beim Scannen passiert.</li>
+        <li><b>Anzeige &amp; Töne, Nachtmodus, Live-Ansicht, Einheiten:</b> Summer je Ereignis, LED, OLED-Helligkeit, ein ruhiges Zeitfenster, welche Kacheln auf der Live-Seite stehen, mAh/Ah, °C/°F, Datumsformat, CSV-Trennzeichen, Sprache.</li>
+        <li><b>Netzwerk, Home Assistant, Benachrichtigungen:</b> feste IP, Ausweich-WLAN, Hotspot-Name und -Passwort, MQTT, Nachrichten aufs Handy über ntfy oder Telegram.</li>
+        <li><b>System:</b> Gerätename, Zeitzone, Neustart und Zurücksetzen, Statistik, Hardware-Test, Experten-Ansicht, Ereignisprotokoll, Datensicherung und Firmware-Update.</li>
+      </ul>
+    </section>
+    </div>
+    <div id="manEn" hidden>
+    <section class="card">
+      <h3>Manual</h3>
+      <p class="sub" style="font-size:14px">Everything important about battery types, cell formats, connectors, readings and safety, plus how to use CellDoc. Works without internet, too.</p>
+      <nav class="toc" aria-label="Chapters">
+        <a href="#m-typen">Battery types</a><a href="#m-vergleich">Comparison</a><a href="#m-bauformen">Cell formats</a><a href="#m-bezeichnung">Type codes</a>
+        <a href="#m-packs">Packs &amp; connectors</a><a href="#m-werte">Readings</a><a href="#m-leben">Health score</a><a href="#m-sicher">Safety</a>
+        <a href="#m-lagern">Storage &amp; disposal</a><a href="#m-bedienung">Using CellDoc</a><a href="#m-einst">Settings</a>
+      </nav>
+    </section>
+
+    <section class="card" data-mid="m-typen">
+      <h3>Battery types</h3>
+      <p>Voltages are per cell. For packs multiply by the cell count, so a 3S LiPo is 3 × 4.2 V = 12.6 V when full.</p>
+
+      <details class="chem" open>
+        <summary>Li-ion (NMC, NCA, LCO)</summary>
+        <div class="body">
+          <div class="facts num">
+            <div><span>Nominal</span><b>3.6–3.7 V</b></div><div><span>Charge to</span><b>4.20 V</b></div>
+            <div><span>Discharge to</span><b>2.5–3.0 V</b></div><div><span>Storage</span><b>3.7–3.8 V</b></div>
+            <div><span>Cycles</span><b>300–1000</b></div><div><span>Charge at</span><b>0–45 °C</b></div>
+          </div>
+          <p>The standard in round cells such as 18650 and 21700: laptops, power tools, e-bikes, flashlights, power banks. High energy density, charged with CC/CV: constant current first, then constant voltage from 4.2 V until the current has dropped to about a tenth.</p>
+          <ul>
+            <li><b>NMC</b> (nickel manganese cobalt): all-rounder, in most brand-name cells (Samsung, LG, Molicel).</li>
+            <li><b>NCA</b> (nickel cobalt aluminium): very high capacity, e.g. Panasonic NCR18650B.</li>
+            <li><b>LCO</b> (lithium cobalt oxide): older laptop and phone cells, low current capability.</li>
+            <li><b>High current vs. capacity:</b> cells are optimised either for current (e.g. 30Q, VTC6, P28A, 20–30 A) or for capacity (e.g. MJ1, 35E, 10 A). You can't have both.</li>
+          </ul>
+          <p class="note">Many datasheets give 2.5 V as the discharge limit. CellDoc tests down to 3.0 V. That is gentler on the cell but measures 3–5 % less capacity than the datasheet.</p>
+        </div>
+      </details>
+
+      <details class="chem">
+        <summary>LiPo (lithium polymer)</summary>
+        <div class="body">
+          <div class="facts num">
+            <div><span>Nominal</span><b>3.7 V</b></div><div><span>Charge to</span><b>4.20 V</b></div>
+            <div><span>Discharge to</span><b>3.0–3.3 V</b></div><div><span>Storage</span><b>3.80–3.85 V</b></div>
+            <div><span>Cycles</span><b>150–500</b></div><div><span>Charge at</span><b>0–45 °C</b></div>
+          </div>
+          <p>Chemically a Li-ion battery, but in a soft foil pouch. Typical for RC models, drones, phones and smartwatches. Very high currents are possible, but printed C ratings are often exaggerated.</p>
+          <ul>
+            <li><b>Puffed up?</b> Gas has formed. The battery is finished and must be disposed of. Do not pierce, press or charge it again.</li>
+            <li>Never store full: a full LiPo ages noticeably within weeks. Bring it to storage voltage after flying.</li>
+            <li>In RC, 3.3 V under load is the landing voltage, 3.0 V the absolute minimum.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="chem">
+        <summary>Li-HV (high-voltage LiPo)</summary>
+        <div class="body">
+          <div class="facts num">
+            <div><span>Nominal</span><b>3.8 V</b></div><div><span>Charge to</span><b>4.35 V</b></div>
+            <div><span>Discharge to</span><b>3.2–3.3 V</b></div><div><span>Storage</span><b>3.85 V</b></div>
+          </div>
+          <p>A LiPo variant that may be charged to 4.35 V (some 4.45 V) and therefore stores about 10 % more energy. Marked "HV" or "LiHV" on the label. Ages faster if it is often kept full.</p>
+          <p class="note">CellDoc charges Li-HV only to 4.2 V, so the measured capacity is about 10 % lower. For comparing several Li-HV packs with each other this doesn't matter.</p>
+        </div>
+      </details>
+
+      <details class="chem">
+        <summary>LiFePO4 (LFP, lithium iron phosphate)</summary>
+        <div class="body">
+          <div class="facts num">
+            <div><span>Nominal</span><b>3.2 V</b></div><div><span>Charge to</span><b>3.60–3.65 V</b></div>
+            <div><span>Discharge to</span><b>2.5–2.8 V</b></div><div><span>Storage</span><b>3.3 V</b></div>
+            <div><span>Cycles</span><b>2000–6000</b></div><div><span>Charge at</span><b>0–45 °C</b></div>
+          </div>
+          <p>Very safe (thermally stable, hardly burns), extremely long-lived, but lower energy density. Common in home storage, camper and boat batteries, solar lights and as 26650/32700 round cells.</p>
+          <ul>
+            <li><b>Never charge with a Li-ion charger.</b> 4.2 V overcharges an LFP cell and damages it.</li>
+            <li>The voltage curve is very flat: between 20 and 90 % the voltage barely changes, so the state of charge can only be roughly estimated from voltage.</li>
+            <li>12 V LFP batteries consist of 4 cells (4S, 14.6 V full).</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="chem">
+        <summary>LTO (lithium titanate)</summary>
+        <div class="body">
+          <div class="facts num">
+            <div><span>Nominal</span><b>2.3–2.4 V</b></div><div><span>Charge to</span><b>2.80–2.85 V</b></div>
+            <div><span>Discharge to</span><b>1.5–1.8 V</b></div><div><span>Cycles</span><b>10,000+</b></div>
+          </div>
+          <p>A niche with special strengths: tens of thousands of cycles, extremely fast charging, works in severe cold. Little energy per weight, though. Often large cylindrical cells (e.g. 66160) for starter batteries or storage.</p>
+          <p class="note">CellDoc can discharge and measure LTO, but not charge it.</p>
+        </div>
+      </details>
+
+      <details class="chem">
+        <summary>NiMH and NiCd</summary>
+        <div class="body">
+          <div class="facts num">
+            <div><span>Nominal</span><b>1.2 V</b></div><div><span>Full</span><b>approx. 1.4–1.45 V</b></div>
+            <div><span>Discharge to</span><b>1.0 V</b></div><div><span>Cycles</span><b>500–2000</b></div>
+          </div>
+          <p>The classic AA/AAA rechargeables and RC stick packs (6 or 7 cells = 7.2 or 8.4 V). They are not charged with CC/CV but with constant current and cut-off when the voltage drops slightly at the end (−ΔV). That's why NiMH needs its own charger.</p>
+          <ul>
+            <li><b>LSD cells</b> (low self-discharge, e.g. Eneloop) keep their charge for years. Normal NiMH lose about 20–30 % per month.</li>
+            <li><b>NiCd</b> is the predecessor: robust, but with a real memory effect and toxic cadmium. Largely banned today, old packs belong at a hazardous-waste collection point.</li>
+            <li>In CellDoc choose "NiMH / NiCd" for both. CellDoc cannot charge them.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="chem">
+        <summary>Lead-acid (AGM, gel, flooded)</summary>
+        <div class="body">
+          <div class="facts num">
+            <div><span>Nominal</span><b>2.0 V (12 V = 6 cells)</b></div><div><span>Charge</span><b>14.4–14.7 V</b></div>
+            <div><span>Float</span><b>13.5–13.8 V</b></div><div><span>Discharge to</span><b>10.5–10.8 V</b></div>
+          </div>
+          <p>Heavy, but cheap and robust: UPS units, alarm systems, kids' ride-on cars, cars. Unlike lithium, store them <b>full</b>, otherwise the battery sulphates and permanently loses capacity.</p>
+          <ul>
+            <li>Available capacity depends strongly on current. The rated capacity usually applies to a 20-hour discharge, e.g. 0.35 A for a 7 Ah battery. Testing at 2 A gives much less.</li>
+            <li>On CellDoc test only on port B, as "Lead" with 6 cells for a 12 V battery.</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <section class="card" data-mid="m-vergleich">
+      <h3>Comparison at a glance</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Type</th><th>Nominal</th><th>Full</th><th>Empty</th><th>Storage</th><th>Cycles</th><th>Safety</th></tr></thead>
+        <tbody>
+          <tr><td>Li-ion</td><td>3.6 V</td><td>4.20 V</td><td>3.0 V</td><td>3.8 V</td><td>300–1000</td><td>medium</td></tr>
+          <tr><td>LiPo</td><td>3.7 V</td><td>4.20 V</td><td>3.2 V</td><td>3.85 V</td><td>150–500</td><td>low</td></tr>
+          <tr><td>Li-HV</td><td>3.8 V</td><td>4.35 V</td><td>3.2 V</td><td>3.85 V</td><td>150–400</td><td>low</td></tr>
+          <tr><td>LiFePO4</td><td>3.2 V</td><td>3.60 V</td><td>2.5 V</td><td>3.3 V</td><td>2000–6000</td><td>high</td></tr>
+          <tr><td>LTO</td><td>2.4 V</td><td>2.80 V</td><td>1.8 V</td><td>2.4 V</td><td>10,000+</td><td>very high</td></tr>
+          <tr><td>NiMH</td><td>1.2 V</td><td>≈1.45 V</td><td>1.0 V</td><td>any</td><td>500–2000</td><td>high</td></tr>
+          <tr><td>Lead</td><td>2.0 V</td><td>2.40 V</td><td>1.8 V</td><td>full</td><td>200–1000</td><td>high</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">Cycle counts down to 80 % remaining capacity, strongly dependent on charge voltage, current and temperature. Charging Li-ion only to 4.1 V roughly doubles the cycle count.</p>
+    </section>
+
+    <section class="card" data-mid="m-bauformen">
+      <h3>Cell formats</h3>
+      <p>The number on round cells gives diameter and length: <b>18650</b> = 18 mm diameter, 65.0 mm long.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Format</th><th>Size</th><th>Typical capacity</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td>10440</td><td>like AAA</td><td>300–350 mAh</td><td>3.7 V! Not for AAA devices</td></tr>
+          <tr><td>14500</td><td>like AA</td><td>700–1000 mAh</td><td>3.7 V! Not for AA devices</td></tr>
+          <tr><td>16340</td><td>like CR123A</td><td>600–800 mAh</td><td>Flashlights</td></tr>
+          <tr><td>18650</td><td>18 × 65 mm</td><td>2000–3600 mAh</td><td>The classic</td></tr>
+          <tr><td>21700</td><td>21 × 70 mm</td><td>4000–5000 mAh</td><td>New standard in e-bikes and tools</td></tr>
+          <tr><td>26650</td><td>26 × 65 mm</td><td>3000–5000 mAh</td><td>Often LiFePO4</td></tr>
+          <tr><td>32700</td><td>32 × 70 mm</td><td>6000 mAh</td><td>Almost always LiFePO4</td></tr>
+          <tr><td>Pouch</td><td>flat</td><td>any</td><td>LiPo, phones, RC</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout"><b>Spotting fakes:</b> there is no 18650 with more than about 3600 mAh. Labels like "9900 mAh" are always lies. Real 18650s weigh 44–50 g, fakes often only 20–35 g. Cheap "brand" cells from unknown shops are often rewrapped used cells. CellDoc exposes them reliably.</div>
+      <p><b>Protected cells</b> have a small protection board at the negative end and are 2–4 mm longer (e.g. 67–70 mm). They don't fit every holder, but make sense for flashlights without their own protection.</p>
+    </section>
+
+    <section class="card" data-mid="m-bezeichnung">
+      <h3>Reading type codes</h3>
+      <p>Using <b>INR18650-30Q</b> as an example:</p>
+      <ul>
+        <li><b>I</b> = lithium-ion</li>
+        <li><b>N</b> = nickel-based cathode (NMC). Others: <b>C</b> = cobalt (LCO), <b>M</b> = manganese, <b>F</b> = iron phosphate (LFP)</li>
+        <li><b>R</b> = round (cylindrical)</li>
+        <li><b>18650</b> = format</li>
+        <li><b>30Q</b> = model, here 3000 mAh, series Q</li>
+      </ul>
+      <p>Panasonic writes <b>NCR</b> for NCA cells, Sony/Murata <b>US18650VTC6</b>. Laptop cells often only carry a manufacturer code, e.g. "ICR18650-26F" (Samsung, LCO, 2600 mAh).</p>
+      <p class="note">If nothing useful is printed on it, choose the type "Unknown" in CellDoc. The health score is then estimated as a range.</p>
+    </section>
+
+    <section class="card" data-mid="m-packs">
+      <h3>Packs and connectors</h3>
+      <p><b>S</b> means cells in series (voltages add up), <b>P</b> parallel (capacities add up). A <b>3S2P</b> pack has 3 × 2 = 6 cells, 11.1 V nominal and twice the capacity of one cell.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>LiPo/Li-ion</th><th>Nominal</th><th>Full</th><th>Empty (3.0 V)</th><th>Balance pins</th></tr></thead>
+        <tbody>
+          <tr><td>1S</td><td>3.7 V</td><td>4.2 V</td><td>3.0 V</td><td>–</td></tr>
+          <tr><td>2S</td><td>7.4 V</td><td>8.4 V</td><td>6.0 V</td><td>3</td></tr>
+          <tr><td>3S</td><td>11.1 V</td><td>12.6 V</td><td>9.0 V</td><td>4</td></tr>
+          <tr><td>4S</td><td>14.8 V</td><td>16.8 V</td><td>12.0 V</td><td>5</td></tr>
+          <tr><td>5S</td><td>18.5 V</td><td>21.0 V</td><td>15.0 V</td><td>6</td></tr>
+          <tr><td>6S</td><td>22.2 V</td><td>25.2 V</td><td>18.0 V</td><td>7</td></tr>
+        </tbody>
+      </table></div>
+      <h4>Connectors</h4>
+      <ul>
+        <li><b>XT30 / XT60 / XT90</b>: yellow high-current connectors, approx. 30 / 60 / 90 A. The number is the rated current.</li>
+        <li><b>T-Plug (Deans)</b>: older high-current connector, increasingly replaced by XT60.</li>
+        <li><b>EC3 / EC5</b>: blue connectors, common on RC cars.</li>
+        <li><b>JST-XH</b>: white balance connector. Pin count = cell count + 1. CellDoc measures every single cell through it.</li>
+        <li><b>JST-PH / Molex</b>: small connectors on 1S batteries for micro drones.</li>
+      </ul>
+      <p><b>Matching cells for a pack:</b> cells should differ by at most ±2–3 % in capacity and ±10–15 % in internal resistance. Otherwise the weakest cell is discharged deeper on every cycle and ages faster. This is exactly what CellDoc is made for.</p>
+    </section>
+
+    <section class="card" data-mid="m-werte">
+      <h3>Understanding the readings</h3>
+      <h4>Capacity (mAh) and energy (Wh)</h4>
+      <p>mAh tells how much charge comes out, Wh how much energy. Wh = mAh × average voltage ÷ 1000. For comparing different chemistries Wh is more meaningful.</p>
+      <h4>C rate</h4>
+      <p>1C is the current that empties the battery in one hour: 3 A for 3000 mAh, 0.5C = 1.5 A. Datasheets usually measure capacity at 0.2C. Choose 0.2–0.5C for comparable results. Higher currents give somewhat less capacity.</p>
+      <h4>Internal resistance</h4>
+      <p>Shows how much the voltage sags under load. It rises with age, in the cold and when the battery is empty. CellDoc measures the <b>DC internal resistance</b> with a one-second current step. Handheld meters (e.g. YR1035) and datasheets give the <b>AC value at 1 kHz</b>, which is about half as large. Both are correct, they just measure different things.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>18650, DC at 50 %</th><th>Rating</th></tr></thead>
+        <tbody>
+          <tr><td>below 40 mΩ</td><td>like new, also for high currents</td></tr>
+          <tr><td>40–70 mΩ</td><td>good, for normal loads</td></tr>
+          <tr><td>70–120 mΩ</td><td>aged, small currents only</td></tr>
+          <tr><td>above 150 mΩ</td><td>worn out</td></tr>
+        </tbody>
+      </table></div>
+      <h4>Efficiency</h4>
+      <p><b>Coulomb efficiency</b>: charge taken out ÷ charge put in, above 97 % for healthy Li-ion cells. Much less points to side reactions or self-discharge. <b>Energy efficiency</b> also includes the voltage losses and is typically 85–95 %.</p>
+      <h4>Heating</h4>
+      <p>How much warmer the cell gets during the test. At 0.5 A, 2–8 K is normal. A cell that gets noticeably warm at a small current is suspicious.</p>
+      <h4>Self-discharge</h4>
+      <p>Charge the cell fully, let it rest for 1–2 weeks, then measure the voltage. If a Li-ion cell drops more than about 0.05 V per week, it has an internal short and should no longer be used. CellDoc can track this for you, see "Self-discharge" under Using CellDoc.</p>
+    </section>
+
+    <section class="card" data-mid="m-leben">
+      <h3>The health score</h3>
+      <p>Sums up the condition in one number from 0 (replace) to 100 (like new).</p>
+      <ul>
+        <li><b>Known cell type:</b> 70 % capacity, 30 % internal resistance. Full rated capacity gives 100 points, 60 % gives 0 points. For internal resistance the new value gives 100 points, 2.5 times the new value 0 points.</li>
+        <li><b>Unknown type:</b> 50/50 with fixed limits per chemistry. The result is shown as a range, e.g. "≈ 55–70 %".</li>
+        <li><b>Same cell, new test:</b> CellDoc compares automatically with the first test of this cell and shows how much capacity has been lost since.</li>
+      </ul>
+      <div class="tbl"><table>
+        <thead><tr><th>Health score</th><th>Verdict</th><th>Still good for</th></tr></thead>
+        <tbody>
+          <tr><td>90–100</td><td>Like new</td><td>everything, including high current</td></tr>
+          <tr><td>75–89</td><td>Very good</td><td>e-bike packs, tools</td></tr>
+          <tr><td>55–74</td><td>Good used</td><td>power bank, flashlight, solar storage</td></tr>
+          <tr><td>35–54</td><td>Weak</td><td>remote control, garden light</td></tr>
+          <tr><td>15–34</td><td>Small loads only</td><td>better recycle</td></tr>
+          <tr><td>0–14</td><td>Replace</td><td>collection point</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="card" data-mid="m-sicher">
+      <h3>Safety</h3>
+      <div class="callout danger"><b>Lithium batteries can burn.</b> Run tests with high currents and LiPo packs only on a non-flammable surface (tile, metal sheet, LiPo bag), away from flammable material and never unattended.</div>
+      <ul>
+        <li><b>Damaged wrap</b> (tear in the shrink sleeve, missing insulator ring at the positive end): rewrap the cell or dispose of it. The whole can is negative, a scratch at the positive end can cause a short.</li>
+        <li><b>Deep discharge</b> (Li-ion below about 2.0 V): copper bridges can form inside. Don't charge such cells any more. CellDoc refuses to test below the safe range.</li>
+        <li><b>Never charge below 0 °C.</b> Lithium then plates out as metal and the cell becomes permanently dangerous.</li>
+        <li><b>Puffed, hot, smell, hissing:</b> disconnect immediately, take it outside or into a metal container with sand, keep your distance.</li>
+        <li><b>In case of fire:</b> leave the room and call the fire brigade (112). Small cells can be cooled with lots of water. Mind your breathing, the fumes are toxic.</li>
+        <li>Never discharge packs to the end without balance monitoring, otherwise the weakest cell drops too low unnoticed.</li>
+      </ul>
+      <h4>What CellDoc monitors itself</h4>
+      <p>Cell, pack and heatsink temperature with throttling and shutdown, over- and undervoltage per cell, overcurrent, fan failure, failure of the measuring electronics and the emergency stop button (BOOT). On every fault, load and charger are disconnected immediately and the buzzer sounds an alarm.</p>
+    </section>
+
+    <section class="card" data-mid="m-lagern">
+      <h3>Storage and disposal</h3>
+      <h4>Storage</h4>
+      <ul>
+        <li>Store lithium at 40–60 % (Li-ion 3.7–3.8 V, LiFePO4 3.3 V) and cool, ideally 10–20 °C. Full and warm, e.g. in a car in summer, they age fastest.</li>
+        <li>Always store lead-acid full and recharge every 3–6 months.</li>
+        <li>Check the voltage every 6 months and sort out cells with strong self-discharge.</li>
+        <li>Keep loose cells in boxes or with pole caps, never loose together with coins or keys.</li>
+      </ul>
+      <p>CellDoc can put cells into storage for you: choose "afterwards to storage voltage" in the capacity test.</p>
+      <h4>Disposal</h4>
+      <ul>
+        <li>Never in household waste: batteries cause fires in garbage trucks and sorting plants.</li>
+        <li>Tape over the terminals, then take them to the collection box in a shop or a recycling centre. Retailers selling batteries must take them back free of charge.</li>
+        <li>Hand in puffed or damaged batteries separately and point this out.</li>
+      </ul>
+    </section>
+
+    <section class="card" data-mid="m-bedienung">
+      <h3>Using CellDoc</h3>
+      <h4>First start</h4>
+      <ul>
+        <li>Without Wi-Fi credentials CellDoc opens the hotspot <b>CellDoc-XXXX</b> (password <b>celldoc1</b>). Connect, the page opens automatically, otherwise go to <b>192.168.4.1</b>.</li>
+        <li>Under Settings → Wi-Fi choose your home network. CellDoc is then reachable at <b>celldoc.local</b> or its IP address.</li>
+        <li>Under Settings → Temperature sensors check that every sensor has the right role: warm one up and watch which value rises.</li>
+        <li>Calibrate once: compare voltage and current with a multimeter and enter the actual value.</li>
+      </ul>
+      <h4>Capacity test</h4>
+      <ul>
+        <li>Insert the cell at port A so it rests on sensor T1 (or tape the sensor to the cell with Kapton tape). Packs go to port B with XT60 and balance connector, place sensor T2 on them.</li>
+        <li>Tap <b>Live → Start</b>, choose the cell type (or "Unknown") and set the current. 0.2–0.5C is suggested.</li>
+        <li>Sequence: charge full → rest → discharge with internal resistance measurements → recover → charge again. Packs are not charged and must be connected full.</li>
+        <li>A 3000 mAh cell at 0.5 A takes about 13–15 hours for the whole sequence.</li>
+      </ul>
+      <h4>Manual charging and discharging</h4>
+      <p>Choose "Charge" or "Discharge" in the start dialog. Discharging runs at constant current down to the set end voltage. The same safety limits apply as in the test.</p>
+      <h4>Cell inventory and labels</h4>
+      <ul>
+        <li>Every capacity test creates a cell with a fixed number, e.g. <b>CD-0042</b>. The number stays with the cell forever, also after further tests.</li>
+        <li>Under <b>Inventory</b> you can search by number, name, storage location, note or pack. A number like "42" finds CD-0042 directly, Enter opens it.</li>
+        <li><b>Print label</b> creates an image with number, QR code, capacity, internal resistance, grade and date at 203 dpi, suitable for Supvan E16, Niimbot and similar printers. Insert it as an image in the printer's app.</li>
+        <li><b>Scan:</b> tap "Scan" in the inventory or start dialog and photograph the label, CellDoc then opens or selects the cell. With a QR scanner module on the device just hold the cell in front of it. What happens then is set under Settings → QR scanner.</li>
+        <li>The QR code opens the cell directly in CellDoc when the phone is on the same Wi-Fi. For the next test choose "From inventory", it is then compared automatically with the first test.</li>
+        <li>Grade: by default <b>A</b> from health score 85, <b>B</b> from 70, <b>C</b> from 50, below that <b>D</b>. Adjustable under Settings → Grading.</li>
+      </ul>
+      <h4>Self-discharge</h4>
+      <p>Cells with an internal short lose charge even without load. After a test with "Afterwards charge full", CellDoc remembers the voltage after one hour of rest. Store the cell for 7–14 days, then choose "Measure now" in the cell under Inventory. Below 3 mV per day is good, from 8 mV per day the cell doesn't belong in a pack.</p>
+      <h4>Cycle test</h4>
+      <p>Enter e.g. 3 under "Cycles" in the start dialog: CellDoc charges and discharges the cell three times in a row and shows the capacity of each cycle. If it stays stable, the measurement is reliable. If it rises from cycle to cycle, the cell had been stored for a long time. The last cycle counts for the health score.</p>
+      <h4>Voltage check when inserting</h4>
+      <p>One hour after every test CellDoc remembers the cell's rest voltage. When it is scanned and inserted again later, CellDoc compares immediately: "−19 mV in 6 days". A lot of loss in a short time points to high self-discharge. In the cell under Inventory this also works with "Check now".</p>
+      <h4>Comparing curves</h4>
+      <p>Under Results tap "Compare curves" and pick up to eight tests. The discharge curves are then overlaid, either over mAh or over percent of capacity.</p>
+      <h4>Building a pack</h4>
+      <p>Under Inventory → Build pack enter series and parallel, e.g. 10S4P. CellDoc picks cells with capacity as equal as possible and similar internal resistance and distributes them so every parallel group has the same capacity. Afterwards the cells can be marked as built in. The <b>build plan</b> shows which cell goes where, which way round it sits, where the nickel strips go at top and bottom and where the balance taps go. It can be printed or saved as an image.</p>
+      <h4>Several devices</h4>
+      <p>Under Settings → Several devices give every CellDoc its own name (e.g. celldoc and celldoc-mini) and enter the others as partners or find them with "Find devices". All devices on the Wi-Fi then share one inventory: a cell tested on the Mini also appears on the big CellDoc, and new numbers are never assigned twice. Tests from other devices appear in the cell's history with the device name.</p>
+      <h4>Home Assistant and backup</h4>
+      <p>Under Settings → MQTT enter the broker (e.g. Mosquitto in Home Assistant). CellDoc then appears automatically as a device with voltage, current, status, temperatures and last result, plus a stop button. Under Backup the inventory and results can be saved to a file and restored, or exported as CSV for Excel.</p>
+      <h4>Display and buttons on the device</h4>
+      <p>With the optional OLED, ◀ / ▶ page through the screens (live, temperatures, balancer, network with IP address). OK confirms a result or, on the live page, starts a default test on port A, long OK stops. On the Mini, ◀ / ▶ select the bay instead.</p>
+      <h4>CellDoc Mini</h4>
+      <ul>
+        <li>The Mini tests only <b>18650 Li-ion</b> (4.2 V), in 1, 2 or 4 bays at once. Every bay has its own charger, load and temperature sensor.</li>
+        <li>In the web interface tap a bay at the top under <b>Bays</b>. Live, start, stop and calibration then refer to this bay.</li>
+        <li>With OLED and buttons: <b>◀ / ▶</b> selects the bay, <b>OK</b> opens the detail view, in the detail view of a free bay <b>OK</b> starts a test with the default test values. <b>Long OK</b> stops, <b>OK</b> confirms a result or an error.</li>
+        <li>A bay won't start without a sensor on the cell.</li>
+      </ul>
+      <h4>CellDoc Nano</h4>
+      <ul>
+        <li>The Nano is the smallest variant: one bay for <b>18650 Li-ion</b>, ESP32-C3 SuperMini, fixed load resistor (3 Ω). The firmware switches it at 25 kHz (inaudible) and so regulates to constant current, up to 1.2 A. At 0.8 A the current stays constant down to the cut-off voltage.</li>
+        <li><b>BOOT button</b> on the board: short = start a test with the default test values (Settings → Default test values, 0.8 A and storage voltage afterwards out of the box) or confirm a result, long = stop.</li>
+        <li><b>Blue LED</b>: short flash every 3 s = ready, slow blinking = charging, on = discharging, double flash = done, fast blinking = error, two flashes per second = hotspot.</li>
+        <li><b>Buzzer at power-on</b>: 1 beep = Wi-Fi connected, 2 beeps = no Wi-Fi set up, hotspot open, 3 beeps = Wi-Fi not reachable, hotspot open.</li>
+        <li>A second DS18B20 on the load resistor is optional. If present, the Nano throttles and stops when it gets too hot.</li>
+      </ul>
+      <h4>Updating the firmware</h4>
+      <p>Under Settings → Firmware update tap "Check for update": CellDoc downloads the matching file directly from GitHub. Alternatively upload the file from the GitHub releases: <b>celldoc-firmware.bin</b> for CellDoc, <b>celldoc-mini1/2/4-firmware.bin</b> for the Mini with 1, 2 or 4 bays, <b>celldoc-nano-firmware.bin</b> for the Nano. Settings and results are kept.</p>
+    </section>
+
+    <section class="card" data-mid="m-einst">
+      <h3>Settings</h3>
+      <p>The settings are grouped into collapsible menus, only one is open at a time. Changes are saved immediately ("Saved ✓" appears). Wi-Fi, calibration and sensor assignment have their own button.</p>
+      <ul>
+        <li><b>Default test values:</b> prefill the start dialog and are used by the BOOT button, the QR scanner in automatic mode and Home Assistant.</li>
+        <li><b>Test profiles:</b> your own presets such as "Quick test", selectable at the top of the start dialog.</li>
+        <li><b>Charging &amp; safety:</b> charger module current, when a cell counts as full, longest charge time, overvoltage, overcurrent and maximum current without cell sensor.</li>
+        <li><b>Cell types, grading, pack building, labels, QR scanner:</b> own cell types, limits for grades and the retire hint, defaults for packs and labels, what happens when scanning.</li>
+        <li><b>Display &amp; sounds, night mode, live view, units:</b> buzzer per event, LED, OLED brightness, a quiet time window, which tiles appear on the live page, mAh/Ah, °C/°F, date format, CSV separator, language.</li>
+        <li><b>Network, Home Assistant, notifications:</b> fixed IP, fallback Wi-Fi, hotspot name and password, MQTT, messages to your phone via ntfy or Telegram.</li>
+        <li><b>System:</b> device name, time zone, restart and reset, statistics, hardware test, expert view, event log, backup and firmware update.</li>
+      </ul>
+    </section>
+    </div>
   </main>
 
   <!-- ===================== EINSTELLUNGEN ===================== -->
@@ -857,9 +1231,9 @@ tr:last-child td{border-bottom:0}
         <label class="switch"><span>Innenwiderstand in Ω statt mΩ</span><input type="checkbox" id="sOhm" data-s="riInOhm"></label>
       </div></details>
 
-      <details class="card acc" id="a-lang" hidden><summary><h2>Sprache</h2><span class="saved"></span></summary><div class="accb">
+      <details class="card acc" id="a-lang"><summary><h2>Sprache</h2><span class="saved"></span></summary><div class="accb">
         <div class="field"><label for="uLang">Sprache der Weboberfläche</label><select id="uLang" data-u="lang"><option value="de">Deutsch</option><option value="en">English</option></select></div>
-        <p class="note" id="langNote"></p>
+        <p class="note" id="langNote">Gilt für alle Browser. Meldungen, die direkt vom Gerät kommen (Fehlertexte, Ereignisprotokoll), sind teilweise noch deutsch.</p>
       </div></details>
 
       <div class="sgh">Verbindungen</div>
@@ -970,6 +1344,7 @@ tr:last-child td{border-bottom:0}
       <details class="card acc" id="a-exp"><summary><h2>Experten-Ansicht</h2><span class="saved"></span></summary><div class="accb">
         <label class="switch"><span>Ausführliches Protokoll (jede Ri-Messung, kurze Stromspitzen)</span><input type="checkbox" id="verbose" data-s="verbose"></label>
         <label class="switch"><span>Rohwerte in der Live-Ansicht zeigen</span><input type="checkbox" id="exRaw" data-u="expert.raw"></label>
+        <div class="field"><label for="logSec">Messintervall der Kurve (s)</label><input type="number" id="logSec" data-s="logSec" min="1" max="120"><span class="hint">Alle wie viele Sekunden ein Kurvenpunkt gespeichert wird. Kleiner = feinere Kurve, bei langen Tests wird der Abstand automatisch verdoppelt (max. 400 Punkte). Gilt ab dem nächsten Start.</span></div>
         <div class="lbl">Rohwerte jetzt</div>
         <div id="rawBox" class="num"></div>
       </div></details>
@@ -1031,13 +1406,16 @@ tr:last-child td{border-bottom:0}
 // ======================================================================
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const nf = (v, d = 0) => (v == null || isNaN(v)) ? "–" : Number(v).toLocaleString("de-AT", {minimumFractionDigits: d, maximumFractionDigits: d});
+// Sprache: Deutsch ist die Quelle, Englisch wird beim Anzeigen übersetzt (siehe EN_DICT)
+let EN_ON = (() => { try { return localStorage.getItem("celldoc-lang") === "en"; } catch (e) { return false; } })();
+const LOC = () => EN_ON ? "en-GB" : "de-AT";
+const nf = (v, d = 0) => (v == null || isNaN(v)) ? "–" : Number(v).toLocaleString(LOC(), {minimumFractionDigits: d, maximumFractionDigits: d});
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dur = s => { s = Math.max(0, Math.round(s || 0)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? `${h} h ${m} min` : `${m} min ${s % 60} s`; };
 const isoD = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-const fmtDate = t => { if (!t) return ""; const d = new Date(t * 1000); return UI?.units?.date === "iso" ? isoD(d) : d.toLocaleDateString("de-AT", {day: "2-digit", month: "2-digit", year: "2-digit"}); };
-const dateStr = t => { if (!t) return "ohne Datum"; const d = new Date(t * 1000); return UI?.units?.date === "iso" ? isoD(d) + " " + d.toLocaleTimeString("de-AT", {hour: "2-digit", minute: "2-digit"}) : d.toLocaleString("de-AT", {day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit"}); };
+const fmtDate = t => { if (!t) return ""; const d = new Date(t * 1000); return UI?.units?.date === "iso" ? isoD(d) : d.toLocaleDateString(LOC(), {day: "2-digit", month: "2-digit", year: "2-digit"}); };
+const dateStr = t => { if (!t) return "ohne Datum"; const d = new Date(t * 1000); return UI?.units?.date === "iso" ? isoD(d) + " " + d.toLocaleTimeString(LOC(), {hour: "2-digit", minute: "2-digit"}) : d.toLocaleString(LOC(), {day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit"}); };
 // Einheiten aus den Einstellungen (UI wird in loadSettings/init gefüllt)
 let UI = null;
 const capF = (v, d = 0) => v == null || isNaN(v) ? "–" : UI?.units?.cap === "Ah" ? nf(v / 1000, 2) + " Ah" : nf(v, d) + " mAh";
@@ -1217,7 +1595,7 @@ function renderLive() {
   if (s.eta && active(ph)) socL += `<br>${PH_NAME[ph] || "Phase"} noch ca. <b style="color:var(--fg)">${etaTxt(s.eta)}</b>`;
   if (s.etaTotal && active(ph) && TEST_STEPS.some(x => x[0] === ph)) {
     const end = new Date(Date.now() + s.etaTotal * 1000);
-    socL += ` · Test fertig in ca. <b style="color:var(--fg)">${etaTxt(s.etaTotal)}</b>, gegen ${end.toLocaleTimeString("de-AT", {hour: "2-digit", minute: "2-digit"})} Uhr`;
+    socL += ` · Test fertig in ca. <b style="color:var(--fg)">${etaTxt(s.etaTotal)}</b>, gegen ${end.toLocaleTimeString(LOC(), {hour: "2-digit", minute: "2-digit"})} Uhr`;
   }
   $("socLine").innerHTML = socL;
 
@@ -1849,6 +2227,7 @@ async function autoSave(el) {
     } else {
       setPath(UI, el.dataset.u, v);
       await saveUi();
+      if (el.dataset.u === "lang") { markSaved(el, true); return setTimeout(() => setLang(v), 400); }
     }
     markSaved(el, true);
   } catch (e) { markSaved(el, false, e.message); }
@@ -1884,7 +2263,7 @@ const TZS = [["CET-1CEST,M3.5.0,M10.5.0/3", "Mitteleuropa (Wien, Berlin, Zürich
   ["CST-8", "China"], ["JST-9", "Japan"], ["AEST-10AEDT,M10.1.0,M4.1.0/3", "Sydney"]];
 function devTime() {
   const t = RAW?.time;
-  $("dTime").textContent = t ? `Uhrzeit am Gerät: ${new Date(t * 1000).toLocaleString("de-AT")}` : "Das Gerät hat noch keine Uhrzeit (kein Internet). Sie wird beim Öffnen der Weboberfläche vom Browser übernommen.";
+  $("dTime").textContent = t ? `Uhrzeit am Gerät: ${new Date(t * 1000).toLocaleString(LOC())}` : "Das Gerät hat noch keine Uhrzeit (kein Internet). Sie wird beim Öffnen der Weboberfläche vom Browser übernommen.";
 }
 function nightNow() {
   const st = SETTINGS || {};
@@ -1910,7 +2289,8 @@ function defProfile() {
 function renderProfiles() {
   const l = UI.profiles || [];
   $("profList").innerHTML = `<div class="row"><div class="l"><b>Standard</b><small>${esc(profSummary(defProfile()))}</small></div><span class="tag">Test-Standardwerte</span></div>` +
-    l.map((p, k) => `<div class="row tap" data-prof="${k}" tabindex="0" role="button"><div class="l"><b>${esc(p.name)}</b><small>${esc(profSummary(p))}</small></div><span class="tag">ändern</span></div>`).join("");
+    l.map((p, k) => `<div class="row tap" data-prof="${k}" tabindex="0" role="button"><div class="l"><b>${esc(p.name)}</b><small>${esc(profSummary(p))}</small></div><span class="tag">ändern</span></div>`).join("")
+    + (l.length ? `<p class="note">Die BOOT-Taste startet immer mit den Test-Standardwerten. Mit „Für die Taste verwenden“ im Profil übernimmst du ein Profil dorthin.</p>` : "");
   $("profList").querySelectorAll("[data-prof]").forEach(r => r.addEventListener("click", () => editProfile(+r.dataset.prof)));
 }
 function editProfile(k) {
@@ -1926,7 +2306,7 @@ function editProfile(k) {
       <div class="field"><label for="pfAfter">Danach</label><select id="pfAfter"><option value="storage">Auf Lagerspannung</option><option value="full">Voll laden</option><option value="none">Nicht laden</option></select></div>
     </div>
     <label class="switch"><span>Vorher voll laden</span><input type="checkbox" id="pfPre" ${p.preCharge ? "checked" : ""}></label>
-    <div class="actions"><button class="btn primary" id="pfSave" type="button" style="flex:1">Speichern</button>${isNew ? "" : `<button class="btn danger" id="pfDel" type="button">Löschen</button>`}</div>`);
+    <div class="actions"><button class="btn primary" id="pfSave" type="button" style="flex:1">Speichern</button>${isNew ? "" : `<button class="btn" id="pfBoot" type="button">Für die Taste verwenden</button><button class="btn danger" id="pfDel" type="button">Löschen</button>`}</div>`);
   const q = x => el.querySelector(x);
   q("#pfAfter").value = p.after;
   q("#pfSave").addEventListener("click", async () => {
@@ -1934,6 +2314,10 @@ function editProfile(k) {
       restMin: clamp(+q("#pfRest").value || 0, 0, 240), after: q("#pfAfter").value, preCharge: q("#pfPre").checked};
     UI.profiles = [...(UI.profiles || [])]; if (isNew) UI.profiles.push(n); else UI.profiles[k] = n;
     try { await saveUi(); close(); renderProfiles(); toast("Profil gespeichert"); } catch (e) { toast(e.message); }
+  });
+  q("#pfBoot")?.addEventListener("click", async () => {
+    const b = {tI: p.currentA, tCut: p.cutoffV, tCyc: p.cycles, tPre: p.preCharge, restMin: p.restMin, tAfter: {none: 0, storage: 1, full: 2}[p.after] ?? 1};
+    try { if (!DEMO) await api("/api/settings", b); Object.assign(SETTINGS, b); close(); fillSettings(); renderProfiles(); toast(`„${p.name}“ gilt jetzt für die Taste und als Standard`); } catch (e) { toast(e.message); }
   });
   q("#pfDel")?.addEventListener("click", async () => { UI.profiles = UI.profiles.filter((_, i) => i !== k); try { await saveUi(); close(); renderProfiles(); toast("Profil gelöscht"); } catch (e) { toast(e.message); } });
 }
@@ -2057,8 +2441,8 @@ function parseLog(txt) {
     return {t: up ? 0 : +t, up: up ? +t.slice(1) : 0, slot: +sl || 0, lv: lv || "i", tx: rest.join(" ")};
   }).reverse();
 }
-const logDay = e => e.t ? new Date(e.t * 1000).toLocaleDateString("de-AT", {weekday: "short", day: "2-digit", month: "2-digit", year: "2-digit"}) : "";
-const logTime = e => e.t ? new Date(e.t * 1000).toLocaleTimeString("de-AT", {hour: "2-digit", minute: "2-digit", second: "2-digit"}) : `${nf(e.up)} s nach Start, Uhrzeit noch unbekannt`;
+const logDay = e => e.t ? new Date(e.t * 1000).toLocaleDateString(LOC(), {weekday: "short", day: "2-digit", month: "2-digit", year: "2-digit"}) : "";
+const logTime = e => e.t ? new Date(e.t * 1000).toLocaleTimeString(LOC(), {hour: "2-digit", minute: "2-digit", second: "2-digit"}) : `${nf(e.up)} s nach Start, Uhrzeit noch unbekannt`;
 function renderLog() {
   const list = LOG.filter(e => logFilter === "all" || e.lv !== "i");
   const multi = isMini() && !isNano() && (INFO?.slots || 1) > 1;
@@ -2095,7 +2479,7 @@ $("logF").addEventListener("click", e => { const b = e.target.closest("button");
 $("logMore").addEventListener("click", () => { logShow += 100; renderLog(); });
 $("logReload").addEventListener("click", loadLog);
 $("logDl").addEventListener("click", () => {
-  const txt = [...LOG].reverse().map(e => `${e.t ? new Date(e.t * 1000).toLocaleString("de-AT") : "+" + e.up + " s"}\t${e.slot ? "Schacht " + e.slot : "System"}\t${{i: "Info", w: "Warnung", e: "Fehler"}[e.lv] || e.lv}\t${e.tx}`).join("\r\n");
+  const txt = [...LOG].reverse().map(e => `${e.t ? new Date(e.t * 1000).toLocaleString(LOC()) : "+" + e.up + " s"}\t${e.slot ? "Schacht " + e.slot : "System"}\t${{i: "Info", w: "Warnung", e: "Fehler"}[e.lv] || e.lv}\t${e.tx}`).join("\r\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob(["\ufeff" + txt], {type: "text/plain;charset=utf-8"}));
   a.download = `celldoc-protokoll-${new Date().toISOString().slice(0, 10)}.txt`; document.body.appendChild(a); a.click(); a.remove();
@@ -2592,7 +2976,7 @@ function labelLines(c, o) {
   if (o.vals && l.cap) lines.push(`${capF(l.cap)} · ${l.ri ? riFmt(l.ri) : "–"}`);
   const g = [];
   if (o.grade && l.cap) g.push(`Note ${gradeOf(l.score)} · ${l.score} %`);
-  if (o.date && l.time) g.push(new Date(l.time * 1000).toLocaleDateString("de-AT", {day: "2-digit", month: "2-digit", year: "2-digit"}));
+  if (o.date && l.time) g.push(new Date(l.time * 1000).toLocaleDateString(LOC(), {day: "2-digit", month: "2-digit", year: "2-digit"}));
   if (g.length) lines.push(g.join(" · "));
   return lines;
 }
@@ -3265,6 +3649,80 @@ function openFromHash() {
 }
 
 // ======================================================================
+// Übersetzung ins Englische: Texte werden beim Anzeigen ersetzt.
+// Schlüssel = deutscher Text, Zahlen darin als # (werden beim Ersetzen eingesetzt).
+// ======================================================================
+const EN_DICT = {"Diagnose für Akkuzellen":"Diagnostics for battery cells","· Demo mit Beispielwerten":"· Demo with sample values","WLAN -# dBm":"Wi-Fi -# dBm","Test · Entladen":"Test · Discharging","Ladezustand":"State of charge","· aus gezählter Ladung":"· from counted charge","Entladen noch ca.":"Discharging, approx.","Entnommen":"Discharged","Energie":"Energy","Laden":"Charge","Ruhen":"Rest","Entladen":"Discharge","Erholen":"Recover","Zelle":"Cell","Drosseln ab # °C · Stopp # °C":"Throttle from # °C · stop # °C","Stoppen":"Stop","Schacht #":"Bay #","Entladen · # %":"Discharging · # %","Balancer · Einzelzellen":"Balancer · single cells","Last per PWM (# Ω)":"Load via PWM (# Ω)","Letztes Ergebnis":"Last result","Akku Taschenlampe":"Flashlight battery","Lebenszahl %":"Health score %","Wie neu.":"Like new.","Kapazität # / # mAh (# %)":"Capacity # / # mAh (# %)","Innenwiderstand # mΩ / neu # mΩ":"Internal resistance # mΩ / new # mΩ","Kapazität":"Capacity","Ø Spannung":"Ø voltage","Ri bei # %":"Ri at # %","Entladestrom":"Discharge current","Ladezeit danach":"Charge time afterwards","Coulomb-Wirkungsgrad":"Coulomb efficiency","Alle Details":"All details","Verlauf":"History","Spannung über entnommener Ladung":"Voltage over discharged charge","Entladeschluss # V":"Cut-off # V","Geprüfte Akkus":"Tested batteries","Kurven vergleichen":"Compare curves","Bis zu # Ergebnisse antippen":"Tap up to # results","Vergleichen":"Compare","Lädt …":"Loading …","Zellenbestand":"Cell inventory","Scannen":"Scan","Neueste zuerst":"Newest first","Nummer aufsteigend":"Number ascending","Hersteller":"Manufacturer","Lagerort":"Location","Lebenszahl":"Health score","Innenwiderstand":"Internal resistance","Zuletzt geprüft":"Last tested","Zuletzt gelöscht":"Last deleted","Neue Zelle":"New cell","Pack zusammenstellen":"Build pack","Etiketten für Auswahl":"Labels for selection","Änderungen werden sofort gespeichert. Ausnahmen mit eigenem Knopf: WLAN, Kalibrierung und Fühlerzuordnung.":"Changes are saved immediately. Exceptions with their own button: Wi-Fi, calibration and sensor assignment.","Messung & Test":"Measurement & test","Test-Standardwerte":"Default test values","Damit ist der Start-Dialog vorbelegt. Die BOOT-Taste, der QR-Scanner im Automatik-Modus und Home Assistant starten genau so.":"These prefill the start dialog. The BOOT button, the QR scanner in automatic mode and Home Assistant start exactly like this.","Entladestrom (A)":"Discharge current (A)","Abschaltspannung (V)":"Cut-off voltage (V)","Zyklen":"Cycles","Ruhezeit vor dem Entladen (min)":"Rest before discharging (min)","Erholen nach dem Entladen (min)":"Recovery after discharging (min)","Danach":"Afterwards","Auf Lagerspannung":"To storage voltage","Voll laden":"Charge full","Nicht laden":"Don't charge","Lagerladung (% der Kapazität)":"Storage charge (% of capacity)","# % ≈ #–# V, gut für lange Lagerung":"# % ≈ #–# V, good for long storage","Vorher voll laden":"Charge full first","Testprofile":"Test profiles","Eigene Vorlagen, im Start-Dialog oben auswählbar. „Standard“ sind die Test-Standardwerte.":"Your own presets, selectable at the top of the start dialog. \"Standard\" are the default test values.","Neues Profil":"New profile","Vorschläge hinzufügen":"Add suggestions","Laden & Sicherheit":"Charging & safety","Ladestrom des Lademoduls (A)":"Charger module current (A)","TP# mit # kΩ = # A. Für Restzeit und Überstromgrenze (×#).":"TP# with # kΩ = # A. Used for remaining time and the overcurrent limit (×#).","Längste Ladezeit (h, # = aus)":"Longest charge time (h, # = off)","Voll, wenn Ladestrom unter (A)":"Full when charge current below (A)","… und Zelle mindestens (V)":"… and cell at least (V)","Überspannung beim Laden (V)":"Overvoltage while charging (V)","Überstrom beim Entladen (× Sollstrom)":"Overcurrent while discharging (× target current)","Höchststrom ohne Zellfühler (A)":"Maximum current without cell sensor (A)","Gleichzeitig laden":"Charge simultaneously","Alle Schächte":"All bays","höchstens # Schacht":"at most # bay","höchstens # Schächte":"at most # bays","Jeder Lader zieht # A. Mini # am #-V/#-A-Regler: #, direkt an USB-C mit # V/# A: #.":"Every charger draws # A. Mini # on the #-V/#-A regulator: #, directly on USB-C with # V/# A: #.","Der Lader selbst hört bei etwa einem Zehntel seines Stroms auf. Die Werte oben bestimmen, wann CellDoc das als „voll“ wertet.":"The charger itself stops at about a tenth of its current. The values above decide when CellDoc counts that as \"full\".","Temperaturgrenzen":"Temperature limits","Ab „Drosseln“ wird der Strom schrittweise bis auf # % reduziert, bei „Stopp“ schaltet CellDoc ab. Immer in °C.":"From \"throttle\" the current is reduced step by step down to # %, at \"stop\" CellDoc switches off. Always in °C.","Laden: drosseln ab °C":"Charging: throttle from °C","Laden: Stopp ab °C":"Charging: stop from °C","Entladen: drosseln ab °C":"Discharging: throttle from °C","Entladen: Stopp ab °C":"Discharging: stop from °C","Kühlkörper: drosseln ab °C":"Heatsink: throttle from °C","Kühlkörper: Stopp ab °C (max. #)":"Heatsink: stop from °C (max. #)","Temperaturfühler":"Temperature sensors","Fühler erwärmen (z. B. mit den Fingern), um zu sehen, welcher welcher ist.":"Warm up a sensor (e.g. with your fingers) to see which one is which.","Zuordnung speichern":"Save assignment","Neu suchen":"Search again","Kalibrierung":"Calibration","Mit dem Multimeter am Akku messen und den Istwert eintragen. Für den Strom eine Entladung von Hand mit mindestens # A laufen lassen.":"Measure at the battery with a multimeter and enter the actual value. For current, run a manual discharge with at least # A.","Was":"What","Spannung":"Voltage","Strom-Nullpunkt (ohne Last)":"Current zero point (no load)","Leitungswiderstand (Zellspannung unter Strom)":"Lead resistance (cell voltage under current)","Balancer-Abgriff":"Balancer tap","Alles zurücksetzen":"Reset everything","Anschluss":"Port","Abgriff (# = erste Zelle)":"Tap (# = first cell)","Istwert (V bzw. A)":"Actual value (V or A)","Abgleichen":"Calibrate","Zellen & Auswertung":"Cells & evaluation","Zelltypen":"Cell types","Eigene Zelltypen erscheinen beim Anlegen und im Start-Dialog. Mitgelieferte Typen lassen sich ausblenden.":"Your own cell types appear when creating cells and in the start dialog. Built-in types can be hidden.","Eigenen Zelltyp anlegen":"Create own cell type","Bewertung":"Grading","Ab welcher Lebenszahl eine Zelle welche Note bekommt und wann CellDoc vorschlägt, sie auszumustern.":"From which health score a cell gets which grade, and when CellDoc suggests retiring it.","Note A ab":"Grade A from","Note B ab":"Grade B from","Note C ab":"Grade C from","Darunter: D":"Below: D","Ausmustern vorschlagen unter":"Suggest retiring below","Lebenszahl, # = nie":"Health score, # = never","… oder Innenwiderstand über (mΩ)":"… or internal resistance above (mΩ)","# = egal":"# = don't care","Pack-Bau-Vorgaben":"Pack building","Vorbelegung für „Pack zusammenstellen“ im Bestand und Warnung, wenn die Zellen zu unterschiedlich sind.":"Defaults for \"Build pack\" in the inventory, and a warning when the cells differ too much.","Zellen in Serie (S)":"Cells in series (S)","Mindest-Lebenszahl":"Minimum health score","Gruppen höchstens auseinander (%)":"Groups at most apart (%)","Innenwiderstand höchstens auseinander (%)":"Internal resistance at most apart (%)","Zellen mit auffälliger Selbstentladung weglassen":"Leave out cells with conspicuous self-discharge","Etiketten & Nummern":"Labels & numbers","Kürzel für Zellnummern":"Prefix for cell numbers","Neue Zellen heißen dann z. B.":"New cells are then called e.g.",". Bereits vergebene Nummern bleiben.":". Numbers already assigned stay.","Etikettengröße":"Label size","QR-Code enthält":"QR code contains","Link zur Zelle":"Link to the cell","Nur die Nummer":"Number only","QR-Code":"QR code","Kapazität und Innenwiderstand":"Capacity and internal resistance","Note und Lebenszahl":"Grade and health score","Datum des Tests":"Test date","QR-Scanner":"QR scanner","Was passiert, wenn der Scanner am Gerät ein CellDoc-Etikett liest.":"What happens when the scanner on the device reads a CellDoc label.","Beim Scannen":"When scanning","Nur die Zelle in der Weboberfläche öffnen":"Only open the cell in the web interface","Zelle dem Schacht zuordnen (Start per Taste oder Web)":"Assign the cell to the bay (start by button or web)","Zuordnen und Test mit Standardwerten starten":"Assign and start a test with default values","„Starten“ beginnt, sobald die Zelle steckt. Gilt auch, wenn erst gescannt und dann eingesetzt wird.":"\"Start\" begins as soon as the cell is inserted. Also applies if you scan first and insert afterwards.","Ton beim Scannen":"Beep when scanning","Anzeige & Bedienung":"Display & controls","Anzeige & Töne":"Display & sounds","Summer":"Buzzer","(Hauptschalter)":"(main switch)","Tastendruck und Start":"Key press and start","Fertig (Test, Laden, Entladen)":"Done (test, charge, discharge)","Fehler und Abbruch":"Errors and aborts","Beim Einschalten: WLAN-Status":"At power-on: Wi-Fi status","Beim Einschalten:":"At power-on:","# Ton":"# beep","= WLAN verbunden,":"= Wi-Fi connected,","# Töne":"# beeps","= kein WLAN eingerichtet, Hotspot offen,":"= no Wi-Fi set up, hotspot open,","= WLAN nicht erreichbar, Hotspot offen.":"= Wi-Fi not reachable, hotspot open.","Status-LED":"Status LED","Display (OLED, falls angeschlossen)":"Display (OLED, if connected)","Helligkeit":"Brightness","Dunkel nach (min ohne Bedienung, # = nie)":"Dark after (min without use, # = never)","Summer testen":"Test buzzer","Nachtmodus":"Night mode","Nachtmodus verwenden":"Use night mode","Von":"From","Bis":"To","Summer stumm (Fehler piepen trotzdem)":"Buzzer silent (errors still beep)","LED aus (Fehler blinken trotzdem)":"LED off (errors still blink)","Display dunkel":"Display dark","Live-Ansicht":"Live view","Was auf der Live-Seite angezeigt wird. Gilt für alle Browser.":"What is shown on the live page. Applies to all browsers.","Ladung (mAh)":"Charge (mAh)","Energie (Wh)":"Energy (Wh)","Ablauf der Phasen":"Phase progress","Temperaturen":"Temperatures","Restzeit und Ladezustand":"Remaining time and state of charge","Verlaufsdiagramm":"History chart","Einheiten & Formate":"Units & formats","Temperatur":"Temperature","Datum":"Date","CSV-Trennzeichen":"CSV separator","Semikolon (Excel deutsch)":"Semicolon (Excel, German)","Komma":"Comma","Tabulator":"Tab","Innenwiderstand in Ω statt mΩ":"Internal resistance in Ω instead of mΩ","Sprache":"Language","Sprache der Weboberfläche":"Language of the web interface","Gilt für alle Browser. Meldungen, die direkt vom Gerät kommen (Fehlertexte, Ereignisprotokoll), sind teilweise noch deutsch.":"Applies to all browsers. Messages that come directly from the device (error texts, event log) are partly still in German.","Verbindungen":"Connections","WLAN":"Wi-Fi","Netzwerk":"Network","Suchen":"Search","Passwort":"Password","Speichern und neu starten":"Save and restart","WLAN löschen":"Delete Wi-Fi","Netzwerk erweitert":"Advanced network","Gilt nach einem Neustart. Feste Adresse nur, wenn du weißt, welche in deinem Netz frei ist.":"Applies after a restart. Only use a fixed address if you know which one is free in your network.","Feste IP-Adresse (leer = automatisch)":"Fixed IP address (empty = automatic)","IP-Adresse":"IP address","Router (Gateway)":"Router (gateway)","Subnetzmaske":"Subnet mask","Ausweich-WLAN":"Fallback Wi-Fi","Passwort (mind. # Zeichen)":"Password (min. # characters)","Jetzt neu starten":"Restart now","CellDoc meldet sich mit allen Messwerten automatisch in Home Assistant an (MQTT-Integration, z. B. mit dem Mosquitto-Add-on). Funktioniert nur im Heim-WLAN, nicht im Hotspot.":"CellDoc registers automatically in Home Assistant with all readings (MQTT integration, e.g. with the Mosquitto add-on). Only works on the home Wi-Fi, not in hotspot mode.","MQTT verwenden":"Use MQTT","Benutzer":"User","Thema":"Topic","Benachrichtigungen":"Notifications","Nachricht aufs Handy, kostenlos über":"Message to your phone, free via","(App installieren, Thema abonnieren) oder einen":"(install the app, subscribe to the topic) or a","-Bot. Braucht Internet über das WLAN.":" bot. Needs internet via Wi-Fi.","ntfy-Thema oder Adresse":"ntfy topic or address","Ein schwer zu erratender Name, denn jeder mit dem Namen kann mitlesen.":"A name that is hard to guess, because anyone with the name can read along.","Telegram-Bot-Token":"Telegram bot token","Telegram-Chat-ID":"Telegram chat ID","Test fertig":"Test finished","Abbruch oder Fehler":"Abort or error","Laden fertig (von Hand gestartet)":"Charging finished (started manually)","Testnachricht senden":"Send test message","Mehrere Geräte":"Several devices","Mehrere CellDocs im selben WLAN teilen sich Zellenbestand und Nummern. Jedes Gerät hat eine vollständige Kopie, Änderungen gleichen sie alle paar Minuten und nach jeder Änderung ab.":"Several CellDocs on the same Wi-Fi share cell inventory and numbers. Every device has a complete copy, they sync changes every few minutes and after every change.","Partnergeräte":"Partner devices","Namen oder IP-Adressen, mit Komma getrennt":"Names or IP addresses, separated by commas","Geräte suchen":"Find devices","Jetzt abgleichen":"Sync now","Gerät & System":"Device & system","Name dieses Geräts":"Name of this device","Zeitzone":"Time zone","Zeitserver":"Time server","Neu starten":"Restart","Zurücksetzen":"Reset","Einstellungen zurücksetzen:":"Reset settings:","alles auf Werkszustand, WLAN, Kalibrierung, Fühler, Bestand und Ergebnisse bleiben.":"everything to factory state; Wi-Fi, calibration, sensors, inventory and results are kept.","Alles löschen:":"Delete everything:","CellDoc wie neu, auch Bestand, Ergebnisse und WLAN. Vorher eine Sicherung herunterladen.":"CellDoc like new, including inventory, results and Wi-Fi. Download a backup first.","Einstellungen zurücksetzen":"Reset settings","Alles löschen":"Delete everything","Statistik":"Statistics","Zähler zurücksetzen":"Reset counters","Hardware-Test":"Hardware test","Schaltet Teile einzeln, um Verdrahtung und Lötstellen zu prüfen. Nur wenn kein Test läuft. Lader und Last gehen nach # s automatisch aus, die Schutzgrenzen gelten weiter.":"Switches parts individually to check wiring and solder joints. Only when no test is running. Charger and load switch off automatically after # s, the safety limits still apply.","Schacht":"Bay","Laststrom (A)":"Load current (A)","Lader ein":"Charger on","Last ein":"Load on","Alles aus":"All off","LED an":"LED on","LED aus":"LED off","Experten-Ansicht":"Expert view","Ausführliches Protokoll (jede Ri-Messung, kurze Stromspitzen)":"Detailed log (every Ri measurement, short current spikes)","Rohwerte in der Live-Ansicht zeigen":"Show raw values in the live view","Rohwerte jetzt":"Raw values now","Ereignisprotokoll":"Event log","Was wann und warum passiert ist: Start und Ende jeder Phase mit Grund, Abbrüche mit Messwerten, Drosselung, Neustarts, WLAN und Updates. Neueste Einträge oben.":"What happened when and why: start and end of every phase with reason, aborts with readings, throttling, restarts, Wi-Fi and updates. Newest entries at the top.","Alles":"Everything","Warnungen und Fehler":"Warnings and errors","Ältere anzeigen":"Show older","Aktualisieren":"Refresh","Als Textdatei":"As text file","Löschen":"Delete","Diagnose":"Diagnostics","Datensicherung":"Backup","Sichert Zellenbestand, Ergebnisse und Einstellungen in eine Textdatei. Vor einem Neuflashen mit „Gerät löschen“ unbedingt sichern. Die Passwörter sind nicht enthalten.":"Saves cell inventory, results and settings to a text file. Be sure to back up before reflashing with \"Erase device\". Passwords are not included.","Entladekurven mitsichern (größer)":"Include discharge curves (larger)","Sicherung herunterladen":"Download backup","Sicherung wiederherstellen":"Restore backup","Einspielen":"Restore","Für Excel":"For Excel","Zellen als CSV":"Cells as CSV","Ergebnisse als CSV":"Results as CSV","Neu anfangen":"Start over","Löscht alle Zellen, Testergebnisse und Kurven. Die Nummerierung beginnt wieder bei #. Einstellungen, WLAN und Kalibrierung bleiben erhalten.":"Deletes all cells, test results and curves. Numbering starts again at #. Settings, Wi-Fi and calibration are kept.","Bestand komplett löschen":"Delete entire inventory","Firmware-Update":"Firmware update","Direkt von GitHub":"Directly from GitHub","Lädt die neueste Firmware für dieses Gerät direkt von GitHub. CellDoc braucht dafür Internet über das WLAN.":"Downloads the latest firmware for this device directly from GitHub. CellDoc needs internet via Wi-Fi for this.","Nach Update suchen":"Check for update","Installieren":"Install","Aus Datei":"From file","Datei":"Choose the file","aus den GitHub-Releases wählen. Während eines Tests ist kein Update möglich.":"from the GitHub releases. No update is possible during a test.","Hochladen":"Upload","Bestand":"Inventory","Ergebnisse":"Results","Handbuch":"Manual","Einstellungen":"Settings","Lebenszahl # Prozent":"Health score # percent","Spannungsverlauf":"Voltage history","Nummer, Name, Ort …":"Number, name, location …","Zellen durchsuchen":"Search cells","Sortierung":"Sort order","Gefundene Netzwerke":"Networks found","wie Router":"same as router","z. B. celldoc-mario-#f#k oder https://ntfy.example.com/thema":"e.g. celldoc-mario-#f#k or https://ntfy.example.com/topic","Firmware-Datei":"Firmware file","Bereiche":"Sections","# Zellen":"# cells","Alle":"All","Im Bestand":"In stock","Note A–B":"Grade A–B","Prüfen":"Check","Verbaut":"Built in","Ausgemustert":"Retired","Nenn # mAh":"Rated # mAh","Zelle #":"Cell #","Note C, Lebenszahl # %":"Grade C, health score # %","Note B, Lebenszahl # %":"Grade B, health score # %","Note A, Lebenszahl # %":"Grade A, health score # %","Note D, Lebenszahl # %":"Grade D, health score # %","noch nicht geprüft":"not tested yet","# Ergebnisse":"# results","geschätzt":"estimated","Höchstens # A":"At most # A","# A bis # V · # Zyklus · vorher laden · Ruhe # min · danach Lagerspannung":"# A to # V · # cycle · charge first · rest # min · then storage voltage","Lastwiderstand: drosseln ab °C":"Load resistor: throttle from °C","Lastwiderstand: Stopp ab °C (max. #)":"Load resistor: stop from °C (max. #)","Angezeigt: # V":"Shown: # V","Mitgeliefert":"Built-in","· verbunden":"· connected","Messwerte unter celldoc/celldoc_xxxxxx/state, Geräte erscheinen in Home Assistant unter Einstellungen → Geräte → MQTT.":"Readings under celldoc/celldoc_xxxxxx/state, devices appear in Home Assistant under Settings → Devices → MQTT.","Mitteleuropa (Wien, Berlin, Zürich)":"Central Europe (Vienna, Berlin, Zurich)","Lissabon":"Lisbon","Osteuropa (Athen, Helsinki)":"Eastern Europe (Athens, Helsinki)","Moskau, Istanbul":"Moscow, Istanbul","Indien":"India","Uhrzeit am Gerät: #, #:#:#":"Time on the device: #, #:#:#","# Einträge":"# entries","gespeichert, leer lassen = unverändert":"saved, leave empty = unchanged","Lastwiderstand":"Load resistor","nicht verwendet":"not used","Strommesser (INA#x#)":"Current sensor (INA#x#)","nicht angeschlossen":"not connected","Freier Speicher (RAM)":"Free memory (RAM)","Ergebnisspeicher":"Result storage","# von # kB":"# of # kB","Rolle":"Role","· # von # verbunden":"· # of # connected","abgeglichen vor # min # s, # Zellen übernommen":"synced # min # s ago, # cells received","verbunden":"connected","Abgeschlossene Tests":"Completed tests","Betriebsstunden":"Operating hours","Geladen":"Charged","Geladene Energie":"Charged energy","Entladene Energie":"Discharged energy","Zählt seit":"Counting since","Zellen im Bestand":"Cells in stock","Davon geprüft":"Of which tested","Ø Kapazität geprüfter Zellen":"Ø capacity of tested cells","Aktiv":"Active","nichts":"nothing","Abbrechen":"Cancel","Ruhezeit (min)":"Rest time (min)","Speichern":"Save","z. B. Schnelltest":"e.g. Quick test","Eigener Zelltyp":"Own cell type","Chemie":"Chemistry","Nennkapazität (mAh)":"Rated capacity (mAh)","Innenwiderstand neu (mΩ, DC)":"Internal resistance new (mΩ, DC)","z. B. RH Power YG#":"e.g. RH Power YG#","Starten":"Start","Kapazitätstest":"Capacity test","CellDoc Nano · # Li-Ion · bis # A, empfohlen # A (bleibt bis zur Abschaltung konstant)":"CellDoc Nano · # Li-ion · up to # A, recommended # A (stays constant until cut-off)","A · Einzelzelle":"A · single cell","Profil":"Profile","Aus dem Bestand":"From inventory","Zelltyp":"Cell type","Eigene Angaben":"Own values","Unbekannt":"Unknown","Zellen in Serie":"Cells in series","Optional, z. B. „Laptop Dell Zelle #“. Leer gelassen heißt die Zelle wie ihre Nummer.":"Optional, e.g. \"Laptop Dell cell #\". If left empty, the cell is named after its number.","Entladeschluss (V pro Zelle)":"Cut-off (V per cell)","Mehrmals laden und entladen, zeigt ob die Kapazität stabil ist":"Charge and discharge several times, shows whether the capacity is stable","Auf Lagerspannung (≈ # %)":"To storage voltage (≈ # %)","Betriebsart":"Mode","Nummer, Name oder Ort":"Number, name or location","Zelle suchen":"Search cell","Kein Temperaturfühler":"No temperature sensor","An der Zelle ist kein Temperaturfühler angeschlossen. Ohne Fühler kann CellDoc nicht erkennen, wenn die Zelle heiß wird:":"There is no temperature sensor on the cell. Without a sensor CellDoc cannot tell when the cell gets hot:","keine Drosselung und keine Abschaltung bei Übertemperatur.":"no throttling and no shutdown on overtemperature.","Weiter überwacht werden Spannung, Strom, Überstrom und die Abschaltspannung, dazu der Fühler am Lastwiderstand, falls vorhanden. Der Entladestrom wird auf höchstens # A begrenzt.":"Voltage, current, overcurrent and the cut-off voltage are still monitored, plus the sensor on the load resistor if present. The discharge current is limited to at most # A.","Li-Ion (NMC/NCA): # V nominal, voll # V. Angeschlossen: # V. Dauer ca. #–# h.":"Li-Ion (NMC/NCA): # V nominal, full # V. Connected: # V. Duration approx. #–# h.","Li-Ion (NMC/NCA): # V nominal, voll # V. Angeschlossen: # V.":"Li-Ion (NMC/NCA): # V nominal, full # V. Connected: # V.","Nur unter Aufsicht und auf nicht brennbarer Unterlage. Wird die Zelle spürbar warm, sofort stoppen.":"Only under supervision and on a non-flammable surface. If the cell gets noticeably warm, stop immediately.","Trotzdem starten":"Start anyway","Neue Zelle anlegen":"Create new cell","Bekommt sofort die nächste freie Nummer (CD-#), damit du sie schon vor dem Test beschriften kannst.":"Gets the next free number right away (CD-#), so you can label it before the test.","Anzahl":"Quantity","Mehrere gleiche Zellen auf einmal":"Several identical cells at once","Notiz":"Note","Mehr Angaben":"More details","freiwillig":"optional","Modell / Aufdruck":"Model / print","Bauform":"Format","Herstelldatum":"Manufacturing date","Herkunft":"Origin","Nennspannung (V)":"Nominal voltage (V)","Max. Entladestrom (A)":"Max. discharge current (A)","Gewicht (g)":"Weight (g)","Spannung beim Eingang (V)":"Voltage on arrival (V)","Was du nicht weißt, einfach leer lassen.":"Just leave empty what you don't know.","Anlegen":"Create","z. B. Laptop Dell Zelle #":"e.g. Laptop Dell cell #","z. B. Kiste #":"e.g. Box #","z. B. Samsung, Sony, LG":"e.g. Samsung, Sony, LG","z. B. INR#-#Q":"e.g. INR#-#Q","z. B. Laptop-Akku Dell, neu gekauft":"e.g. Dell laptop battery, bought new","Schließen":"Close","Angaben":"Details","Defekt":"Defective","Entsorgt":"Disposed","Spannungscheck":"Voltage check","Letzte Ruhespannung # V am #, #:# (nach dem Test). Steckt die Zelle wieder im Gerät, zeigt der Vergleich, wie viel Spannung sie in der Zwischenzeit verloren hat. Nach dem Scannen prüft CellDoc das automatisch.":"Last rest voltage # V on #, #:# (after the test). When the cell is back in the device, the comparison shows how much voltage it has lost in the meantime. After scanning, CellDoc checks this automatically.","Jetzt prüfen":"Check now","Selbstentladung":"Self-discharge","# mV pro Tag · gut":"# mV per day · good","# V → # V in # Tagen":"# V → # V in # days","Unter # mV/Tag ist gut, ab # mV/Tag hat die Zelle wahrscheinlich einen inneren Kurzschluss und gehört nicht in ein Pack.":"Below # mV/day is good, from # mV/day the cell probably has an internal short and doesn't belong in a pack.","# mAh · # mΩ · auf celldoc":"# mAh · # mΩ · on celldoc","Etikett drucken":"Print label","Test starten":"Start test","Aus dem Bestand löschen":"Delete from inventory","z. B. E-Bike #S#P":"e.g. e-bike #S#P","z. B. aus Laptop Dell, leicht verbeult":"e.g. from a Dell laptop, slightly dented","# mV pro Tag · schlecht":"# mV per day · bad","Zeigt, ob die Zelle von selbst Ladung verliert. Voll laden, eine Stunde ruhen lassen, Startspannung messen, #–# Tage lagern, nachmessen. Nach einem Kapazitätstest mit „Danach voll laden“ misst CellDoc die Startspannung nach einer Stunde automatisch.":"Shows whether the cell loses charge by itself. Charge full, let it rest for an hour, measure the start voltage, store for #–# days, measure again. After a capacity test with \"Afterwards charge full\" CellDoc measures the start voltage automatically after one hour.","Startspannung messen":"Measure start voltage","# mAh · # mΩ · auf celldoc-mini":"# mAh · # mΩ · on celldoc-mini","-# mV in # Tagen · # mV/Tag":"-# mV in # days · # mV/day","Geprüft am #, #:#: # V → # V":"Checked on #, #:#: # V → # V","Letzte Ruhespannung # V am #, #:# (beim Prüfen). Steckt die Zelle wieder im Gerät, zeigt der Vergleich, wie viel Spannung sie in der Zwischenzeit verloren hat. Nach dem Scannen prüft CellDoc das automatisch.":"Last rest voltage # V on #, #:# (when checking). When the cell is back in the device, the comparison shows how much voltage it has lost in the meantime. After scanning, CellDoc checks this automatically.","Läuft seit # Tagen":"Running for # days","Start # V am #, #:#. Für ein belastbares Ergebnis mindestens # Tage warten.":"Start # V on #, #:#. Wait at least # days for a reliable result.","Jetzt nachmessen":"Measure again now","Noch nicht geprüft. Starte einen Kapazitätstest und wähle diese Zelle aus dem Bestand.":"Not tested yet. Start a capacity test and choose this cell from the inventory.","Noch keine Ruhespannung gespeichert. Steckt die Zelle wieder im Gerät, zeigt der Vergleich, wie viel Spannung sie in der Zwischenzeit verloren hat. Nach dem Scannen prüft CellDoc das automatisch.":"No rest voltage saved yet. When the cell is back in the device, the comparison shows how much voltage it has lost in the meantime. After scanning, CellDoc checks this automatically.","Keine gespeicherten Tests.":"No saved tests.","Sucht aus dem Bestand Zellen mit möglichst gleicher Kapazität und ähnlichem Innenwiderstand und verteilt sie so auf die Parallelgruppen, dass jede Gruppe gleich viel Kapazität hat.":"Picks cells from the inventory with capacity as equal as possible and similar internal resistance, and distributes them over the parallel groups so every group has the same capacity.","Nur Zellen mit …":"Only cells with …","Nur Zellen mit gemessener Selbstentladung":"Only cells with measured self-discharge","Außerhalb der Pack-Bau-Vorgaben":"Outside the pack building limits","Gruppen weichen um # % ab (Vorgabe # %). Innenwiderstand streut um # % (Vorgabe # %).":"Groups differ by # % (limit # %). Internal resistance spreads by # % (limit # %).","Pack · # Zellen":"Pack · # cells","Energie ca.":"Energy approx.","Gruppen weichen um # mAh ab (# %). Zellen #–# mAh, Innenwiderstand # mΩ–# mΩ. Passende Zellen im Bestand: #.":"Groups differ by # mAh (# %). Cells #–# mAh, internal resistance # mΩ–# mΩ. Matching cells in stock: #.","Gruppe":"Group","Zellen":"Cells","Summe":"Sum","Name des Packs":"Pack name","Als verbaut markieren":"Mark as built in","Bauplan":"Build plan","Liste (CSV)":"List (CSV)","Etiketten":"Labels","z. B. Kiste # oder #Q":"e.g. Box # or #Q","Etiketten (#)":"Labels (#)","Fertig":"Done","# Bilder speichern":"Save # images","Liste für die App (CSV)":"List for the app (CSV)","Supvan E# und andere Bluetooth-Drucker: Bild speichern, in der Katasymbol-App ein neues Etikett in derselben Größe anlegen,":"Supvan E# and other Bluetooth printers: save the image, create a new label of the same size in the Katasymbol app, insert it as","Bild":"image","einfügen und auf volle Größe ziehen. Die Bilder haben # dpi und sind reines Schwarz-Weiß. Für viele Etiketten auf einmal kann die App auch eine Tabelle importieren.":"and stretch it to full size. The images are # dpi and pure black and white. For many labels at once the app can also import a table.","Etikett CD-#":"Label CD-#","#, #:# · Anschluss A · Li-Ion (NMC/NCA)":"#, #:# · Port A · Li-Ion (NMC/NCA)","Energie-Wirkungsgrad":"Energy efficiency","Max. Temperatur":"Max. temperature","Erwärmung":"Heating","Ruhespannung voll":"Rest voltage when full","Erholt nach Entladung":"Recovered after discharge","Dauer gesamt":"Total duration","Entladekurve":"Discharge curve","Entladeschluss":"Cut-off","Innenwiderstand über der Entladung":"Internal resistance during discharge","Zur Zelle CD-#":"To cell CD-#","Etikett":"Label","Ergebnis löschen":"Delete result","Gut gebraucht.":"Good used.","Seit dem ersten Test: -# % Kapazität (# → # mAh)":"Since the first test: -# % capacity (# → # mAh)","Entladekurven je Zyklus":"Discharge curves per cycle","Zyklus #":"Cycle #","Zyklus":"Cycle","Wirkungsgrad":"Efficiency","Streuung # %. Für die Lebenszahl zählt der letzte Zyklus.":"Spread # %. The last cycle counts for the health score.","Kapazität je Zyklus":"Capacity per cycle","#, #:# · Anschluss B · lipo · #S":"#, #:# · Port B · lipo · #S","geschätzt %":"estimated %","Sehr gut.":"Very good.","Innenwiderstand # mΩ":"Internal resistance # mΩ","Innenwiderstand je Zelle":"Internal resistance per cell","Die Zelle mit dem höchsten Wert begrenzt das Pack.":"The cell with the highest value limits the pack.","Lebenszahl #–# Prozent":"Health score #–# percent","Nur für kleine Lasten.":"Small loads only.","Kapazität # / # mAh (# %) · Vergleichswert geschätzt":"Capacity # / # mAh (# %) · reference estimated","Während des Tests wurde wegen Wärme gedrosselt.":"Throttled because of heat during the test.","% der Kapazität":"% of capacity","Verschiedene Entladeströme verschieben die Kurven: höherer Strom = tiefere Spannung.":"Different discharge currents shift the curves: higher current = lower voltage.","Darstellung":"Display","Entladekurven im Vergleich":"Discharge curves compared","CD-# · Samsung INR#-#Q · Anschluss A":"CD-# · Samsung INR#-#Q · Port A","Zelle (A)":"Cell (A)","Kühlkörper":"Heatsink","Anschlüsse":"Ports","Anschluss A · Zelle · Last":"Port A · cell · load","Anschluss B · Pack":"Port B · pack","leer":"empty","Lüfter # % · # U/min · Lader aus":"Fan # % · # rpm · charger off","Strommesser A (INA#x#)":"Current sensor A (INA#x#)","Strommesser B (INA#x#)":"Current sensor B (INA#x#)","Last-Sollwert (MCP#)":"Load setpoint (MCP#)","Balancer-Abgriffe":"Balancer taps","Blei (AGM/Gel/Nass)":"Lead (AGM/gel/flooded)","Weiter überwacht werden Spannung, Strom, Überstrom und die Abschaltspannung. Der Entladestrom wird auf höchstens # A begrenzt.":"Voltage, current, overcurrent and the cut-off voltage are still monitored. The discharge current is limited to at most # A.","Anschluss A":"Port A","#, #:# · Anschluss B · LiPo · #S":"#, #:# · Port B · LiPo · #S","Schächte":"Bays","Laden · # %":"Charging · # %","Fertig · # %":"Done · # %","Bereit":"Ready","Lüfter # % · Display angeschlossen":"Fan # % · display connected","Zelle Schacht #":"Cell bay #","Strommesser Schacht # (INA#x#)":"Current sensor bay # (INA#x#)","Last-Sollwerte (MCP#)":"Load setpoints (MCP#)","Schacht # · # Li-Ion · max. # A":"Bay # · # Li-ion · max. # A","Bestand gelöscht, nächste Zelle ist Nr. #":"Inventory deleted, next cell is no. #","Ergebnis endgültig löschen?":"Delete result permanently?","Update erfolgreich, CellDoc startet neu …":"Update successful, CellDoc is restarting …","Zelle nicht gefunden":"Cell not found","Gespeichert":"Saved","Zelltyp gelöscht":"Cell type deleted","Ungültige Zahl":"Invalid number","CellDoc neu starten? Ein laufender Test wird abgebrochen.":"Restart CellDoc? A running test will be aborted.","Frage GitHub …":"Asking GitHub …","Profil gelöscht":"Profile deleted","Protokoll gelöscht":"Log deleted","Keine Verbindung zu CellDoc …":"No connection to CellDoc …","Startet neu …":"Restarting …","Es läuft bereits ein Vorgang":"A process is already running","Spannung über der Zeit":"Voltage over time","Zähler für Tests, Energie und Betriebsstunden auf # setzen?":"Reset counters for tests, energy and operating hours to #?","Gelöscht":"Deleted","Als verbaut markiert":"Marked as built in","Frühestens # Stunden nach dem Start messen, besser nach #–# Tagen":"Measure at the earliest # hours after the start, better after #–# days","Wirklich stoppen? Der laufende Test geht verloren.":"Really stop? The running test will be lost.","Jetzt neu starten? Ein laufender Test wird abgebrochen.":"Restart now? A running test will be aborted.","Wirklich ALLE Zellen und Ergebnisse endgültig löschen? Das lässt sich nicht rückgängig machen.":"Really delete ALL cells and results permanently? This cannot be undone.","Keine Kurven gefunden":"No curves found","Zurückgesetzt, startet neu …":"Reset, restarting …","Profil gespeichert":"Profile saved","Zelltyp gespeichert":"Cell type saved","Testnachricht verschickt":"Test message sent","Abgleich läuft":"Sync running","Ganzes Ereignisprotokoll löschen?":"Delete the whole event log?","WLAN gelöscht. Mit dem Hotspot „CellDoc-…“ verbinden und # öffnen.":"Wi-Fi deleted. Connect to the hotspot \"CellDoc-…\" and open #.","Update von GitHub installieren? CellDoc startet danach neu.":"Install update from GitHub? CellDoc restarts afterwards.","Verbindung abgebrochen":"Connection lost","QR-Leser fehlt in dieser Firmware":"QR reader missing in this firmware","Im Demo-Modus nicht möglich":"Not possible in demo mode","Text zu lang für den QR-Code":"Text too long for the QR code","Abgeglichen":"Calibrated","Alles gelöscht, CellDoc startet als Hotspot neu":"Everything deleted, CellDoc restarts as a hotspot","Lade Firmware …":"Loading firmware …","Fehler: ":"Error: ","Vorschläge hinzugefügt":"Suggestions added","Gespeichert. CellDoc startet neu und verbindet sich mit dem WLAN.":"Saved. CellDoc restarts and connects to the Wi-Fi.","Keine Zellen in der Auswahl":"No cells in the selection","Ergebnis nicht gefunden":"Result not found","Gestartet":"Started","Wirklich ALLES löschen? Bestand, Ergebnisse, Einstellungen und WLAN sind danach weg. CellDoc öffnet dann seinen Hotspot.":"Really delete EVERYTHING? Inventory, results, settings and Wi-Fi will be gone. CellDoc then opens its hotspot.","Wiederhergestellt":"Restored","Alle Einstellungen auf Werkszustand? WLAN, Kalibrierung, Fühler, Bestand und Ergebnisse bleiben.":"Reset all settings to factory state? Wi-Fi, calibration, sensors, inventory and results are kept.","Kein QR-Code erkannt. Etikett näher und scharf fotografieren.":"No QR code found. Photograph the label closer and in focus.","Gelöscht. Unter „Gelöscht“ wiederherstellbar.":"Deleted. Can be restored under \"Deleted\".","Kein CellDoc-Etikett: ":"Not a CellDoc label: ","WLAN-Zugangsdaten löschen? CellDoc startet neu und öffnet nur noch seinen Hotspot „CellDoc-…“ (Adresse #).":"Delete Wi-Fi credentials? CellDoc restarts and only opens its hotspot \"CellDoc-…\" (address #).","Sicherung einspielen? Gleichnamige Zellen und Ergebnisse werden überschrieben.":"Restore backup? Cells and results with the same name will be overwritten.","Zuordnung gespeichert":"Assignment saved","Sucht …":"Searching …","Der Vergleich mit dem ersten Test dieser Zelle erfolgt automatisch.":"The comparison with the first test of this cell happens automatically.","Unbekannter Code: ":"Unknown code:","Noch keine Daten":"No data yet","Test · Laden":"Test · Charging","Test · Ruhen":"Test · Resting","Test · Erholen":"Test · Recovering","Test · Wieder laden":"Test · Recharging","ist fertig":"is done","Das Ergebnis steht rechts und unter Ergebnisse.":"The result is on the right and under Results.","Zelle erkannt · bereit für einen Test":"Cell detected · ready for a test","· aus der Spannung geschätzt":"· estimated from voltage","A · Zelle":"A · cell","· lädt":"· charging","Der Verlauf erscheint, sobald ein Vorgang läuft":"The history appears as soon as a process is running",", dazu der Fühler am Lastwiderstand, falls vorhanden":", plus the sensor on the load resistor if present","· noch nicht geprüft":"· not tested yet","Ohne Zuordnung zu einer Zelle.":"Not assigned to a cell.","Keine passende Zelle":"No matching cell","Der Bestand ist noch leer":"The inventory is still empty","Für # ohne Angabe: # A":"For # without rating: # A","Packs bitte mit einem Modellbau-Ladegerät mit Balancer laden.":"Please charge packs with an RC charger with balancer.","Der Akku muss voll angeschlossen werden, CellDoc lädt ihn nicht.":"The battery must be connected full, CellDoc does not charge it.","· Vergleichswert geschätzt":"· reference estimated","Das Gerät hat noch keine Uhrzeit (kein Internet). Sie wird beim Öffnen der Weboberfläche vom Browser übernommen.":"The device has no time yet (no internet). It is taken over from the browser when the web interface is opened.","Gerade ist Nachtmodus.":"Night mode is on right now.","Gerade ist kein Nachtmodus.":"Night mode is off right now.","danach nicht laden":"then don't charge","Profil ändern":"Edit profile","Zelltyp ändern":"Edit cell type","Einträge":"entries","Zelle Schacht":"Cell bay","auffällig":"conspicuous","gelöscht":"deleted","Nennkapazität":"Rated capacity","Für ein belastbares Ergebnis mindestens # Tage warten.":"Wait at least # days for a reliable result.","(vorläufig)":"(preliminary)","nach dem Test":"after the test","beim Prüfen":"when checking","Noch keine Ruhespannung gespeichert.":"No rest voltage saved yet.","· kommt in den nächsten Schacht, in den eine Zelle gesteckt wird":"· goes into the next bay a cell is inserted into","Kapazität mAh":"Capacity mAh","Letzter Test":"Last test","Nennkapazität mAh":"Rated capacity mAh","Gelöscht am":"Deleted on","läuft":"running","Blick von oben":"View from above","durch das Pack gesehen":"seen through the pack","noch nicht abgeglichen":"not synced yet","hinzufügen":"add","Nur für kleine Lasten":"Small loads only","wird beim Laden warm":"gets warm while charging","Last und Lader sind getrennt.":"Load and charger are disconnected.","Strom wird nicht erreicht":"Current not reached","Die Akkuspannung ist für diesen Strom zu niedrig. Der Test läuft mit dem maximal möglichen Strom weiter.":"The battery voltage is too low for this current. The test continues with the maximum possible current.","bereit für einen Test":"ready for a test","noch ca.":"approx.","Test fertig in ca.":"Test done in approx.","Läuft ohne Temperaturfühler an der Zelle: keine Überwachung der Zelltemperatur.":"Running without a temperature sensor on the cell: cell temperature is not monitored.","Es laden schon so viele Schächte, wie das Netzteil schafft (Einstellungen → Gleichzeitig laden).":"As many bays are already charging as the power supply can handle (Settings → Charge simultaneously).","Innenwiderstand wird gemessen":"Measuring internal resistance","Kurzer Stromsprung für eine Sekunde.":"Short current step for one second.","Es wird warm. Der Strom wird reduziert, bis die Temperatur sinkt.":"It's getting warm. The current is reduced until the temperature drops.","Lüfter":"Fan","Weiter überwacht werden Spannung, Strom, Überstrom und die Abschaltspannung":"Voltage, current, overcurrent and the cut-off voltage are still monitored","ist nicht im Bestand":"is not in the inventory","seit":"since","ändern":"edit","Bekommt die Nummer":"Gets number","fürs Etikett.":"for the label.","kann CellDoc nicht laden.":"cannot be charged by CellDoc.","Noch keine Tests. Starte unter Live einen Kapazitätstest.":"No tests yet. Start a capacity test under Live.","Höchstens":"At most","Verbunden mit":"Connected to","Uhrzeit am Gerät:":"Time on the device:","s nach Start, Uhrzeit noch unbekannt":"s after start, time not known yet","Noch keine Einträge.":"No entries yet.","Neue Version verfügbar:":"New version available:","ist die neueste Version.":"is the latest version.","mΩ über":"mΩ above",". Status auf „Defekt“ oder „Entsorgt“ setzen, wenn du sie nicht mehr verwenden willst.":". Set the status to \"Defective\" or \"Disposed\" if you no longer want to use it.","Selbstentladung läuft · Tag":"Self-discharge running · day","… und":"… and","Keine gelöschten Zellen.":"No deleted cells.","Noch keine Zellen. Jeder Kapazitätstest legt automatisch eine Zelle mit eigener Nummer an.":"No cells yet. Every capacity test automatically creates a cell with its own number.","Du kannst Zellen auch vorab anlegen und gleich beschriften.":"You can also create cells in advance and label them right away.","Seit dem ersten Test (":"Since the first test (","% Kapazität (":"% capacity (","Läuft seit":"Running since","Geprüft am":"Checked on","mV seit":"mV since","aus dem Bestand löschen? Sie bleibt unter „Gelöscht“ sichtbar und lässt sich wiederherstellen. Die Nummer wird nicht neu vergeben.":"delete from inventory? It stays visible under \"Deleted\" and can be restored. The number is not reassigned.","Jede Reihe ist eine Parallelgruppe (":"Each row is a parallel group (",". B− und B+ bekommen die dicken Anschlusskabel.":". B− and B+ get the thick connection cables.","Nur mit passendem BMS bauen. Vor dem Verbinden alle Zellen auf gleiche Spannung bringen (höchstens # V Unterschied). Nickelband punktschweißen, nicht direkt an die Zellen löten.":"Only build with a matching BMS. Bring all cells to the same voltage before connecting (at most # V difference). Spot-weld the nickel strip, don't solder directly to the cells.","Zellen übernommen":"cells received","Der Abgleich braucht die Uhrzeit aus dem Internet und läuft nur im Heim-WLAN.":"Syncing needs the time from the internet and only works on the home Wi-Fi.","Gestoppt":"Stopped","Abbruch":"Aborted","Vorladen":"Pre-charging","Nachladen":"Recharging","Wie neu":"Like new","Sehr gut":"Very good","Gut gebraucht":"Good used","Schwach":"Weak","Ersetzen":"Replace","Schwach.":"Weak.","Ersetzen.":"Replace.","Drosseln ab # °F · Stopp # °F":"Throttle from # °F · stop # °F","Warnung":"Warning","Fehler":"Error","Ruhe":"Rest","Mehr Angaben freiwillig":"More details optional","Gespeichert ✓":"Saved ✓","Ausmustern?":"Retire?","Wiederherstellen":"Restore","Gerade läuft ein Test":"A test is running","Am Abgriff liegt keine Spannung an":"There is no voltage at the tap","Am Gerät gestoppt":"Stopped on the device","Bestätigung fehlt":"Confirmation missing","Das passt nicht: Der Wert müsste beim Laden kleiner, beim Entladen größer als die Anzeige sein":"That doesn't fit: the value should be lower than the display while charging and higher while discharging","Die Zelle wird gerade geprüft":"The cell is being tested right now","Für den Spannungsabgleich muss ein Akku angeschlossen sein":"A battery must be connected for voltage calibration","Für den Spannungsabgleich muss eine Zelle eingesetzt sein":"A cell must be inserted for voltage calibration","Für den Stromabgleich mindestens # A fließen lassen":"Let at least # A flow for current calibration","Für diesen Abgleich muss mindestens # A fließen (Laden oder Entladen)":"At least # A must flow for this calibration (charging or discharging)","Kein Internet: CellDoc ist nicht mit dem WLAN verbunden":"No internet: CellDoc is not connected to Wi-Fi","Keine Zelle eingesetzt":"No cell inserted","Kühlkörper zu heiß (# °C)":"Heatsink too hot (# °C)","Laden dauert zu lange (über # h)":"Charging takes too long (over # h)","Lader liefert keinen Strom":"Charger delivers no current","Lastwiderstand zu heiß (# °C)":"Load resistor too hot (# °C)","Läuft bereits":"Already running","Lüfter dreht nicht":"Fan not spinning","Nicht gefunden":"Not found","Not-Aus-Taste gedrückt":"Emergency stop pressed","Nullabgleich nur ohne laufenden Vorgang":"Zero calibration only when nothing is running","Strommesser antwortet nicht mehr":"Current sensor no longer responds","Temperaturfühler am Kühlkörper ausgefallen":"Heatsink temperature sensor failed","Temperaturfühler am Lastwiderstand ausgefallen":"Load resistor temperature sensor failed","Temperaturfühler an der Zelle ausgefallen":"Cell temperature sensor failed","Unbekannte Kalibrierung":"Unknown calibration","Ungültige Anfrage":"Invalid request","Ungültiger Abgriff":"Invalid tap","Von Hand gestoppt":"Stopped manually","Während eines Tests ist kein Update möglich":"No update possible during a test","Während eines Tests nicht möglich":"Not possible during a test","Während eines Vorgangs nicht möglich":"Not possible while something is running","Zelle ist schon voll":"Cell is already full","Zelle wurde gelöscht":"Cell was deleted","Zelle zu heiß beim Entladen (# °C)":"Cell too hot while discharging (# °C)","Zelle zu heiß beim Laden (# °C)":"Cell too hot while charging (# °C)","Zelle zu leer für die Last":"Cell too empty for the load","Zu wenig Speicher frei":"Not enough memory free","Zuerst die Partnergeräte entfernen, sonst holt der Abgleich die Zellen zurück":"Remove the partner devices first, otherwise syncing brings the cells back","Zuerst die Zellspannung eingeben":"Enter the cell voltage first","Zuerst ntfy oder Telegram eintragen":"Enter ntfy or Telegram first","Über # Ω: Hier stimmt etwas mit den Kontakten nicht":"Over # Ω: something is wrong with the contacts","Über Home Assistant gestoppt":"Stopped via Home Assistant","Überspannung beim Laden (# V)":"Overvoltage while charging (# V)","Fehlende Zelle":"Missing cell","In Schacht # steckt keine Zelle":"There is no cell in bay #","Temperaturfühler an Zelle fehlt":"Cell temperature sensor missing","Kein Temperaturfühler an der Zelle":"No temperature sensor on the cell","Strom":"Current","Leistung":"Power","Ladung":"Charge","Kein Vorgang aktiv":"No process running","Messintervall der Kurve (s)":"Curve sampling interval (s)","Alle wie viele Sekunden ein Kurvenpunkt gespeichert wird. Kleiner = feinere Kurve, bei langen Tests wird der Abstand automatisch verdoppelt (max. # Punkte). Gilt ab dem nächsten Start.":"How often a curve point is saved, in seconds. Smaller = finer curve; on long tests the interval doubles automatically (max. # points). Applies from the next start.","Die BOOT-Taste startet immer mit den Test-Standardwerten. Mit „Für die Taste verwenden“ im Profil übernimmst du ein Profil dorthin.":"The BOOT button always starts with the default test values. Use \"Use for the button\" in a profile to copy that profile there.","Für die Taste verwenden":"Use for the button","Laden noch ca.":"Charging, approx.","Ruhen noch ca.":"Resting, approx.","Erholen noch ca.":"Recovering, approx.","Phase noch ca.":"Phase, approx.","· Test fertig in ca.":"· test done in approx.",", gegen #:# Uhr":", around #:#","unter # min":"under # min"};
+const EN_RX = [[/^Ort: (.+)$/,"Location: $1"],[/^Verbaut in (.+)$/,"Built into $1"],[/^Selbstentladung (.+) mV\/Tag$/,"Self-discharge $1 mV/day"],[/^Selbstentladung läuft$/,"Self-discharge running"],[/^Tag (\d+)$/,"day $1"],[/^Nenn (.+)$/,"rated $1"],[/^angelegt (.+)$/,"created $1"],[/^auf (.+)$/,"on $1"],[/^gut$/,"good"],[/^auffällig$/,"conspicuous"],[/^schlecht$/,"bad"],[/^läuft$/,"running"],[/^gedrosselt$/,"throttled"],[/^gelöscht( am (.+))?$/,"deleted$1"],[/^Anschluss ([AB])$/,"Port $1"],[/^Schacht (\d+)$/,"Bay $1"],[/^Verbunden mit (.+)$/,"Connected to $1"],[/^Hotspot aktiv: (.+)$/,"Hotspot active: $1"],[/^Erreichbar unter (\S+?)(, gilt nach einem Neustart)?$/,"Reachable at $1"],[/^(.+): (.+) V nominal, voll (.+) V\. Angeschlossen: nichts erkannt\.(.*)$/,"$1: $2 V nominal, full $3 V. Connected: nothing detected.$4"],[/^(.+): (.+) V nominal, voll (.+) V\. Angeschlossen: (.+?)\.(.*)$/,"$1: $2 V nominal, full $3 V. Connected: $4.$5"],[/Dauer ca\. (.+) h\./,"Duration approx. $1 h."],[/^Bekommt die Nummer (.+) fürs Etikett\.$/,"Gets number $1 for the label."],[/^(.+) ist fertig$/,"$1 is done"],[/^(.+) ist fertig · Note ([A-D])$/,"$1 is done · grade $2"],[/^Note ([A-D])$/,"Grade $1"],[/^Note ([A-D]), Lebenszahl (.+)$/,"Grade $1, health score $2"],[/^Kein CellDoc-Etikett: (.*)$/,"Not a CellDoc label: $1"],[/^Unbekannter Code: (.*)$/,"Unknown code: $1"],[/^Fehler: (.*)$/,"Error: $1"],[/^Abbruch: (.*)$/,"Aborted: $1"],[/^Überstrom (.*)$/,"Overcurrent $1"],[/^Spannung zu hoch (.*)$/,"Voltage too high $1"],[/^(.+) gescannt$/,"$1 scanned"],[/^Neue Version verfügbar: (.+) \(installiert: (.+)\)$/,"New version available: $1 (installed: $2)"],[/^Aktuell: (.+) ist die neueste Version\.$/,"Current: $1 is the latest version."],[/^Höchstens (.+) A$/,"At most $1 A"],[/^Gespeichert$/,"Saved"],[/^Schacht (\d+): (.*)$/,"Bay $1: $2"],[/^Anschluss ([AB]): (.*)$/,"Port $1: $2"],[/Faktoren U/,"factors U"],[/Null (.+) mA, Leitung/,"zero $1 mA, lead"],[/\(([-\d.,]+) A roh\)/,"($1 A raw)"],[/^Entladen noch ca\.$/,"Discharging, approx."],[/^Laden noch ca\.$/,"Charging, approx."],[/^(Phase|Ruhen|Erholen|Vorladen|Nachladen) noch ca\.$/,"approx. remaining:"],[/gegen (.+) Uhr/,"around $1"],[/^Uhrzeit am Gerät: (.+)$/,"Time on the device: $1"],[/^„(.+)“ gilt jetzt für die Taste und als Standard$/,"\"$1\" now applies to the button and as default"]];
+const NUMRX = /\d+(?:[.,   ]\d+)*/g;
+function trOne(core) {
+  let e = EN_DICT[core];
+  if (e != null) return e;
+  const nums = core.match(NUMRX);
+  if (nums) {
+    e = EN_DICT[core.replace(NUMRX, "#")];
+    if (e != null) { let i = 0; return e.replace(/#/g, () => nums[i++] ?? "#"); }
+  }
+  let r = core;
+  for (const [rx, rep] of EN_RX) if (rx.test(r)) r = r.replace(rx, rep);
+  return r !== core ? r : null;
+}
+function trStr(t) {
+  const core = t.replace(/\s+/g, " ").trim();
+  if (!core || !/[A-Za-zÄÖÜäöüß]/.test(core)) return null;
+  const r = trOne(core);
+  if (r != null) return r;
+  // zusammengesetzte Zeilen: Teilstücke zwischen " · " einzeln übersetzen
+  if (core.includes(" · ")) {
+    let hit = false;
+    const out = core.split(" · ").map(seg => { const x = trOne(seg); if (x != null) hit = true; return x ?? seg; }).join(" · ");
+    if (hit) return out;
+  }
+  return null;
+}
+function trNode(n) {
+  const p = n.parentElement;
+  if (!p || p.closest("script,style,#manDe,#manEn,input,textarea,[data-notr]")) return;
+  const r = trStr(n.data);
+  if (r == null) return;
+  const v = n.data.match(/^\s*/)[0] + r + n.data.match(/\s*$/)[0];
+  if (v !== n.data) n.data = v;
+}
+const TR_ATTR = ["placeholder", "title", "aria-label"];
+function trEl(el) {
+  for (const a of TR_ATTR) { const v = el.getAttribute(a); if (v) { const r = trStr(v); if (r != null && r !== v) el.setAttribute(a, r); } }
+}
+function trTree(root) {
+  if (root.nodeType === 3) return trNode(root);
+  if (root.nodeType !== 1) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let n; while ((n = w.nextNode())) trNode(n);
+  if (root.matches?.("[placeholder],[title],[aria-label]")) trEl(root);
+  root.querySelectorAll?.("[placeholder],[title],[aria-label]").forEach(trEl);
+}
+function startEnglish() {
+  document.documentElement.lang = "en";
+  document.title = "CellDoc";
+  // Handbuch: englische Fassung zeigen, Sprungmarken umhängen
+  $("manDe").hidden = true; $("manEn").hidden = false;
+  $("manDe").querySelectorAll("[id^='m-']").forEach(e => { e.dataset.mid = e.id; e.removeAttribute("id"); });
+  $("manEn").querySelectorAll("[data-mid]").forEach(e => { e.id = e.dataset.mid; });
+  trTree(document.body);
+  new MutationObserver(ms => {
+    for (const m of ms) {
+      if (m.type === "characterData") trNode(m.target);
+      else if (m.type === "attributes") trEl(m.target);
+      else m.addedNodes.forEach(trTree);
+    }
+  }).observe(document.body, {subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: TR_ATTR});
+}
+function setLang(l) {
+  try { localStorage.setItem("celldoc-lang", l); } catch (e) {}
+  if ((l === "en") !== EN_ON) location.reload();
+}
+if (EN_ON) startEnglish();
+
+// ======================================================================
 // Start
 // ======================================================================
 (async function init() {
@@ -3275,6 +3733,8 @@ function openFromHash() {
   try { INFO = await api("/api/info"); } catch (e) {}
   try { SETTINGS = await api("/api/settings"); } catch (e) {}
   UI = mergeUi(SETTINGS?.ui); applyUi();
+  if (DEMO) UI.lang = EN_ON ? "en" : "de";
+  else if (SETTINGS && (UI.lang === "en") !== EN_ON) return setLang(UI.lang);
   let tab = params.get("tab");
   if (!tab) try { tab = localStorage.getItem("celldoc-tab"); } catch (e) {}
   if (location.hash.startsWith("#m-")) tab = "manual";

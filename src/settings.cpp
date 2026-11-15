@@ -82,7 +82,7 @@ void Settings::toJson(JsonObject o, bool withSecrets) const {
   o["ssid2"] = ssid2; o["apName"] = apName;
   if (withSecrets) { o["pass2"] = pass2; o["apPass"] = apPass; }
   else { o["pass2Set"] = pass2.length() > 0; o["apPassSet"] = apPass.length() > 0; }
-  o["scanMode"] = scanMode; o["verbose"] = verbose;
+  o["scanMode"] = scanMode; o["verbose"] = verbose; o["logSec"] = logSec;
   JsonDocument u;
   if (!deserializeJson(u, ui) && u.is<JsonObject>()) o["ui"] = u;
   else o["ui"].to<JsonObject>();
@@ -221,6 +221,7 @@ void Settings::fromJson(JsonObjectConst o) {
   }
   scanMode = uint8_t(clampf(o["scanMode"] | scanMode, 0, 2));
   verbose = o["verbose"] | verbose;
+  logSec = uint8_t(clampf(o["logSec"] | logSec, 1, 120));
   if (o["ui"].is<JsonObjectConst>()) {
     String u;
     serializeJson(o["ui"], u);
