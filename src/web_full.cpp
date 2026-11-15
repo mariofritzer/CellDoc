@@ -1,6 +1,7 @@
 // CellDoc – gerätespezifische Web-API (großer Prüfstand)
 #include <ArduinoJson.h>
 #include <WebServer.h>
+#include "stats.h"
 
 #include "evlog.h"
 #include "cells.h"
@@ -80,12 +81,12 @@ static bool parseJob(JsonDocument& b, JobConfig& c) {
   c.cellNo = b["cell"].is<const char*>() ? cells::parseRef(b["cell"].as<const char*>()) : (b["cell"] | 0u);
   c.nomCapMah = b["nomCapMah"] | 0.0f;
   c.riNewMilli = b["riNew"] | 0.0f;
-  c.currentA = b["currentA"] | 0.5f;
+  c.currentA = b["currentA"] | (settings.tI > 0.05f ? settings.tI : 0.5f);
   c.cutoffV = b["cutoffV"] | 0.0f;
-  c.preCharge = b["preCharge"] | true;
+  c.preCharge = b["preCharge"] | settings.tPre;
   c.restMin = b["restMin"] | settings.restMin;
-  c.cycles = b["cycles"] | 1;
-  String after = b["after"] | "full";
+  c.cycles = b["cycles"] | settings.tCyc;
+  String after = b["after"] | (settings.tAfter == 0 ? "none" : settings.tAfter == 1 ? "storage" : "full");
   c.after = after == "none" ? After::None : after == "storage" ? After::Storage : After::Full;
   // Zelltyp-Vorgabe übernimmt Chemie, Kapazität und Ri, wenn nichts anderes angegeben ist
   const CellPreset* p = findPreset(c.presetId.c_str());
@@ -223,7 +224,76 @@ static void handleCalibrate() {
 
 namespace device {
 
+// ---------------------------------------------------------------------------
+// Hardware-Test: Lader (A), Last (A oder B), Lüfter, Summer – nur wenn nichts läuft
+
+static int8_t hwPort = -1;
+static uint8_t hwWhat = 0;  // 1 Lader, 2 Last
+static uint32_t hwUntil = 0;
+
+static void hwOff(const char* why) {
+  if (hwPort >= 0) {
+    hal.setCharger(ChargerMode::Off);
+    hal.setLoad(Port(hwPort), 0);
+    hal.setFanBoost(false);
+    if (why) evlog::info(hwPort + 1, String("Hardware-Test beendet: ") + why);
+  }
+  hwPort = -1;
+  hwWhat = 0;
+}
+
+void hwTick(uint32_t now) {
+  if (hwPort < 0) return;
+  if (tester.active()) { hwPort = -1; hwWhat = 0; return; }
+  const Meas& m = hal.m();
+  const PortMeas& pm = m.port[hwPort];
+  if ((int32_t)(now - hwUntil) >= 0) hwOff("nach 60 s automatisch aus");
+  else if (hwWhat == 1 && pm.v > 4.22f) hwOff("Zelle voll");
+  else if (hwWhat == 2 && pm.v < 2.9f) hwOff("Spannung zu niedrig");
+  else if (!isnan(m.tSink) && m.tSink > settings.sinkStopC) hwOff("Kühlkörper zu warm");
+  else if (!isnan(m.tCell) && m.tCell > settings.dischargeStopC) hwOff("Zelle zu warm");
+}
+
+static void handleHwTest() {
+  JsonDocument b;
+  if (!readBody(b)) return sendError("Ungültige Anfrage");
+  String what = b["what"] | "";
+  Port p = String(b["port"] | "A") == "B" ? PORT_B : PORT_A;
+  if (what == "off") { hwOff("von Hand"); return sendOk(); }
+  if (what == "buzzer") { hal.beepRaw(400); return sendOk(); }
+  if (what == "led") return sendOk();
+  if (tester.active()) return sendError("Während eines Tests nicht möglich", 409);
+  const PortMeas& pm = hal.m().port[p];
+  if (!(b["on"] | false)) { hwOff("von Hand"); return sendOk(); }
+  hwOff(nullptr);
+  if (what == "fan") {
+    hal.setFanBoost(true);
+    hwWhat = 3;
+  } else if (what == "charger") {
+    if (p != PORT_A) return sendError("Laden geht nur an Anschluss A", 409);
+    if (pm.v < 2.5f) return sendError("Keine Zelle eingesetzt", 409);
+    if (pm.v > 4.15f) return sendError("Zelle ist schon voll", 409);
+    hal.setCharger(ChargerMode::Li42);
+    hwWhat = 1;
+    evlog::info(1, "Hardware-Test: Lader ein (Li-Ion 4,2 V)");
+  } else if (what == "load") {
+    if (pm.v < 3.0f) return sendError("Kein Akku angeschlossen oder zu leer", 409);
+    float a = constrain(float(b["amps"] | 0.5f), 0.1f, p == PORT_A ? cfg::MAX_CURRENT_PORT_A : cfg::MAX_CURRENT_A);
+    hal.setLoad(p, a);
+    hwWhat = 2;
+    evlog::info(p + 1, "Hardware-Test: Last mit " + evlog::num(a, 2) + " A ein");
+  } else {
+    return sendError("Unbekannt");
+  }
+  hwPort = p;
+  hwUntil = millis() + 60000;
+  sendOk();
+}
+
+
 void routes() {
+  server.on("/api/hwtest", HTTP_POST, handleHwTest);
+  stats::routes();
   server.on("/api/state", HTTP_GET, handleState);
   server.on("/api/curve", HTTP_GET, handleCurve);
   server.on("/api/info", HTTP_GET, handleInfo);
@@ -244,6 +314,12 @@ bool busy() { return tester.active(); }
 void fillState(JsonObject o) {
   tester.stateJson(o);
   o["oled"] = display::available();
+  if (hwPort >= 0) {
+    JsonObject h = o["hwtest"].to<JsonObject>();
+    h["port"] = hwPort ? "B" : "A";
+    h["what"] = hwWhat == 1 ? "charger" : hwWhat == 2 ? "load" : "fan";
+    h["left"] = int32_t(hwUntil - millis()) / 1000;
+  }
 }
 
 String cellVoltage(JsonDocument& b, float& v) {
@@ -305,10 +381,11 @@ uint32_t scannedCell() { return scanNo; }
 
 void onScan(uint32_t no, const String& id) {
   if (!no) {
-    hal.beep(400);
+    hal.beep(400, 's');
     return;
   }
-  hal.beep(60);
+  hal.beep(60, 's');
+  if (settings.scanMode == 0) return;  // nur in der Weboberfläche öffnen
   scanNo = no;
   scanId = id;
   scanAt = millis();
@@ -331,7 +408,25 @@ void scanTick(uint32_t now) {
   checked = true;
   checkRes.clear();
   cells::check(scanNo, pm.v, checkRes.to<JsonObject>());
+  // Scan-Modus 2: gleich mit den Test-Standardwerten starten
+  if (settings.scanMode == 2) {
+    JobConfig c;
+    c.port = PORT_A;
+    c.chem = findChemistry("liion");
+    c.cells = 1;
+    c.cellNo = scanNo;
+    c.currentA = min(settings.tI > 0.05f ? settings.tI : 0.5f, cfg::MAX_CURRENT_PORT_A);
+    c.cutoffV = settings.tCut;
+    c.cycles = settings.tCyc;
+    c.preCharge = settings.tPre;
+    c.restMin = settings.restMin;
+    c.after = settings.tAfter == 0 ? After::None : settings.tAfter == 2 ? After::Full : After::Storage;
+    String e = tester.startTest(c);
+    if (e.length()) hal.alarm();
+    else hal.beep(80, 'k');
+  }
 }
+
 
 void scanState(JsonObject o) {
   if (!scanNo) return;
@@ -345,8 +440,6 @@ void killAll() { hal.killAll(); }
 
 void idle() { hal.update(millis()); }
 
-void signal(uint8_t n) {
-  if (settings.sound('b')) hal.beep(uint16_t(80 * n));
-}
+void signal(uint8_t n) { hal.beeps(n, 90, 'b'); }
 
 }  // namespace device

@@ -3,11 +3,9 @@
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 
-#include "config_mini.h"
-#include "hal_mini.h"
-#include "web.h"
+#include <time.h>
 
-using namespace mcfg;
+#include "web.h"
 
 namespace stats {
 
@@ -49,7 +47,7 @@ void begin() {
   f.close();
 }
 
-void update(uint32_t now) {
+void tick(uint32_t now, const float* amps, const float* watts, int n) {
   if (!lastMs) { lastMs = now; lastSave = now; return; }
   if (now - lastMs < 1000) return;
   double dt = (now - lastMs) / 3600000.0;  // h
@@ -59,11 +57,11 @@ void update(uint32_t now) {
     time_t t = time(nullptr);
     if (t > 1700000000) since = uint32_t(t);
   }
-  for (int s = 0; s < NSLOTS; s++) {
-    const SlotMeas& m = hal.m(s);
-    if (!m.ok || fabsf(m.i) < 0.01f) continue;
-    if (m.i > 0) { mahIn += m.i * 1000 * dt; whIn += m.p * dt; }
-    else { mahOut += -m.i * 1000 * dt; whOut += fabsf(m.p) * dt; }
+  for (int s = 0; s < n; s++) {
+    float i = amps[s];
+    if (isnan(i) || fabsf(i) < 0.01f) continue;
+    if (i > 0) { mahIn += i * 1000 * dt; whIn += fabsf(watts[s]) * dt; }
+    else { mahOut += -i * 1000 * dt; whOut += fabsf(watts[s]) * dt; }
     dirty = true;
   }
   // alle 15 min sichern, damit der Flash geschont wird

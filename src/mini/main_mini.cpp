@@ -34,6 +34,10 @@ void loop() {
   for (int s = 0; s < mcfg::NSLOTS; s++) slots[s].update(now);
   display::update(now);
   web::update();
-  stats::update(now);
+  {
+    float a[NSLOTS], w[NSLOTS];
+    for (int s = 0; s < NSLOTS; s++) { const SlotMeas& m = hal.m(s); a[s] = m.ok ? m.i : NAN; w[s] = m.p; }
+    stats::tick(now, a, w, NSLOTS);
+  }
   device::hwTick(now);
 }

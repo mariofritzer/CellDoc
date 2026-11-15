@@ -186,13 +186,16 @@ static void quickStart() {
   c.chem = findChemistry("liion");
   c.cells = 1;
   c.cellNo = device::scannedCell();  // gescannte Zelle, sonst neue
-  c.currentA = 0.5f;
-  c.preCharge = true;
+  // Test-Standardwerte aus den Einstellungen (Strom höchstens so viel wie Anschluss A kann)
+  c.currentA = min(settings.tI > 0.05f ? settings.tI : 0.5f, cfg::MAX_CURRENT_PORT_A);
+  c.cutoffV = settings.tCut;
+  c.cycles = settings.tCyc;
+  c.preCharge = settings.tPre;
   c.restMin = settings.restMin;
-  c.after = After::Storage;
+  c.after = settings.tAfter == 0 ? After::None : settings.tAfter == 2 ? After::Full : After::Storage;
   String e = tester.startTest(c);
   if (e.length()) hal.alarm();
-  else hal.beep(80);
+  else hal.beep(80, 'k');
 }
 
 bool available() { return present; }
@@ -204,11 +207,29 @@ void begin() {
   u8g2.setBusClock(400000);
   u8g2.begin();
   u8g2.enableUTF8Print();
-  u8g2.setContrast(180);
+  u8g2.setContrast(settings.oledBr);
+}
+
+// Helligkeit, Abschaltung nach Zeit und Nachtmodus
+static bool dark = false;
+static uint8_t contrast = 0;
+static uint32_t lastInput = 0;
+static Phase lastPh = Phase::Idle;
+static void power(uint32_t now) {
+  if (tester.phase() != lastPh) { lastPh = tester.phase(); lastInput = now; }
+  bool off = (settings.night() && settings.nightOled) ||
+             (settings.oledOff && now - lastInput > uint32_t(settings.oledOff) * 60000UL) || settings.oledBr == 0;
+  if (off != dark) { dark = off; u8g2.setPowerSave(off ? 1 : 0); }
+  if (!off && contrast != settings.oledBr) { contrast = settings.oledBr; u8g2.setContrast(contrast); }
 }
 
 void update(uint32_t now) {
   Btn b = readButtons(now);
+  if (b != Btn::None) {
+    bool wasDark = dark;
+    lastInput = now;
+    if (wasDark && present) b = Btn::None;  // erster Tastendruck weckt nur das Display
+  }
   Phase ph = tester.phase();
   switch (b) {
     case Btn::Prev: page = (page + PAGES - 1) % PAGES; break;
@@ -221,7 +242,7 @@ void update(uint32_t now) {
     case Btn::OkLong:
       if (tester.active()) {
         tester.stop("Am Gerät gestoppt");
-        hal.beep(300);
+        hal.beep(300, 'k');
       }
       break;
     default: break;
@@ -229,6 +250,8 @@ void update(uint32_t now) {
   if (b != Btn::None) lastDraw = 0;
   if (!present || now - lastDraw < 300) return;
   lastDraw = now;
+  power(now);
+  if (dark) return;
   JsonDocument d;
   JsonObject s = d.to<JsonObject>();
   device::fillState(s);

@@ -89,11 +89,11 @@ void Hal::update(uint32_t now) {
 
   // Summer
   if (alarmBeeps_ && now >= alarmNext_) {
-    beep(150);
+    beepRaw(alarmOn_);
     alarmBeeps_--;
-    alarmNext_ = now + 300;
+    alarmNext_ = now + alarmOn_ + 150;
   }
-  digitalWrite(cfg::PIN_BUZZER, (settings.buzzer && now < beepUntil_) ? HIGH : LOW);
+  digitalWrite(cfg::PIN_BUZZER, now < beepUntil_ ? HIGH : LOW);
 }
 
 void Hal::readIna(uint32_t now) {
@@ -362,12 +362,20 @@ void Hal::setCharger(ChargerMode mode) {
 
 void Hal::setChargerDuty(float d) { chgDuty_ = d < 0.1f ? 0.1f : (d > 1 ? 1 : d); }
 
-void Hal::beep(uint16_t ms) { beepUntil_ = millis() + ms; }
+void Hal::beepRaw(uint16_t ms) { beepUntil_ = millis() + ms; }
 
-void Hal::alarm() {
-  alarmBeeps_ = 6;
+void Hal::beep(uint16_t ms, char kind) {
+  if (settings.sound(kind)) beepRaw(ms);
+}
+
+void Hal::beeps(uint8_t n, uint16_t on, char kind) {
+  if (!settings.sound(kind)) return;
+  alarmBeeps_ = n;
+  alarmOn_ = on;
   alarmNext_ = millis();
 }
+
+void Hal::alarm() { beeps(6, 150, 'e'); }
 
 void Hal::killAll() {
   digitalWrite(cfg::PIN_LOAD_EN_N, HIGH);

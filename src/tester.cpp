@@ -7,11 +7,35 @@
 #include "settings.h"
 #include "soh.h"
 #include "storage.h"
+#include "notify.h"
+#include "stats.h"
 
 Tester tester;
 
-static constexpr uint32_t REST_AFTER_MS = 10UL * 60 * 1000;
-static constexpr uint32_t CHARGE_TIMEOUT_MS = 10UL * 3600 * 1000;
+#define REST_AFTER_MS (uint32_t(settings.tRestAfter) * 60000UL)
+
+// Ereignisprotokoll: Anschluss A = 1, B = 2
+static const char* phaseTxt(Phase p) {
+  switch (p) {
+    case Phase::PreCharge: return "Vorladen";
+    case Phase::Rest: return "Ruhen vor dem Entladen";
+    case Phase::Discharge: return "Entladen";
+    case Phase::RestAfter: return "Erholen nach dem Entladen";
+    case Phase::Recharge: return "Nachladen";
+    case Phase::ManualCharge: return "Laden";
+    case Phase::ManualDischarge: return "Entladen";
+    case Phase::Done: return "Fertig";
+    case Phase::Error: return "Abbruch";
+    default: return "Bereit";
+  }
+}
+static String dur(uint32_t ms) {
+  uint32_t s = ms / 1000;
+  if (s < 120) return String(s) + " s";
+  uint32_t m = (s + 30) / 60;
+  if (m < 60) return String(m) + " min";
+  return String(m / 60) + " h " + String(m % 60) + " min";
+}
 
 const char* phaseId(Phase p) {
   switch (p) {
@@ -156,7 +180,7 @@ String Tester::startTest(const JobConfig& cIn) {
   lastChgMah_ = 0;
   throttled_ = saturatedSeen_ = false;
   nPts_ = 0;
-  ptInterval_ = 10;
+  ptInterval_ = settings.logSec;
   lastPtSec_ = 0;
   tempStart_ = cellTemp();
   tempMax_ = tempStart_;
@@ -164,6 +188,14 @@ String Tester::startTest(const JobConfig& cIn) {
   float ref = job_.nomCapMah > 0 ? job_.nomCapMah : (job_.chem->defaultCapMah > 0 ? job_.chem->defaultCapMah : 3000);
   riStepMah_ = max(50.0f, ref * 0.05f);
   startMs_ = millis();
+  {
+    const char* aft = job_.after == After::Full ? "voll laden" : job_.after == After::Storage ? "auf Lagerspannung laden" : "nichts";
+    log('i', "Test gestartet: " + job_.cellId + (job_.name.length() && job_.name != job_.cellId ? " " + job_.name : "") + ", " +
+                 job_.chem->name + (job_.cells > 1 ? " " + String(job_.cells) + "S" : "") + ", entladen mit " +
+                 evlog::num(job_.currentA, 2) + " A bis " + evlog::num(job_.cutoffV, 2) + " V, Ruhe " + String(job_.restMin) +
+                 " min, " + String(job_.cycles) + (job_.cycles > 1 ? " Zyklen" : " Zyklus") + ", danach " + aft +
+                 (job_.preCharge ? "" : ", ohne Vorladen"));
+  }
   enter(job_.preCharge ? Phase::PreCharge : Phase::Rest);
   return "";
 }
@@ -178,9 +210,10 @@ String Tester::startManualCharge(const JobConfig& cIn) {
   sdArmAt_ = 0;
   error_ = "";
   nPts_ = 0;
-  ptInterval_ = 10;
+  ptInterval_ = settings.logSec;
   lastPtSec_ = 0;
   startMs_ = millis();
+  log('i', "Laden gestartet" + (job_.cellId.length() ? ": " + job_.cellId : String("")) + ", " + job_.chem->name);
   enter(Phase::ManualCharge);
   return "";
 }
@@ -196,19 +229,21 @@ String Tester::startManualDischarge(const JobConfig& cIn) {
   if (job_.cutoffV <= 0) job_.cutoffV = job_.chem->cutoffV;
   error_ = "";
   nPts_ = 0;
-  ptInterval_ = 10;
+  ptInterval_ = settings.logSec;
   lastPtSec_ = 0;
   riCount_ = 0;
   riStage_ = 0;
   riStepMah_ = 1e9;  // keine Ri-Pulse im Handbetrieb
   startMs_ = millis();
+  log('i', "Entladen gestartet" + (job_.cellId.length() ? ": " + job_.cellId : String("")) + ", mit " +
+               evlog::num(job_.currentA, 2) + " A bis " + evlog::num(job_.cutoffV, 2) + " V");
   enter(Phase::ManualDischarge);
   return "";
 }
 
 void Tester::stop(const char* reason) {
   if (!isActive(phase_)) return;
-  evlog::warn(1, String("Gestoppt: ") + (reason ? reason : "Abgebrochen"));
+  log('w', String("Gestoppt: ") + (reason ? reason : "Abgebrochen") + " (während " + phaseTxt(phase_) + ", " + snap() + ")");
   hal.killAll();
   error_ = reason ? reason : "Abgebrochen";
   enter(Phase::Error);
@@ -219,11 +254,12 @@ void Tester::acknowledge() {
 }
 
 void Tester::fail(const String& reason) {
-  evlog::err(1, "Abbruch: " + reason);
+  log('e', "Abbruch: " + reason + " (während " + phaseTxt(phase_) + ", " + snap() + ")");
   hal.killAll();
   error_ = reason;
   enter(Phase::Error);
   hal.alarm();
+  notify::send('e', "Abbruch" + (job_.cellId.length() ? " " + job_.cellId : String("")), reason);
 }
 
 void Tester::enter(Phase p) {
@@ -232,6 +268,9 @@ void Tester::enter(Phase p) {
   phaseMs_ = now;
   cutoffSince_ = fullSince_ = ovSince_ = ocSince_ = fanBadSince_ = 0;
   loadFactor_ = chgFactor_ = 1;
+  thrLog_ = false;
+  if (p == Phase::Done) log('i', "Fertig");
+  else if (p != Phase::Idle && p != Phase::Error) log('i', String("Phase: ") + phaseTxt(p) + " (" + snap() + ")");
   switch (p) {
     case Phase::PreCharge:
     case Phase::Recharge:
@@ -262,6 +301,16 @@ void Tester::enter(Phase p) {
 // Hauptschleife
 
 bool Tester::active() const { return isActive(phase_); }
+
+void Tester::log(char level, const String& text) const { evlog::add(level, job_.port == PORT_B ? 2 : 1, text); }
+
+String Tester::snap() const {
+  const PortMeas& pm = hal.m().port[job_.port];
+  String s = "U " + evlog::num(pm.v, 3) + " V, I " + evlog::num(pm.i, 3) + " A";
+  float tc = cellTemp();
+  if (!isnan(tc)) s += ", Zelle " + evlog::num(tc, 1) + " °C";
+  return s;
+}
 
 // Zelle aus dem Bestand verknüpfen; ein Test legt bei Bedarf eine neue an
 String Tester::linkCell(JobConfig& c, bool create) {
@@ -313,6 +362,7 @@ void Tester::update(uint32_t now) {
     case Phase::Rest: {
       uint32_t restMs = uint32_t(job_.restMin) * 60000UL;
       if (now - phaseMs_ >= restMs) {
+        log('i', "Ruhezeit vorbei (" + String(job_.restMin) + " min), Ruhespannung " + evlog::num(pm.v, 3) + " V");
         startOcv_ = pm.v;
         enter(Phase::Discharge);
       }
@@ -324,6 +374,7 @@ void Tester::update(uint32_t now) {
       break;
     case Phase::RestAfter:
       if (now - phaseMs_ >= REST_AFTER_MS) {
+        log('i', "Erholt: Ruhespannung " + evlog::num(pm.v, 3) + " V nach " + dur(now - phaseMs_));
         restOcv_ = pm.v;
         recordCycle(cycleIdx_ == 0 ? preChargeMah_ : lastChgMah_);
         if (cycleIdx_ + 1 < job_.cycles) {
@@ -334,7 +385,7 @@ void Tester::update(uint32_t now) {
         } else if (job_.after == After::None) {
           finishTest();
         } else {
-          storageTargetMah_ = job_.after == After::Storage ? capMah_ * 0.5f : 0;
+          storageTargetMah_ = job_.after == After::Storage ? capMah_ * settings.tStorPct / 100.0f : 0;
           enter(Phase::Recharge);
         }
       }
@@ -365,10 +416,13 @@ void Tester::safety(uint32_t now) {
   float dis = -pm.i;
   float tgt = hal.loadTarget();
   bool oc = fabsf(pm.i) > cfg::MAX_CURRENT_A * 1.1f ||
-            (dis > 0 && dis > max(tgt * cfg::OVERCURRENT_FACTOR, tgt + 0.3f) && !isChargePhase(phase_));
+            (dis > 0 && dis > max(tgt * settings.ocF, tgt + 0.3f) && !isChargePhase(phase_));
   if (isChargePhase(phase_) && pm.i > 2.5f) oc = true;  // TP5000 liefert max. 2 A
   if (oc) {
-    if (!ocSince_) ocSince_ = now;
+    if (!ocSince_) {
+      ocSince_ = now;
+      if (settings.verbose) log('w', "Strom kurz über der Grenze (" + snap() + ")");
+    }
     if (now - ocSince_ > cfg::OVERCURRENT_MS) {
       fail("Überstrom " + String(fabsf(pm.i), 2) + " A");
       return;
@@ -435,6 +489,19 @@ void Tester::safety(uint32_t now) {
     }
   }
 
+  // Beginn und Ende einer Drosselung protokollieren
+  {
+    float f = isChargePhase(phase_) ? chgFactor_ : isDischargePhase(phase_) ? loadFactor_ : 1;
+    bool thr = f < 0.99f;
+    if (thr != thrLog_) {
+      thrLog_ = thr;
+      String temps = "Zelle " + (isnan(tc) ? String("?") : evlog::num(tc, 1)) + " °C" +
+                     (isDischargePhase(phase_) && !isnan(m.tSink) ? ", Kühlkörper " + evlog::num(m.tSink, 1) + " °C" : "");
+      if (thr) log('w', String(isChargePhase(phase_) ? "Laden" : "Entladen") + " gedrosselt auf " + evlog::num(f * 100, 0) + " % wegen Wärme (" + temps + ")");
+      else log('i', "Drosselung aufgehoben (" + temps + ")");
+    }
+  }
+
   // Überspannung beim Laden
   if (isChargePhase(phase_)) {
     if (perCellV() > job_.chem->maxV) {
@@ -455,8 +522,8 @@ void Tester::handleCharge(uint32_t now, bool isTest) {
   uint32_t t = now - phaseMs_;
   float mah = float(pm.chargeAs / 3.6);
 
-  if (t > CHARGE_TIMEOUT_MS) {
-    fail("Laden dauert zu lange (über 10 h)");
+  if (settings.chgMaxH && t > uint32_t(settings.chgMaxH) * 3600000UL) {
+    fail("Laden dauert zu lange (über " + String(settings.chgMaxH) + " h)");
     return;
   }
   // Lader startet nicht
@@ -469,15 +536,21 @@ void Tester::handleCharge(uint32_t now, bool isTest) {
   if (m.chgFull) {
     if (!fullSince_) fullSince_ = now;
     if (now - fullSince_ > 5000) full = true;
-  } else if (t > 60000 && pm.i < 0.05f && perCellV() >= job_.chem->chargeV - 0.05f && chgFactor_ > 0.99f) {
+  } else if (t > 60000 && pm.i < min(settings.fullA, 0.05f) && perCellV() >= job_.chem->chargeV - 0.05f && chgFactor_ > 0.99f) {
     if (!fullSince_) fullSince_ = now;
     if (now - fullSince_ > 60000) full = true;
   } else {
     fullSince_ = 0;
   }
-  if (phase_ == Phase::Recharge && storageTargetMah_ > 0 && mah >= storageTargetMah_) full = true;
+  bool storageHit = phase_ == Phase::Recharge && storageTargetMah_ > 0 && mah >= storageTargetMah_;
+  if (storageHit) full = true;
 
   if (!full) return;
+  log('i', String(phaseTxt(phase_)) + " beendet: " +
+               (storageHit ? "Lagerladung erreicht (" + evlog::num(mah, 0) + " von " + evlog::num(storageTargetMah_, 0) + " mAh)"
+                : m.chgFull ? "Lader meldet voll bei " + evlog::num(perCellV(), 3) + " V je Zelle"
+                            : "Ladestrom unter " + evlog::num(min(settings.fullA, 0.05f), 2) + " A bei " + evlog::num(perCellV(), 3) + " V je Zelle") +
+               ". Geladen " + evlog::num(mah, 0) + " mAh in " + dur(t));
   hal.setCharger(ChargerMode::Off);
   if (phase_ == Phase::PreCharge) {
     preChargeMah_ = mah;
@@ -495,7 +568,8 @@ void Tester::handleCharge(uint32_t now, bool isTest) {
     finishTest();
   } else {
     enter(Phase::Done);
-    hal.beep(600);
+    hal.beep(600, 'd');
+    notify::send('c', "Laden fertig" + (job_.cellId.length() ? " " + job_.cellId : String("")), "Geladen " + evlog::num(mah, 0) + " mAh");
   }
   (void)isTest;
 }
@@ -523,11 +597,16 @@ void Tester::handleDischarge(uint32_t now) {
     cutoffSince_ = 0;
   }
   if (cutoffSince_ && now - cutoffSince_ > 2000) {
+    log('i', String(phaseTxt(phase_)) + " beendet: Abschaltspannung " + evlog::num(job_.cutoffV, 2) + " V erreicht (" +
+                 evlog::num(v, 3) + " V seit 2 s). Entnommen " + evlog::num(capMah_, 0) + " mAh, " + evlog::num(energyWh_, 2) +
+                 " Wh in " + dur(now - phaseMs_));
     hal.setLoad(job_.port, 0);
     logPoint(now, true);
     if (phase_ == Phase::ManualDischarge) {
       enter(Phase::Done);
-      hal.beep(600);
+      hal.beep(600, 'd');
+      notify::send('d', "Entladen fertig" + (job_.cellId.length() ? " " + job_.cellId : String("")),
+                   "Entnommen " + evlog::num(capMah_, 0) + " mAh, " + evlog::num(energyWh_, 2) + " Wh");
     } else {
       enter(Phase::RestAfter);
     }
@@ -596,6 +675,7 @@ void Tester::handleRiPulse(uint32_t now) {
   s.riMilli = (v1 - v2) / di * 1000.0f;
   for (int k = 0; k < 6; k++) s.cellRi[k] = k < m.balCells ? float((riCell1_[k] / riN1_ - m.cell[k]) / di * 1000.0) : 0;
   lastRi_ = s.riMilli;
+  if (settings.verbose) log('i', "Innenwiderstand " + evlog::num(lastRi_, 0) + " mΩ bei " + evlog::num(capMah_, 0) + " mAh");
 }
 
 void Tester::logPoint(uint32_t now, bool force) {
@@ -739,11 +819,17 @@ void Tester::finishTest() {
   lastCellId_ = job_.cellId;
   lastCap_ = capMah_;
   lastScore_ = r.score;
+  log('i', "Test fertig: " + evlog::num(capMah_, 0) + " mAh" +
+               (job_.nomCapMah > 0 ? " (" + evlog::num(capMah_ / job_.nomCapMah * 100, 0) + " % der Nennkapazität)" : "") +
+               ", Ri " + evlog::num(ri50 > 0 ? ri50 : ri100, 0) + " mΩ, Lebenszahl " + String(r.score) + ", Dauer " + dur(millis() - startMs_));
+  stats::testDone();
+  notify::send('d', "Test fertig " + job_.cellId,
+               evlog::num(capMah_, 0) + " mAh, Ri " + evlog::num(ri50 > 0 ? ri50 : ri100, 0) + " mΩ, Lebenszahl " + String(r.score));
   // in einer Stunde die Ruhespannung merken, nach dem Vollladen auch den Selbstentladungstest starten
   sdArmAt_ = millis() + 3600000UL;
   sdStartToo_ = job_.after == After::Full && job_.cells == 1 && job_.chem->lithium;
   enter(Phase::Done);
-  hal.beep(800);
+  hal.beep(800, 'd');
 }
 
 // ---------------------------------------------------------------------------

@@ -54,7 +54,10 @@ class Hal {
   void setChargerDuty(float duty01);  // Drosselung im Takt, 1 = Dauerbetrieb
 
   void setFanBoost(bool on) { fanBoost_ = on; }
-  void beep(uint16_t ms);
+  // kind: k Taste, d fertig, e Fehler, b Start/WLAN, s Scan (siehe Settings::sound)
+  void beep(uint16_t ms, char kind = 'k');
+  void beeps(uint8_t n, uint16_t on, char kind);
+  void beepRaw(uint16_t ms);  // ohne Einstellungen (Hardware-Test)
   void alarm();
 
   // Alles sofort aus (Not-Aus, Fehler)
@@ -95,6 +98,7 @@ class Hal {
   bool tempRequested_ = false;
   uint32_t beepUntil_ = 0;
   uint8_t alarmBeeps_ = 0;
+  uint16_t alarmOn_ = 150;
   uint32_t alarmNext_ = 0;
 };
 

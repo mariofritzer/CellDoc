@@ -481,7 +481,15 @@ static void statusLed() {
   last = now;
   bool blink = (now / 500) % 2;
   uint8_t r = 0, g = 0, b = 0;
-  switch (device::ledState()) {
+  uint8_t st = device::ledState();
+  // ausgeschaltet oder nachts dunkel; Fehler leuchten trotzdem
+  if (st != 4 && (!settings.led || (settings.night() && settings.nightLed))) {
+#if CONFIG_IDF_TARGET_ESP32S3
+    neopixelWrite(cfg::PIN_RGB, 0, 0, 0);
+#endif
+    return;
+  }
+  switch (st) {
     case 1: g = 14; b = 14; break;
     case 2: r = 24; g = 9; break;
     case 3: g = 30; break;

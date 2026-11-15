@@ -91,6 +91,9 @@ class Tester {
   String error_;
   uint32_t startMs_ = 0, phaseMs_ = 0;
   float loadFactor_ = 1, chgFactor_ = 1;
+  bool thrLog_ = false;
+  void log(char level, const String& text) const;
+  String snap() const;
   bool throttled_ = false, saturatedSeen_ = false;
   uint32_t cutoffSince_ = 0, fullSince_ = 0, ovSince_ = 0, ocSince_ = 0, fanBadSince_ = 0;
 
